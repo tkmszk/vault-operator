@@ -467,6 +467,7 @@ Quelle: BA-013, IMPL-007. 4 Community-Issues + 3 Dependabot-Alerts + zwei wahren
 | BUG-016 defensive error handling (Memory + Context-Prefix) | Implemented (tests: 16/16) |
 | Hard Tool-Filter (BUG-018 Wave 2) | Implemented (tests: 5/5, `filterShadowedBuiltins` in AgentTask `rebuildPromptCache`) |
 | Excalidraw-Arrows-Extension | Implemented (tests: 5/5 format, arrows + endpoint bindings, drop-unknown-refs) |
+| FEATURE-1600 Deferred Tool Loading | Implemented (tests: 14/14, 24 deferred tools hidden by default, `find_tool` activates on demand) |
 
 ---
 
@@ -481,7 +482,7 @@ Quelle: BA-013, IMPL-007. 4 Community-Issues + 3 Dependabot-Alerts + zwei wahren
 
 ### Kurzfristig (danach)
 
-1. **Deferred Tool Loading (FEATURE-1600)** -- groesster ROI, spart ~30-40% Token pro API-Call
+1. ~~**Deferred Tool Loading (FEATURE-1600)**~~ -- Implemented in Wave 2. 24 specialised tools hidden from the default prompt, activated on demand via the new `find_tool` meta-tool. Live token impact TBD after sustained use.
 2. **Memory Side-Query (FEATURE-1601)** -- macht Memory skalierbar, relevante Memories per Side-Query
 3. **Default PPTX Templates (FEATURE-1101)** -- professionelle Vorlagen als Plugin-Assets
 4. **Token Budget Management (FEATURE-0603)** -- limitiert Kontext-Ueberladung
