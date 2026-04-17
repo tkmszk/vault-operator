@@ -476,7 +476,7 @@ Quelle: BA-013, IMPL-007. 4 Community-Issues + 3 Dependabot-Alerts + zwei wahren
 
 1. **EPIC-019 Knowledge Maintenance Phase 2** -- Knowledge Ingest Skill (FEATURE-1900), Template-Onboarding (FEATURE-1903), verbleibende Features
 2. **MCP Remote Auth (FEATURE-1404)** -- Authentifizierung fuer Remote-Clients
-3. **Gemini Provider (ADR-064)** -- Google Gemini als eigenstaendiger Provider (feature/gemini-provider Branch)
+3. ~~**Gemini Provider (ADR-064)**~~ -- Already implemented in the main codebase: `ProviderType 'gemini'`, built-in models, UI labels/colors, model fetching, ModelConfigModal wiring, model-registry entries. Nothing left to do. Flagged in Wave 2 review 2026-04-17.
 4. **Wave-2 Triage** -- BUG-016, Excalidraw-Arrows, Hard Tool-Filter (siehe oben)
 
 ### Kurzfristig (danach)
