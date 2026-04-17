@@ -2,7 +2,7 @@
 
 Stand: 2026-04-17
 Branch: `dev` / `main`
-Status: **v2.5.0 released** (Community-Wave 1)
+Status: **v2.5.1 released** (Community-Wave 2 patch + feature additions)
 
 ---
 
@@ -460,14 +460,15 @@ Quelle: BA-013, IMPL-007. 4 Community-Issues + 3 Dependabot-Alerts + zwei wahren
 - **Excalidraw-Arrows-Extension** -- `CreateExcalidrawTool` kann aktuell nur rectangles + text. Pfeile brauchen Bezier-Bindings (~300 LOC).
 - **Hard Tool-Filter** -- built-in Tools komplett aus dem Schema entfernen, wenn ein Plugin-Aequivalent aktiv ist. Robuster als die Description-Redirect-Heuristik in FEATURE-0507/BUG-018.
 
-## Community-Wave 2 (in Arbeit, branch: `feature/community-wave-2`)
+## Community-Wave 2 (released als v2.5.1)
 
 | Arbeitsstrom | Status |
 |---|---|
-| BUG-016 defensive error handling (Memory + Context-Prefix) | Implemented (tests: 16/16) |
-| Hard Tool-Filter (BUG-018 Wave 2) | Implemented (tests: 5/5, `filterShadowedBuiltins` in AgentTask `rebuildPromptCache`) |
-| Excalidraw-Arrows-Extension | Implemented (tests: 5/5 format, arrows + endpoint bindings, drop-unknown-refs) |
-| FEATURE-1600 Deferred Tool Loading | Implemented (tests: 14/14, 24 deferred tools hidden by default, `find_tool` activates on demand) |
+| BUG-016 defensive error handling (Memory + Context-Prefix) | Released v2.5.1 (tests: 16/16) |
+| Hard Tool-Filter (BUG-018 Wave 2) | Released v2.5.1 (tests: 5/5, `filterShadowedBuiltins` in AgentTask `rebuildPromptCache`) |
+| Excalidraw-Arrows-Extension | Released v2.5.1 (tests: 5/5 format, arrows + endpoint bindings, drop-unknown-refs) |
+| FEATURE-1600 Deferred Tool Loading | Released v2.5.1 (tests: 14/14, 24 deferred tools hidden by default, `find_tool` activates on demand) |
+| Agent-Folder Native Picker (Issue #26 UI) | Released v2.5.1 (Finder/Explorer via electron dialog, vault-relative + absolute support with partial cross-vault semantics) |
 
 ---
 
