@@ -19,4 +19,4 @@ Multi-Provider-Support (Anthropic, OpenAI, Ollama, Azure, OpenRouter, LM Studio,
 | FEATURE-0405 | Onboarding | P1 | Implementiert |
 | FEATURE-0406 | Notifications | P2 | Implementiert |
 | FEATURE-0407 | Agent Skill Mastery | P1 | Implementiert |
-| FEATURE-0409 | OpenAI-kompatible Streaming Tool-Call Robustheit | P1 | Geplant (BUG-013, Issue #30) |
+| FEATURE-0409 | OpenAI-kompatible Streaming Tool-Call Robustheit | P1 | Implementiert v2.5.0 (BUG-013, Issue #30) |

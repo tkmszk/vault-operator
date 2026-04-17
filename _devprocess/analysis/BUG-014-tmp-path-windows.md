@@ -1,6 +1,11 @@
 # BUG-014: TMP-Files nicht lesbar auf Windows (Pfad-Trennzeichen)
 
 **Prioritaet:** P1 (Kurzfristig, blockiert Windows-User mit MCP-Connector + grossen Tool-Results)
+**Status:** Resolved in v2.5.0 (commit cc74b22). Root cause was wider than the
+issue suggested: ResultExternalizer wrote to GlobalFileService while read_file
+resolves vault-relative paths, so every externalised result was unreachable on
+all platforms (most visible on Windows where MCP traffic exposes the mismatch
+directly).
 **Datei:** `src/core/tool-execution/ResultExternalizer.ts`, `src/core/storage/VaultFileService.ts` (oder vergleichbarer Adapter)
 **Feature-Bezug:** FEATURE-1803 (Cross-Platform TMP-Pfade) in EPIC-018, ADR-063 (Context Externalization)
 **Entdeckt:** 2026-04-15 (Community Issue #29, Reporter unbekannt)

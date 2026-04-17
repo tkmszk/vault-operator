@@ -1,6 +1,7 @@
 # BUG-015: GitHub Copilot Provider lehnt max_tokens fuer neuere Modelle ab
 
 **Prioritaet:** P1 (Kurzfristig, blockiert Copilot-Modelle wie gpt-5, gpt-5-codex, o4-mini)
+**Status:** Resolved in v2.5.0 (commit 6b67b6c)
 **Datei:** `src/api/providers/github-copilot.ts`
 **Feature-Bezug:** FEATURE-1206 (Copilot Modern Model Compatibility) in EPIC-012
 **Entdeckt:** 2026-04-15 (Community Issue #28)

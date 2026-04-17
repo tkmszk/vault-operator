@@ -1,6 +1,7 @@
 # BUG-013: OpenAI Provider verschluckt Tool-Calls bei finish_reason="stop"
 
 **Prioritaet:** P1 (Kurzfristig, blockiert OpenRouter-Modelle wie gpt-oss-120b)
+**Status:** Resolved in v2.5.0 (commit 6c11f72, 5/5 unit tests)
 **Datei:** `src/api/providers/openai.ts` (Streaming-Loop)
 **Feature-Bezug:** FEATURE-0409 (OpenAI-kompatible Streaming Tool-Call Robustheit) in EPIC-004
 **Entdeckt:** 2026-04-15 (Community Issue #30, Reporter: Nicholas Leonard)

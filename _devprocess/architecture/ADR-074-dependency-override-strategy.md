@@ -1,6 +1,6 @@
 # ADR-074: Dependency-Override-Strategie fuer transitive Vulnerabilities
 
-**Status:** Proposed
+**Status:** Accepted (implemented in v2.5.0)
 **Date:** 2026-04-17
 **Deciders:** Sebastian Hanke
 **Bezug:** Querschnittliche Security-Maintenance (kein eigenes Feature). Begleitet IMPL-007 Phase 1. Aktuelle Anlaesse: Dependabot #31 (hono), #32 (dompurify), #33 (protobufjs).

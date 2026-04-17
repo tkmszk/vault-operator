@@ -1,6 +1,6 @@
 # ADR-072: Konfigurierbarer Agent-Storage-Root
 
-**Status:** Proposed
+**Status:** Accepted (implemented in v2.5.0)
 **Date:** 2026-04-17
 **Deciders:** Sebastian Hanke
 **Bezug:** FEATURE-0507 (EPIC-005), Issue #26

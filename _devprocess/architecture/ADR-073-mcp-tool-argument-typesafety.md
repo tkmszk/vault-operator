@@ -1,6 +1,10 @@
 # ADR-073: MCP-Tool-Argument Type-Safety
 
-**Status:** Proposed
+**Status:** Superseded by current code state (v2.5.0). The original
+no-explicit-any disables that motivated this ADR are no longer in the
+tree, so the proposed coerceStringArg/coerceNumberArg helpers were not
+introduced. Kept as a reference in case future MCP tool growth re-raises
+the type-safety question.
 **Date:** 2026-04-17
 **Deciders:** Sebastian Hanke
 **Bezug:** Querschnittliche Review-Bot-Compliance (kein eigenes Feature). Begleitet IMPL-007 Phase 6. Siehe `memory/review-bot-compliance.md` fuer die kanonische Regel-Liste.
