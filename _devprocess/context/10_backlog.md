@@ -456,9 +456,18 @@ Quelle: BA-013, IMPL-007. 4 Community-Issues + 3 Dependabot-Alerts + zwei wahren
 
 ### Offen fuer Wave 2
 
-- **BUG-016** (P2) -- Memory-Extractor und SemanticIndex Context-Prefix umgehen den konfigurierten Provider und rufen Anthropic SDK direkt auf. Noisy 400-Errors fuer User ohne Anthropic-Key, aber keine Funktionsverlust.
+- ~~**BUG-016**~~ -- Resolved in Wave-2 Arbeit (session-disable auf permanent provider errors statt retry-spam). Befund war: kein Anthropic-Hardcoding, sondern User hatte Anthropic-Modell konfiguriert ohne Credits. Fix ist defensive error handling.
 - **Excalidraw-Arrows-Extension** -- `CreateExcalidrawTool` kann aktuell nur rectangles + text. Pfeile brauchen Bezier-Bindings (~300 LOC).
 - **Hard Tool-Filter** -- built-in Tools komplett aus dem Schema entfernen, wenn ein Plugin-Aequivalent aktiv ist. Robuster als die Description-Redirect-Heuristik in FEATURE-0507/BUG-018.
+
+## Community-Wave 2 (in Arbeit, branch: `feature/community-wave-2`)
+
+| Arbeitsstrom | Status |
+|---|---|
+| BUG-016 defensive error handling (Memory + Context-Prefix) | Implemented (tests: 16/16) |
+| Hard Tool-Filter (BUG-018 Wave 2) | Implemented (tests: 5/5, `filterShadowedBuiltins` in AgentTask `rebuildPromptCache`) |
+| Excalidraw-Arrows-Extension | Implemented (tests: 5/5 format, arrows + endpoint bindings, drop-unknown-refs) |
+| FEATURE-1600 Deferred Tool Loading | Implemented (tests: 14/14, 24 deferred tools hidden by default, `find_tool` activates on demand) |
 
 ---
 
@@ -466,14 +475,14 @@ Quelle: BA-013, IMPL-007. 4 Community-Issues + 3 Dependabot-Alerts + zwei wahren
 
 ### Kurzfristig (aktiv)
 
-1. **EPIC-019 Knowledge Maintenance Phase 2** -- Knowledge Ingest Skill (FEATURE-1900), Template-Onboarding (FEATURE-1903), verbleibende Features
-2. **MCP Remote Auth (FEATURE-1404)** -- Authentifizierung fuer Remote-Clients
-3. **Gemini Provider (ADR-064)** -- Google Gemini als eigenstaendiger Provider (feature/gemini-provider Branch)
+1. **EPIC-019 Knowledge Maintenance** -- Phase 2 groesstenteils erledigt. Offen bleiben FEATURE-1903 (Template-Onboarding einmalig) und FEATURE-1907 (Chat UI Polish). FEATURE-1900 + 1904 + 1906 waren bereits implementiert, nur Backlog-Stand war veraltet.
+2. **MCP Remote Auth (FEATURE-1404)** -- Eigener Feature-Branch, nicht Wave 2. Heute: Bearer-Token-Auth (McpBridge + Cloudflare-Relay-Worker). Spec fordert OAuth 2.1 + PKCE (Authorization-Endpoint, PKCE-Challenges, Refresh-Tokens, Client-Registration, Settings-UI) -- ~500-1000 LOC plus Security-Review. Zu gross fuer inkrementelle Wave-Arbeit.
+3. ~~**Gemini Provider (ADR-064)**~~ -- Already implemented in the main codebase: `ProviderType 'gemini'`, built-in models, UI labels/colors, model fetching, ModelConfigModal wiring, model-registry entries. Nothing left to do. Flagged in Wave 2 review 2026-04-17.
 4. **Wave-2 Triage** -- BUG-016, Excalidraw-Arrows, Hard Tool-Filter (siehe oben)
 
 ### Kurzfristig (danach)
 
-1. **Deferred Tool Loading (FEATURE-1600)** -- groesster ROI, spart ~30-40% Token pro API-Call
+1. ~~**Deferred Tool Loading (FEATURE-1600)**~~ -- Implemented in Wave 2. 24 specialised tools hidden from the default prompt, activated on demand via the new `find_tool` meta-tool. Live token impact TBD after sustained use.
 2. **Memory Side-Query (FEATURE-1601)** -- macht Memory skalierbar, relevante Memories per Side-Query
 3. **Default PPTX Templates (FEATURE-1101)** -- professionelle Vorlagen als Plugin-Assets
 4. **Token Budget Management (FEATURE-0603)** -- limitiert Kontext-Ueberladung
