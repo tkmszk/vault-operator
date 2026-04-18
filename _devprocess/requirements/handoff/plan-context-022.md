@@ -128,14 +128,17 @@ Siehe: [_devprocess/architecture/ADR-075-skill-package-architecture.md](../archi
 
 | Datei | Aenderung | Feature |
 |-------|-----------|---------|
-| [src/core/skills/SelfAuthoredSkillLoader.ts](../../src/core/skills/SelfAuthoredSkillLoader.ts) | Folder-Scan erweitert | 2201, 2204 |
-| [src/core/skills/types.ts](../../src/core/skills/types.ts) | `SkillInventory`, `SubRoleMeta` | 2201, 2204 |
-| [src/core/skills/SkillPackageImporter.ts](../../src/core/skills/SkillPackageImporter.ts) | Neu | 2202 |
-| [src/ui/settings/SkillsTab.ts](../../src/ui/settings/SkillsTab.ts) | Import-Button | 2202 |
-| `src/ui/settings/SkillImportConfirmModal.ts` | Neu | 2202 |
-| `src/core/utils/agentFolder.ts` | `getSkillsDir()` Helper | 2201 |
-| `src/core/prompts/SystemPromptBuilder.ts` (oder aequivalent) | Inventory-Block + Coordinator-Block | 2201, 2203, 2204 |
-| [src/core/skills/__tests__](../../src/core/skills/__tests__) | Neue Fixtures + Tests | alle |
+| [src/core/skills/SelfAuthoredSkillLoader.ts](../../src/core/skills/SelfAuthoredSkillLoader.ts) | Folder-Scan erweitert, `refresh()` Methode, Pfad-Migration | 2201, 2204 |
+| `src/core/skills/types.ts` (neu) | `SkillInventory`, `SubRoleMeta`, `SkillImportResult` | 2201, 2202, 2204 |
+| [src/core/skills/SkillPackageImporter.ts](../../src/core/skills/SkillPackageImporter.ts) (neu) | Zip-Extraktion mit Whitelist + Security-Checks | 2202 |
+| `src/core/skills/SkillImportRouter.ts` (neu) | Universal-Router: Single-MD / Folder / Zip Auto-Detect | 2202 |
+| `src/core/skills/SkillFolderImporter.ts` (neu) | Folder-Kopie mit Whitelist | 2202 |
+| `src/core/skills/SkillMigration.ts` (neu) | Einmalige `.obsilo-sync/skills/` -> `getAgentFolderPath()/skills/` Migration | 2201 |
+| [src/ui/settings/SkillsTab.ts](../../src/ui/settings/SkillsTab.ts) | Existierenden Import-Button durch Universal-Import ersetzen (kein zweiter Button) | 2202 |
+| `src/ui/settings/SkillImportConfirmModal.ts` (neu) | Duplikat-Modal Replace/Rename/Cancel | 2202 |
+| [src/core/utils/agentFolder.ts](../../src/core/utils/agentFolder.ts) | `getSelfAuthoredSkillsDir(holder)` Helper | 2201 |
+| [src/core/prompts/sections/skills.ts](../../src/core/prompts/sections/skills.ts) + Aufrufer | Inventory-Block + Coordinator-Block (NICHT SkillRegistry) | 2201, 2203, 2204 |
+| [src/core/skills/__tests__](../../src/core/skills/__tests__) | Neue Fixtures + Tests + Migrations-Test | alle |
 
 ## Security Requirements (verbindlich)
 

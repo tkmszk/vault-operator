@@ -1,4 +1,4 @@
-# Feature: `.skill` Zip-Import
+# Feature: Universal Skill-Import (.md / Folder / .skill-Zip)
 
 > **Feature ID**: FEATURE-2202
 > **Epic**: EPIC-022 (Skill-Package Ecosystem)
@@ -8,14 +8,30 @@
 
 ## Feature Description
 
-Neuer UI-Button in Settings → Skills Tab: **"Import skill package…"**. Der User
-waehlt eine `.skill`-Datei (Zip-Archiv) oder eine `.zip` und Obsilo entpackt
-den Inhalt nach `<agent-folder>/skills/<skill-name>/`. Anschliessend wird der
-Loader refreshed und der Skill ist sofort verfuegbar.
+**Decision 2026-04-18 (user):** Ein einziger Import-Button, der alle Skill-
+Formate versteht und die Komplexitaet fuer den User abstrahiert. Der bestehende
+Einzel-Markdown-Import-Button in [SkillsTab.ts:78](../../../src/ui/settings/SkillsTab.ts#L78)
+wird durch den universellen Import ersetzt.
+
+Der neue Button **"Import skill…"** akzeptiert drei Eingabeformen und routet
+sie automatisch anhand von Dateityp und Inhalt:
+
+1. **Einzelne `.md`-Datei** → bestehender Flow (Frontmatter parsen, als
+   Single-File-Skill anlegen).
+2. **Ordner mit `SKILL.md` + optional `scripts/`, `references/`, `assets/`**
+   (Electron Native Directory-Picker) → rekursiv pruefen, Whitelist anwenden,
+   nach `<agent-folder>/skills/<slug>/` kopieren.
+3. **`.skill`- oder `.zip`-Datei** → JSZip-basiert entpacken mit Whitelist,
+   Path-Traversal-Check, Size-Limit, dann nach `<agent-folder>/skills/<slug>/`.
+
+Nach jedem erfolgreichen Import wird der `SelfAuthoredSkillLoader` refreshed
+und der Skill erscheint sofort in der Liste. Bei Duplikaten zeigt ein Modal
+die bekannten Optionen "Replace / Rename / Cancel".
 
 Anthropic definiert `.skill` als De-facto-Extension (nicht formell
 spec'd, aber vom `skill-creator` Tool produziert), und Claude.ai akzeptiert
-Uploads via Settings. Wir uebernehmen diese Konvention.
+Uploads via Settings. Wir uebernehmen diese Konvention plus Obsilo-eigene
+Markdown-/Ordner-Pfade fuer Backward-Compat.
 
 ## User Stories
 
@@ -47,6 +63,9 @@ fragt: "Replace or keep both?"
 | SC-05 | Existierender Skill bei Import wird mit Confirm-Modal ersetzt oder umbenannt (User-Wahl) | 100% | UI-Test |
 | SC-06 | Nach Import refreshed der Loader, Skill erscheint in Skill-Liste | 100% | Live-Test |
 | SC-07 | Korrupter Zip gibt klare Fehlermeldung, crash nicht das Plugin | 100% | Fuzz-Test |
+| SC-08 | Einzelne `.md`-Datei wird als Single-File-Skill importiert (Backward-Compat) | 100% | UI-Test |
+| SC-09 | Ordner (Electron Directory-Picker) mit SKILL.md wird als Folder-Skill importiert | 100% | UI-Test |
+| SC-10 | Import-Routing erkennt Typ automatisch, kein zweiter Button, keine Format-Nachfrage | 100% | UX-Review |
 
 ## Architektur-Hinweise
 
@@ -55,6 +74,15 @@ fragt: "Replace or keep both?"
 - Whitelist der erlaubten Pfade pro Entry; alles andere wird verworfen.
 - Groessenlimit 100 MB entpackt (konfigurierbar).
 - Confirm-Modal analog zu `AgentFolderPickerModal` → bestehendes Pattern.
+- **Universal-Import-Router** ([src/core/skills/SkillImportRouter.ts](../../../src/core/skills/SkillImportRouter.ts)):
+  nimmt `File`-Objekt oder Directory-Path, erkennt Typ (Single-MD / Folder /
+  Zip), ruft den passenden Sub-Importer auf. UI zeigt Notice je nach
+  erkanntem Typ ("Imported single-file skill" / "Imported skill folder
+  with 3 scripts" / "Imported skill package from zip, 5 files").
+- **Directory-Picker:** Electron hat via `dialog.showOpenDialog` native
+  Directory-Selection (siehe [AgentFolderPickerModal](../../../src/ui/settings/AgentFolderPickerModal.ts)
+  Pattern). Der Button oeffnet einen kombinierten Picker (File+Directory)
+  oder zeigt zwei Menu-Eintraege unter einem Dropdown-Button.
 
 ## Out of Scope
 
