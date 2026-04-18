@@ -4,7 +4,7 @@
 > **Epic**: EPIC-022 (Skill-Package Ecosystem)
 > **Priority**: P0
 > **Effort Estimate**: M
-> **Status**: Geplant
+> **Status**: Implemented (core) 2026-04-18
 
 ## Feature Description
 
@@ -47,6 +47,8 @@ Aenderung des Inhalts.
 | SC-05 | Anthropic-Frontmatter-Felder (`license`, `compatibility`, `metadata`) werden geparst, ignorieren aber nicht obsilos eigene Felder (`trigger`, `requiredTools`) | 100% | Unit-Test |
 | SC-06 | Alle 9 bestehenden Bundled-Skills laden weiter ohne Migration | 100% | Regression-Test |
 | SC-07 | Skill-Ordner ohne `SKILL.md` wird mit klarer Fehlermeldung abgelehnt | 100% | Unit-Test |
+| SC-08 | Bestehende User-Skills unter `.obsilo-sync/skills/` werden einmalig nach `getAgentFolderPath()/skills/` migriert (Decision 2026-04-18) | 100% | Migrations-Test mit Fixture |
+| SC-09 | Nach Migration bleibt ein Marker (`.migrated`) zurueck, damit die Migration nicht doppelt laeuft | 100% | Idempotenz-Test |
 
 ## Architektur-Hinweise
 
@@ -56,6 +58,13 @@ Aenderung des Inhalts.
   neue Felder: `scripts: string[]`, `references: string[]`, `assets: string[]`.
 - Validation-Schicht: `name` muss mit Ordner-Name matchen (Anthropic-Regel),
   Frontmatter-Parser nimmt zusaetzliche Felder an ohne zu erroren.
+- **Skill-Pfad-Migration (Decision 2026-04-18):** Self-Authored-Skill-Dir wird
+  `getAgentFolderPath()/skills/` (konfigurierbar via ADR-072) statt des
+  hart verdrahteten `.obsilo-sync/skills/`. Beim Plugin-Start prueft ein
+  einmaliger Migrations-Schritt: wenn Legacy-Dir existiert und Ziel-Dir
+  leer ist, kopiert er die Skill-Ordner und schreibt einen
+  `.migrated`-Marker in den Legacy-Ordner. Defensive Kopie (Original
+  bleibt erhalten) analog zu FEATURE-0508 P2.
 
 ## Out of Scope
 
@@ -68,3 +77,46 @@ Aenderung des Inhalts.
 1. Build: `npm run build` passiert.
 2. Unit-Tests fuer Loader mit Fixtures: single-file, mit references, mit scripts, mit assets, mit falschem name/dir, mit Anthropic-Fields.
 3. Regression: bestehende Skills smoke-test.
+
+## How It Works (post-implementation)
+
+**Key files:**
+
+- [src/core/skills/types.ts](../../../src/core/skills/types.ts): `SkillInventory`,
+  `SkillScriptFile`, `SkillSubRole`, `SkillMigrationResult` Types (EPIC-022 block).
+- [src/core/skills/SelfAuthoredSkillLoader.ts](../../../src/core/skills/SelfAuthoredSkillLoader.ts):
+  - `SelfAuthoredSkill` extended with `inventory` und `isCoordinator`.
+  - `loadSkillInventory()` scannt `scripts/`, `references/`, `assets/`,
+    sowie `*.skill.md` Sub-Rollen fuer Coordinatoren.
+  - `renderSkillSummary()` + `renderInventoryLines()` erweitern den
+    System-Prompt um Inventory-Eintraege (Progressive Disclosure: nur
+    Dateinamen, keine Inhalte).
+  - Neue `refresh()` Methode fuer Import-Flows.
+  - `getUserSkillsDir()` ersetzt `this.syncSkillsDir` -- loest dynamisch via
+    `getSelfAuthoredSkillsDir(plugin)` auf, respektiert ADR-072.
+- [src/core/skills/SkillMigration.ts](../../../src/core/skills/SkillMigration.ts):
+  `migrateLegacySkillsIfNeeded()` kopiert `.obsilo-sync/skills/*` einmalig
+  nach `getSelfAuthoredSkillsDir(plugin)`. Defensive Kopie, `.migrated`
+  Marker fuer Idempotenz.
+- [src/core/utils/agentFolder.ts](../../../src/core/utils/agentFolder.ts):
+  neuer Helper `getSelfAuthoredSkillsDir(holder)` + Konstante
+  `LEGACY_SELF_AUTHORED_SKILLS_DIR`.
+- [src/main.ts](../../../src/main.ts): wiring: Migration laeuft vor erstem
+  `loadAll()`.
+
+**Tests:**
+
+- [src/core/skills/__tests__/SkillMigration.test.ts](../../../src/core/skills/__tests__/SkillMigration.test.ts):
+  6 Tests (null wenn Legacy-Dir fehlt, Kopie, Idempotenz via Marker,
+  Skip bei existierendem Ziel, No-op wenn Source==Target, Recursive-Copy
+  fuer scripts/).
+
+**Open follow-ups:**
+
+- Dedizierte Inventory-Tests mit Fixtures fuer `loadSkillInventory()` folgen
+  mit FEATURE-2202 Integration-Tests (dort wird ein voll-strukturierter
+  Skill-Ordner ohnehin entpackt und geladen).
+- Anthropic-Frontmatter-Felder (license, compatibility, metadata) werden
+  durch den permissiven `parseFrontmatter` bereits akzeptiert; SC-05 ist
+  damit implizit erfuellt und braucht nur noch einen bestaetigenden
+  Unit-Test, der in der FEATURE-2202-Test-Suite mitlaeuft.
