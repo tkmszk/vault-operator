@@ -4,7 +4,7 @@
 > **Epic**: EPIC-022 (Skill-Package Ecosystem)
 > **Priority**: P1
 > **Effort Estimate**: XS
-> **Status**: Implemented (core) 2026-04-18
+> **Status**: Released v2.6.0 (2026-04-19)
 
 ## Feature Description
 

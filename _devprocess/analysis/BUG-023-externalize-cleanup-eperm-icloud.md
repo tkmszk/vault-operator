@@ -1,6 +1,6 @@
 # BUG-023: Externalise cleanup fails with EPERM on iCloud-synced vaults
 
-> **Status:** Resolved 2026-04-19 (retry-with-backoff, orphan sweeper remains safety net)
+> **Status:** Resolved in v2.6.0 (2026-04-19)
 > **Priority:** P2
 > **Epic:** EPIC-018 (Token-Kostenreduktion / ADR-063 Context Externalization)
 > **Date:** 2026-04-19

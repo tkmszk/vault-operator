@@ -1,6 +1,6 @@
 # BUG-027: SandboxBridge circuit-breaker stays open, permanently blocks evaluate_expression
 
-> **Status:** Resolved 2026-04-19 (beta-11, auto-reset after 30s)
+> **Status:** Resolved in v2.6.0 (2026-04-19)
 > **Priority:** P1 (once tripped, whole agent session can't run sandbox code)
 > **Epic:** EPIC-005 (Sandbox)
 > **Date:** 2026-04-19

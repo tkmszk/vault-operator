@@ -1,6 +1,6 @@
 # BUG-025: Vault-health badge disappeared + redesign to heart-pulse icon
 
-> **Status:** Resolved 2026-04-19
+> **Status:** Resolved in v2.6.0 (2026-04-19)
 > **Priority:** P1 (regression)
 > **Epic:** EPIC-019 / FEATURE-1901 (Vault Health Check)
 > **Date:** 2026-04-19

@@ -2,7 +2,7 @@
 
 Stand: 2026-04-17
 Branch: `dev` / `main`
-Status: **v2.5.3 released** (Wave 3: Review-Bot Scan 5 Fixes -- native Dialoge durch Obsidian Modals ersetzt, Template-Stringification Type-Guard, plus JSON-Input-Coercion fuer GPT/Copilot Stringification-Quirks) + **EPIC-022 in Planung** (Skill-Package Ecosystem, Anthropic-kompatibel -- BA/Epic/Features/ADR-075 geschrieben, Coding nicht gestartet)
+Status: **v2.6.0 released** 2026-04-19 (EPIC-022 Skill-Package Ecosystem + Wave-4 Community-Feedback, BUG-019..028, AUDIT-012 GREEN, 446/446 Tests). **FEATURE-2203 (skill scripts) + FEATURE-2204 (coordinator) und SEC-M-1/L-1 warten auf v2.7**.
 
 ---
 
@@ -337,13 +337,13 @@ Handoff: `architect-handoff-022.md` + `plan-context-022.md`
 
 | Feature | Spec | Prioritaet | Aufwand | Status |
 |---------|------|------------|---------|--------|
-| Skill-Folder-Struktur (SKILL.md + Subfolders) | FEATURE-2201-skill-folder-structure.md | P0-Critical | M | Implemented (core) 2026-04-18 (feature-branch, unreleased) |
-| Universal Skill-Import (.md / Folder / .skill) | FEATURE-2202-skill-zip-import.md | P0-Critical | S | Implemented (core) 2026-04-18 (feature-branch, unreleased) |
+| Skill-Folder-Struktur (SKILL.md + Subfolders) | FEATURE-2201-skill-folder-structure.md | P0-Critical | M | Implemented (core) 2026-04-18 (released v2.6.0) |
+| Universal Skill-Import (.md / Folder / .skill) | FEATURE-2202-skill-zip-import.md | P0-Critical | S | Implemented (core) 2026-04-18 (released v2.6.0) |
 | Scripts-im-Skill (Sandbox) | FEATURE-2203-skill-scripts.md | P1-High | M | Geplant |
 | Coordinator-Skill (Multi-Rolle) | FEATURE-2204-coordinator-skill.md | P1-High | M | Geplant |
-| Slash Skill Autocomplete (`/` shows skills) | FEATURE-2205-slash-skill-autocomplete.md | P1-High | XS | Implemented (core) 2026-04-18 (feature-branch, unreleased) |
-| Inline @-Reference (@name stays in text) | FEATURE-2206-inline-at-reference.md | P1-High | XS | Implemented (core) 2026-04-18 (feature-branch, unreleased) |
-| Prefix Split (`/` Skills, `#` Prompts, `\u00a7` Workflows) + `+` menu | FEATURE-2207-prefix-split-and-plus-menu.md | P1-High | S | Implemented (core) 2026-04-19 (feature-branch, unreleased) |
+| Slash Skill Autocomplete (`/` shows skills) | FEATURE-2205-slash-skill-autocomplete.md | P1-High | XS | Implemented (core) 2026-04-18 (released v2.6.0) |
+| Inline @-Reference (@name stays in text) | FEATURE-2206-inline-at-reference.md | P1-High | XS | Implemented (core) 2026-04-18 (released v2.6.0) |
+| Prefix Split (`/` Skills, `#` Prompts, `\u00a7` Workflows) + `+` menu | FEATURE-2207-prefix-split-and-plus-menu.md | P1-High | S | Implemented (core) 2026-04-19 (released v2.6.0) |
 
 Release-Plan: 2201+2202 zusammen als v2.6.0 (Anthropic-kompatibles Minimum). 2203+2204 additiv als v2.6.1 / v2.6.2.
 Backward-Compat: Alle 9 bundled-skills + bestehende User-Skills laden unveraendert.
@@ -515,7 +515,7 @@ Scope: 3 Required-Findings fixen, dazu bestehende WIP-Bugfixes buendeln.
 
 ---
 
-## Community-Wave 4 (feature-branch, unreleased)
+## Community-Wave 4 (released als v2.6.0)
 
 Trigger: [pssah4/obsilo#31](https://github.com/pssah4/obsilo/issues/31) von [@nicholas-leonard](https://github.com/nicholas-leonard) mit vier Bugfix-Commits in seinem Fork.
 Scope: Vier diskrete Bugs, jeder einem bestehenden Epic zugeordnet; keine neue Feature-Struktur.
@@ -523,10 +523,10 @@ Analyse: [BA-022](../analysis/BA-022-community-feedback-wave-4.md).
 
 | Arbeitsstrom | Epic | Status |
 |---|---|---|
-| [BUG-019](../analysis/BUG-019-drag-drop-from-vault-explorer.md) Drag & Drop aus Obsidian-File-Explorer | EPIC-004 | Resolved 2026-04-19. Neuer `dragManagerBridge.ts` Helper liest `app.dragManager.draggable`; `stopPropagation()` auf `dragover` und `drop`. 6 Tests. |
-| [BUG-020](../analysis/BUG-020-read-file-externalized-tmp.md) `read_file` findet `tmp/task-*` ohne Agent-Folder-Prefix | EPIC-018 / ADR-063 | Resolved 2026-04-19. `ReadFileTool` retried strikt gegen `looksLikeExternalisedTmpPath` auf `<agent-folder>/tmp/task-*`. 5 Tests. |
-| [BUG-021](../analysis/BUG-021-missing-tools-in-builtin-modes.md) `vault_health_check` + `ingest_document` fehlten in Tool-Gruppen | EPIC-019 | Resolved 2026-04-19. `TOOL_GROUP_MAP` ergaenzt, plus Coverage-Test der jedes user-facing Tool gegen die Gruppen prueft -- verhindert zukuenftigen Drift. 4 Tests. |
-| [BUG-022](../analysis/BUG-022-sandbox-integrity-hashes-and-root-listing.md) Sandbox: esbuild SHA-256 Hashes veraltet + `vaultList('/')` warf | EPIC-005 | Resolved 2026-04-19. Hashes live gegen jsdelivr verifiziert und aktualisiert; `vaultList` normalisiert `/` -> `''` und nutzt `vault.getRoot()`. 5 Tests. |
+| [BUG-019](../analysis/BUG-019-drag-drop-from-vault-explorer.md) Drag & Drop aus Obsidian-File-Explorer | EPIC-004 | Released v2.6.0 (2026-04-19). Neuer `dragManagerBridge.ts` Helper liest `app.dragManager.draggable`; `stopPropagation()` auf `dragover` und `drop`. 6 Tests. |
+| [BUG-020](../analysis/BUG-020-read-file-externalized-tmp.md) `read_file` findet `tmp/task-*` ohne Agent-Folder-Prefix | EPIC-018 / ADR-063 | Released v2.6.0 (2026-04-19). `ReadFileTool` retried strikt gegen `looksLikeExternalisedTmpPath` auf `<agent-folder>/tmp/task-*`. 5 Tests. |
+| [BUG-021](../analysis/BUG-021-missing-tools-in-builtin-modes.md) `vault_health_check` + `ingest_document` fehlten in Tool-Gruppen | EPIC-019 | Released v2.6.0 (2026-04-19). `TOOL_GROUP_MAP` ergaenzt, plus Coverage-Test der jedes user-facing Tool gegen die Gruppen prueft -- verhindert zukuenftigen Drift. 4 Tests. |
+| [BUG-022](../analysis/BUG-022-sandbox-integrity-hashes-and-root-listing.md) Sandbox: esbuild SHA-256 Hashes veraltet + `vaultList('/')` warf | EPIC-005 | Released v2.6.0 (2026-04-19). Hashes live gegen jsdelivr verifiziert und aktualisiert; `vaultList` normalisiert `/` -> `''` und nutzt `vault.getRoot()`. 5 Tests. |
 
 Nicht im Scope dieser Welle: TTL fuer externalized tmp files, hash-drift CI-Guard (separate ADR), kontributions-Guidelines-Dokument.
 
@@ -534,9 +534,9 @@ Nicht im Scope dieser Welle: TTL fuer externalized tmp files, hash-drift CI-Guar
 
 | Arbeitsstrom | Epic | Status |
 |---|---|---|
-| [BUG-023](../analysis/BUG-023-externalize-cleanup-eperm-icloud.md) Externalize-Cleanup EPERM auf iCloud | EPIC-018 / ADR-063 | Resolved 2026-04-19. `removeWithRetry()` Helper mit 3 Versuchen (0/150/500ms) fuer transiente EPERM/EBUSY/ETXTBSY. Orphan-Sweeper auf naechstem Plugin-Start bleibt als Safety-Net. 2 neue Tests. |
-| [BUG-024](../analysis/BUG-024-fastpath-planner-json-parse.md) FastPath-Planner JSON-Parse bei LLM-Prosa | EPIC-018 / ADR-061 | Resolved 2026-04-19. Neuer `extractFirstJsonDocument()` mit Fence-Strip + Balanced-Bracket-Scanner (respektiert String-Literale + Escapes). 10 neue Tests. |
-| [BUG-025](../analysis/BUG-025-health-badge-regression-and-icon-redesign.md) Vault-Health-Badge verschwunden + Redesign | EPIC-019 / FEATURE-1901 | Resolved 2026-04-19. Beta-5-Race gefixt via `syncHealthBadge()` im View-Mount. Dot → lucide `heart-pulse` Icon, Placement links neben Settings-Button, `color: var(--color-red/orange)` via severity-Class. Titel "Obsilo agent" → "Obsilo". |
+| [BUG-023](../analysis/BUG-023-externalize-cleanup-eperm-icloud.md) Externalize-Cleanup EPERM auf iCloud | EPIC-018 / ADR-063 | Released v2.6.0 (2026-04-19). `removeWithRetry()` Helper mit 3 Versuchen (0/150/500ms) fuer transiente EPERM/EBUSY/ETXTBSY. Orphan-Sweeper auf naechstem Plugin-Start bleibt als Safety-Net. 2 neue Tests. |
+| [BUG-024](../analysis/BUG-024-fastpath-planner-json-parse.md) FastPath-Planner JSON-Parse bei LLM-Prosa | EPIC-018 / ADR-061 | Released v2.6.0 (2026-04-19). Neuer `extractFirstJsonDocument()` mit Fence-Strip + Balanced-Bracket-Scanner (respektiert String-Literale + Escapes). 10 neue Tests. |
+| [BUG-025](../analysis/BUG-025-health-badge-regression-and-icon-redesign.md) Vault-Health-Badge verschwunden + Redesign | EPIC-019 / FEATURE-1901 | Released v2.6.0 (2026-04-19). Beta-5-Race gefixt via `syncHealthBadge()` im View-Mount. Dot → lucide `heart-pulse` Icon, Placement links neben Settings-Button, `color: var(--color-red/orange)` via severity-Class. Titel "Obsilo agent" → "Obsilo". |
 | [BUG-026](../analysis/BUG-026-brat-hotreload-view-opens-before-plugin-ready.md) Sidebar crasht bei BRAT-Hot-Reload | EPIC-004 / FEATURE-2208 | Resolved 2026-04-19 (beta-9). `plugin.readyPromise` synchron in `onload()` aufgesetzt, View-`onOpen` wartet darauf bevor Settings/ModeService gelesen werden. Behebt TypeError `currentMode`/`autoAddActiveFileContext` bei Layout-Restore innerhalb der `onload`-Tick. |
 | BUG-021 Amendment (beta-10): `find_tool` findet `vault_health_check` nicht | EPIC-019 / FEATURE-1600 | Resolved 2026-04-19 (beta-10). FindToolTool normalisiert `_`/`-` zu Space, tokenisiert Query mit min-3-chars-Filter, Phrase- und Name/Label-Hits sind strong-Hits (Description-only-Hits reichen nicht). 5 neue Test-Faelle. |
 | [BUG-027](../analysis/BUG-027-sandbox-circuit-breaker-stuck.md) Sandbox-Circuit-Breaker bleibt permanent offen | EPIC-005 | Resolved 2026-04-19 (beta-11). Auto-Reset nach 30s Cooldown, `recordSuccess()` schliesst Circuit explizit. Fehlermeldung zeigt verbleibende Cooldown-Zeit. 2 neue Tests. |

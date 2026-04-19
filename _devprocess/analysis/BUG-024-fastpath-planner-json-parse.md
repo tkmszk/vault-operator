@@ -1,6 +1,6 @@
 # BUG-024: FastPath planner JSON parse fails -- recipe aborts mid-task
 
-> **Status:** Resolved 2026-04-19 (tolerant JSON extractor with balanced-bracket scanner)
+> **Status:** Resolved in v2.6.0 (2026-04-19)
 > **Priority:** P2
 > **Epic:** EPIC-018 / ADR-061 (Fast Path Execution)
 > **Date:** 2026-04-19

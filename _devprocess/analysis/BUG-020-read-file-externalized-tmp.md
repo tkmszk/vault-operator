@@ -1,6 +1,6 @@
 # BUG-020: read_file cannot open externalised tool results under tmp/
 
-> **Status:** Resolved 2026-04-19 (feature-branch, unreleased)
+> **Status:** Resolved in v2.6.0 (2026-04-19)
 > **Priority:** P1
 > **Epic:** EPIC-018 (Token-Kostenreduktion, ADR-063 Context Externalisation)
 > **Date:** 2026-04-19

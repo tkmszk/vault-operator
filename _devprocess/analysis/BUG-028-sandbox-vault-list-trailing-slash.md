@@ -1,6 +1,6 @@
 # BUG-028: SandboxBridge vault paths with trailing slash return null
 
-> **Status:** Resolved 2026-04-19 (beta-11, normaliseVaultPath helper)
+> **Status:** Resolved in v2.6.0 (2026-04-19)
 > **Priority:** P1 (agent regularly produces these paths; triggers BUG-027)
 > **Epic:** EPIC-005 (Sandbox)
 > **Date:** 2026-04-19

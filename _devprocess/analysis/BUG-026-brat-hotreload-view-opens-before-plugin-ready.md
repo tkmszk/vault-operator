@@ -1,6 +1,6 @@
 # BUG-026: Sidebar view crashes during BRAT hot-reload (opens before doLoad)
 
-> **Status:** Resolved 2026-04-19
+> **Status:** Resolved in v2.6.0 (2026-04-19)
 > **Priority:** P0 (all sidebar UI broken after BRAT update)
 > **Epic:** EPIC-004 (Chat UX) / FEATURE-2208 (BRAT rebuild survive)
 > **Date:** 2026-04-19
