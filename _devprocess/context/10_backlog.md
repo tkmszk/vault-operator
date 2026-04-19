@@ -523,6 +523,10 @@ Analyse: [BA-022](../analysis/BA-022-community-feedback-wave-4.md).
 
 Nicht im Scope dieser Welle: TTL fuer externalized tmp files, hash-drift CI-Guard (separate ADR), kontributions-Guidelines-Dokument.
 
+**Beta-7 Test-Funde (nicht blockierend):**
+- [BUG-023](../analysis/BUG-023-externalize-cleanup-eperm-icloud.md) Externalize-Cleanup scheitert mit EPERM auf iCloud-Vaults. Non-fatal (nur Log-Warning), Tmp-Dirs wachsen langsam an. Fix fuer spaetere Welle: defer-cleanup auf naechsten Plugin-Start.
+- [BUG-024](../analysis/BUG-024-fastpath-planner-json-parse.md) FastPath-Planner `JSON.parse` scheitert wenn LLM (Copilot Sonnet 4.6) mit Prosa-Preamble antwortet. Non-fatal (faellt zurueck auf normale Loop, verliert aber Fast-Path-Speedup). Fix fuer spaetere Welle: Markdown-Fence-Stripping + First-Balanced-JSON-Scanner.
+
 ---
 
 ## Naechste Prioritaeten
