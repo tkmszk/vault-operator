@@ -1,6 +1,6 @@
 # BUG-021: vault_health_check and ingest_document missing from builtin mode tool groups
 
-> **Status:** Open (Solution Proposal)
+> **Status:** Resolved 2026-04-19 (feature-branch, unreleased)
 > **Priority:** P2
 > **Epic:** EPIC-019 (Knowledge Maintenance)
 > **Date:** 2026-04-19

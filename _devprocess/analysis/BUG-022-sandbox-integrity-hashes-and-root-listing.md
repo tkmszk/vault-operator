@@ -1,6 +1,6 @@
 # BUG-022: Sandbox esbuild integrity hashes stale + vaultList('/') throws
 
-> **Status:** Open (Solution Proposal)
+> **Status:** Resolved 2026-04-19 (feature-branch, unreleased)
 > **Priority:** P1
 > **Epic:** EPIC-005 (Sandbox)
 > **Date:** 2026-04-19

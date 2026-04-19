@@ -1,6 +1,6 @@
 # BUG-019: Drag-and-drop from Obsidian file explorer opens tab instead of attaching
 
-> **Status:** Open (Solution Proposal)
+> **Status:** Resolved 2026-04-19 (feature-branch, unreleased)
 > **Priority:** P1
 > **Epic:** EPIC-004 (Chat UX)
 > **Date:** 2026-04-19
