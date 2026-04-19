@@ -1,6 +1,6 @@
 # ADR-075: Skill-Package-Architektur (Anthropic-kompatibel + Coordinator-Erweiterung)
 
-**Status:** Proposed
+**Status:** Accepted (modified by coding review 2026-04-18)
 **Date:** 2026-04-17
 **Deciders:** Sebastian Hanke
 **Bezug:** EPIC-022, BA-021, FEATURE-2201 / 2202 / 2203 / 2204
@@ -333,6 +333,29 @@ Dort gibt es keinen `SKILL.md` neben, daher kein Coordinator-Match.
 - Skill-Signatur / Hash-Allowlist (separater Stream, nicht jetzt).
 - Python/Bash-Runtime via Docker-Sidecar (Security-heavy, eigenes Epic).
 - Online-Skill-Registry / "Skill Store" (UX-Epic, benoetigt Gateway).
+
+### Implementation Notes (Coding-Review 2026-04-18)
+
+Die Review gegen die Codebase hat drei Annahmen des Entwurfs praezisiert:
+
+1. **Skill-Pfad-Migration (User-Entscheidung).** User-Skills liegen heute
+   unter hartem `.obsilo-sync/skills/` ([SelfAuthoredSkillLoader.ts:69-70](../../src/core/skills/SelfAuthoredSkillLoader.ts#L69-L70)).
+   FEATURE-2201 migriert einmalig nach `getAgentFolderPath()/skills/`
+   (ADR-072), damit Skills das konfigurierbare Agent-Folder respektieren.
+   Defensive Kopie mit `.migrated`-Marker fuer Idempotenz, Original bleibt
+   erhalten.
+2. **Universal-Import-Router (User-Entscheidung).** Statt separater
+   Import-Knopf ersetzt FEATURE-2202 den bestehenden Markdown-Import durch
+   einen universellen Router, der Single-MD, Folder und `.skill`/`.zip`
+   automatisch erkennt. Abstrahiert die Format-Komplexitaet fuer den User.
+3. **Prompt-Integration auf Section-Ebene, nicht Registry.** Der
+   Inventory-Block wird in [src/core/prompts/sections/skills.ts](../../src/core/prompts/sections/skills.ts)
+   und dem Aufrufer in `systemPrompt.ts` ergaenzt, nicht im `SkillRegistry`
+   (der nur fuer VaultDNA-Plugin-Skills zustaendig ist).
+4. **`refresh()` Methode.** `SelfAuthoredSkillLoader` bekommt eine
+   `refresh()`-Methode, die `loadAll()` auf Demand triggert (zusaetzlich
+   zum existierenden Watcher). Genutzt von `SkillImportRouter` nach
+   erfolgreichem Import und vom Migrations-Schritt.
 
 ## Verification
 
