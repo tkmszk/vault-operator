@@ -1,8 +1,9 @@
 ---
 id: PLAN-006
 title: Memory v2 Phase 3 -- Dynamic Context Composition (FEATURE-0317)
-status: Active
+status: Implemented
 date: 2026-04-28
+completed: 2026-04-28
 feature-refs: [FEATURE-0317]
 adr-refs: [ADR-077, ADR-078, ADR-080, ADR-081, ADR-082]
 bug-refs: []
@@ -325,3 +326,43 @@ PLAN-006 erstellt. Status: Active. Trigger: User-Anweisung "weiter im
 plan" nach Phase 2 + UI-Polish (Commits 6f5daae, 8c68494, f812b26).
 Auto-Mode-konform: Plan first, dann sequenziell durch Aufgabe 1-13
 mit Build+Test+Commit pro Schritt.
+
+### 2026-04-28 - Implementation abgeschlossen
+
+User-Anweisung "freigabe für alles, bitte einmal voll durch implementieren".
+Alle 13 Aufgaben in einem zusammenhängenden Run umgesetzt.
+
+Commits:
+- `eb8b1a6` -- Aufgabe 1 (TopicInference)
+- `954a884` -- Aufgaben 2, 3, 8 (UserProfileView, RecallHit, ContextRanker)
+- `3d65dcb` -- Aufgaben 4, 5, 7 (KnowledgeGraphAdapter + LocalKnowledgeAdapter
+  + UnifiedGraphService + Stale-Edge in EdgeStore)
+- `e0fdf81` -- Aufgaben 6, 9 (ContextComposer + recall_memory tool)
+- (folgend) -- Aufgaben 10, 11, 12, 13 (Plugin-MCP-Tools, McpKnowledgeAdapter,
+  StandardAdapters, engineVersion-Flag + AgentSidebarView cut-over,
+  MemoryV2Telemetry)
+
+**Tests:** 718 grün (von 644 vor Phase 3, also +74 neu für Phase 3).
+**Engine-Coupling:** 0 obsidian-Imports in `src/core/memory/*.ts`.
+
+**Scope-Anpassungen während der Implementation:**
+- Aufgabe 9 (recall_memory) nutzt aktuell keyword-overlap-Ranking statt
+  Cosine über fact_embeddings -- die EmbeddingService-Integration für
+  Fact-Embeddings ist Phase-4-Material (FEATURE-0318). API-Form bleibt
+  stabil; der Upgrade ist lokal.
+- Aufgabe 11 (McpKnowledgeAdapter.searchSimilar) returniert in Phase 3
+  bewusst leeres Array, weil cross-process Embedding-Vector-Search nicht
+  portabel ist. Phase-4-FactExtractor lift das.
+- Vault-Adapter (`vault://`) ist nicht in StandardAdapters.ts -- der
+  ist Plugin-spezifisch, lebt mit der Obsidian-Wiring im main.ts.
+
+**Cut-over:** `settings.memory.engineVersion === 'v2'` schaltet
+ContextComposer in AgentSidebarView ein. Default bleibt 'v1'.
+Reload erforderlich nach Switch.
+
+**Open / Phase 4:**
+- FactExtractor (FEATURE-0318) konsumiert driftEvent aus ContextComposer
+  und schreibt re-extract-Jobs in die ExtractionQueue.
+- recall_memory: Cosine-Pfad via fact_embeddings.
+- McpKnowledgeAdapter.searchSimilar: voller Pfad, sobald cross-process
+  Embedding-Bridge konzeptioniert ist.
