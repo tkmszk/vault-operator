@@ -544,7 +544,7 @@ Nicht im Scope dieser Welle: TTL fuer externalized tmp files, hash-drift CI-Guar
 
 ---
 
-## Initiative: Memory v2 + UCM Foundation (in Vorbereitung, 2026-04-26)
+## Initiative: Memory v2 + UCM Foundation (Phase 1 abgeschlossen, 2026-04-27)
 
 Branch `feature/memory-redesign`. Capability-Set unter EPIC-003 (context-memory-scaling). Ziel: Obsilo-Memory-Subsystem rewriten, Engine als `@obsilo/memory-engine` extrahieren, UCM (Unified Chat Memory, separates Repo) baut darauf auf.
 
@@ -561,9 +561,9 @@ Branch `feature/memory-redesign`. Capability-Set unter EPIC-003 (context-memory-
 
 | Phase | Status | Feature-ID (vorgesehen) | Hauptdeliverable | Vorbedingung |
 |-------|--------|------------------------|------------------|--------------|
-| 0 Spikes + ADRs | Planned | (kein Feature, ADR-Arbeit) | 3 Spikes (ATTACH+CTE-Performance, FTS5-WASM-Bundle-Size, Single-Call-Token-Profil), ADR-076-079 finalisiert, ADR-062-Implementation-Spec | Branch existiert |
+| 0 Spikes + ADRs | Implemented (2026-04-27, PLAN-002) | (kein Feature, ADR-Arbeit) | 3 Spikes (ATTACH+CTE-Performance, FTS5-WASM-Bundle-Size, Single-Call-Token-Profil), ADR-076-079 finalisiert, ADR-062-Implementation-Spec | Branch existiert |
 | 0.5 Knowledge-DB-Haertung | Implemented (2026-04-27, PLAN-003) | FEATURE-0314 | BUG-012-Fix (Single-File-Atomic-Commit pro DB + Vault-Mode-Haertung mit Verify), Vault-Rename-Cascade (Listener immer aktiv, nicht mehr im `semanticAutoIndexOnChange`-Gate; live verifiziert mit `Notes/Dominik Klumpp.md` -> 57 Reihen sauber migriert), embedding_model-Spalte (v9), Daily-Snapshot-Job, integrity_check + Auto-Recovery aus `.bak`, WriterLock am `obsidian-sync`-Pfad in `KnowledgeDB.open()`/`close()` mit Notice via `WriterLockHeldError`. URI-Migration im Hotfix verworfen, neue Tabellen ab Phase 1 nutzen `vault://`/`session://`/`episode://` direkt. **470 Tests gruen** | Phase 0 ADRs gruen |
-| 1 Engine-Foundation | Planned | FEATURE-0315 | facts/fact_edges/communication_styles/known_topics/memory_audit additiv, FactStore + EdgeStore + StyleStore mit DI, ADR-062-KV-Cache-Layout im Code, EmbeddingService | Phase 0.5 gruen |
+| 1 Engine-Foundation | Implemented (2026-04-27, PLAN-004) | FEATURE-0315 | memory.db v1->v2 additiv (9 neue Tabellen + memory_schema_meta), FactStore/EdgeStore/CommunicationStyleStore mit Constructor-Injection, AuditLog-Helper, EmbeddingService als thin adapter, SourceAdapter+AdapterRegistry+UriResolver (9 Standard-Schemata), HistoryDB-Skelett, ADR-062 KV-Cache-Layout via 4 stability tests verifiziert. Engine-Coupling 0 (kein `obsidian`-Import in `src/core/memory/*.ts`). **568 Tests gruen, +90 neu fuer Phase 1**. Caller-Migration auf EmbeddingService folgt in Phase 2 | Phase 0.5 gruen |
 | 2 Migration + Vault-RRF-Quick-Win | Planned | FEATURE-0316 | Migration soul.md -> styles, knowledge.md skip, andere 5 -> Facts. Hybrid `semantic_search` mit RRF zuerst als Vault-Tool. Export-Tool facts -> markdown | Phase 1 gruen |
 | 3 Dynamic Context Composition | Planned | FEATURE-0317 | ContextComposer mit per-Conversation-Topic-Lock, lokale Topic-Inference (Centroids), `recall_memory` mit multiHop, UnifiedGraphService (ATTACH-Konfig + Templates) | Phase 2 + RRF battle-tested |
 | 4 Single-Call Update + Combined Note-Index | Planned | FEATURE-0318 | Single-Call-Extraction (Session+Facts+Topics+Importance+Edges+Entities+Vault-Mentions), Lazy Conflict-Resolution, Aging mit use_count-Boost, Audit-Pruning, Eval-Test-Set, Combined Note-Index-Pass fuer Vault | Phase 3 stabil |
@@ -592,7 +592,7 @@ Branch `feature/memory-redesign`. Capability-Set unter EPIC-003 (context-memory-
 - [BUG-029](../analysis/BUG-029-writerlock-not-wired.md) (WriterLock nicht verdrahtet, P2): RESOLVED 2026-04-27. WriterLock am `obsidian-sync`-Pfad in `KnowledgeDB.open()`/`close()` verdrahtet, `WriterLockHeldError` triggert 10-s-Notice
 - [BUG-030](../analysis/BUG-030-icloud-vault-rename-not-cascaded.md) (Rename-Cascade greift nicht, P2): RESOLVED 2026-04-27. Echte Ursache war `semanticAutoIndexOnChange: false` in data.json -- Listener-Block uebersprungen. Fix: Listener aus dem Settings-Gate herausgezogen, Cascade laeuft jetzt immer wenn KnowledgeDB offen. Live verifiziert mit `Notes/Dominik Klumpp.md` (57 Reihen migriert). Initial gebauter `RenamePairDetector` zurueckgerollt (auf Fehldiagnose gebaut). Lehre in `feedback_check_settings_first.md` festgehalten
 
-**Naechster Schritt:** `/requirements-engineering` -> 8 Phasen werden 8 FEATURE-0314 bis FEATURE-0321 mit Akzeptanzkriterien. Plus FEATURE-0322 (Privacy & Forget-Right) und FEATURE-0323 (Memory-UX, Onboarding & Settings-Migration) als Querschnitts-Features aus A/B-Beschluessen 2026-04-26.
+**Naechster Schritt:** Phase 2 (FEATURE-0316) -- Migration der bestehenden 6 MD-Dateien (soul.md -> communication_styles, knowledge.md skip, andere 5 -> Facts via Single-Call-Atomizer), Hybrid `semantic_search` mit RRF zuerst als Vault-Tool battle-testen, Export-Tool facts -> markdown, plus Migration der 3 Embedding-Caller auf den neuen `EmbeddingService` (aus Phase 1 als thin adapter geliefert).
 
 **Future-Considerations nach C-Triage 2026-04-26:**
 
