@@ -1,8 +1,9 @@
 ---
 id: PLAN-004
 title: Memory v2 Phase 1 -- Engine Foundation (FEATURE-0315)
-status: Active
+status: Implemented
 date: 2026-04-27
+completed: 2026-04-27
 feature-refs: [FEATURE-0315]
 adr-refs: [ADR-076, ADR-077, ADR-080, ADR-081, ADR-082, ADR-083, ADR-084, ADR-085, ADR-086]
 bug-refs: []
@@ -226,3 +227,35 @@ Aufgaben werden **sequenziell** umgesetzt. Jede Aufgabe schliesst mit `npm run b
 ### 2026-04-27 - Initial
 
 PLAN-004 erstellt. Status: Active. Trigger: User-Anweisung "mach weiter und entscheide selbst" nach abgeschlossener Phase 0.5 (Commit 8f928f3). Auto-Mode-konform: Plan first, dann sequenziell durch Aufgabe 1-9 mit Build+Test+Commit pro Schritt.
+
+### 2026-04-27 - Implementation abgeschlossen
+
+Alle 9 Aufgaben implementiert. 4 Commits gegen `feature/memory-redesign`:
+
+- `ac5fca9` -- Aufgabe 1 (Schema v1->v2 additiv) + PLAN-004 selbst
+- `78c372a` -- Aufgabe 8 (AuditLog)
+- `0dab1d4` -- Aufgabe 2 (FactStore)
+- `751eaeb` -- Aufgaben 3, 4, 7 (EdgeStore, CommunicationStyleStore, URI infrastructure)
+- (folgender Commit) -- Aufgaben 5, 6, 9 (EmbeddingService, KV-Cache-Tests, HistoryDB)
+
+**Tests:** 568/568 gruen, +98 neu insgesamt fuer Phase 1. Build + Deploy
+nach jedem Schritt sauber.
+
+**Engine-Coupling:** `grep -rn "from 'obsidian'" src/core/memory/*.ts` ohne
+`__tests__` -> 0 Treffer. Stores sind Engine-Extract-Ready (ADR-080).
+
+**Aufgabe 5 (EmbeddingService) als thin adapter realisiert** -- die Phase-1-
+Strategie aus dem Plan. Das volle Refactoring der drei existing Caller
+(SemanticIndexService, MemoryRetriever, EpisodicExtractor) bleibt Phase 2 /
+FEATURE-0316 vorbehalten, weil dort die Migration-Pipeline ohnehin den
+heissen Code anfasst.
+
+**Aufgabe 6 (ADR-062) war im Code bereits umgesetzt** (systemPrompt.ts:146-204
+hatte die Section-Reordering schon). FEATURE-0315 forderte zusaetzlich den
+Test der Cache-Position; vier neue Cases in src/core/__tests__/systemPrompt.test.ts
+(Memory zwischen Stable und DateTime, byte-identischer Stable-Prefix bei
+unterschiedlichem memoryContext, DateTime nie im Cache-Prefix).
+
+**Open / Phase 2:** EmbeddingService-Caller migrieren, Vault-RRF-Quick-Win
+(FEATURE-0316), Migration der 6 MD-Dateien (soul.md -> communication_styles
+etc.).
