@@ -313,9 +313,19 @@ available tools.
 4. Hallucination-Regression: Eval-Fixture 13/14/15 gruen.
 5. KV-Cache-Test: Soul-Block kommt immer in stabiler Reihenfolge, Cache bleibt warm.
 
-## Open Questions (klaeren in /architecture)
+## Architecture-Entscheidungen (2026-04-28)
 
-A. **profile-Filter-API:** Mehrfach-Profile in einem compose-Call oder zwei Calls + Concat?
-B. **L2 Token-Cap:** Top-N pro Kategorie -- 3-3-3-3=12 Eintraege total, oder dynamisch nach importance?
-C. **Capability-Hash:** Web-Crypto sha256 oder djb2? Web-Crypto ist async, djb2 sync. Onload-Path bevorzugt sync.
-D. **inspect_self code-area:** Phase 1 (settings + tools + capabilities) reicht; code-Reading defer als Phase 2.
+A. **profile-Filter-API:** Zwei separate compose-Calls. ContextComposer.compose({profile:'_obsilo'}) liefert Soul-Block; zweiter Call mit User-Profil liefert User-Memory-Block. Caller (System-Prompt-Builder) konkateniert beide. Saubere Trennung, beide Bloecke unabhaengig cache-stabil, ContextRanker bleibt profile-naiv.
+
+B. **L2 Token-Cap:** Top-3 pro Kategorie (Werte/Anti-Patterns/Identity/Communication) = max 12 Eintraege total. Vorhersagbar (~150-200 Tokens). SoulView ranking nach importance DESC, Tiebreaker last_used_at DESC.
+
+C. **Capability-Hash:** djb2 sync (32-bit). Sync im onload-Pfad noetig (kein await), kollisionsarm fuer ~100 kuratierte Eintraege. Implementierung 5 Zeilen, kein crypto-Import.
+
+D. **inspect_self code-area:** Phase 1 = settings + tools + capabilities only. code-Reading defer als Phase 2 mit eigenem Driver. Tool-Schema laesst code-area als Enum-Wert offen, Implementierung returnt "not yet implemented" -- so bleibt API forward-kompatibel.
+
+## Implikationen fuer den Plan
+
+- Aufgabe 3 ContextComposer-Erweiterung: nur Soul-Block-Rendering + Top-3-Cap pro Kategorie. Kein Profile-Multi.
+- Aufgabe 7 Capability-Sync: djb2-Helper inline, kein Web-Crypto-Import.
+- Aufgabe 5 inspect_self: 3 Areas implementieren, 'code' wirft "not yet implemented".
+- SystemPrompt-Builder (vermutlich AgentSidebarView oder MemoryService) muss zwei compose-Calls coordinieren -- finden wir in Block C.

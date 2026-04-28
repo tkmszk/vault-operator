@@ -123,12 +123,12 @@ Parallel adressiert das Feature die **Self-Awareness-Luecke**, die im Live-Test 
 - Eigenstaendiges UI fuer Capability-Editing (Capabilities sind code-derived, nicht user-editable).
 - Cross-Vault-Sync der Soul -- jede Vault-Instanz hat eigene Memory-DB, eigene Soul.
 
-## Open Questions for /architecture
+## Architecture-Entscheidungen (2026-04-28, /architecture)
 
-A. **profile-Filter-API:** Akzeptiert ContextComposer.compose ein Array von profiles, oder zwei separate Calls die im SystemPrompt zusammengefuegt werden?
-B. **L2 Token-Cap:** wie viele Soul-Facts maximal in den Prompt? Ranking nach importance + use_count, Top-N?
-C. **Capability-Hash-Algorithmus:** SHA-256 ueber serialisiertes Manifest, oder Plugin-Version-Tag?
-D. **inspect_self code-area Phase 1 oder 2?** Phase 1 = settings + tools + capabilities. Code-Reading defer als Phase 2 wenn Need-Driver kommt.
+A. **profile-Filter-API:** Zwei separate ContextComposer.compose-Calls (Soul + User), Caller konkateniert. Saubere Cache-Trennung pro Block.
+B. **L2 Token-Cap:** Top-3 pro Kategorie, max 12 Eintraege gesamt; Ranking nach importance + last_used_at.
+C. **Capability-Hash:** djb2 sync, 32-bit. Sync im onload-Pfad, ~100 Eintraege ausreichend kollisionsarm.
+D. **inspect_self code-area:** Phase 1 deckt settings + tools + capabilities. Code-Area-Enum bleibt im Schema (forward-compat), Implementation Phase 2.
 
 ## Files Likely Touched
 
