@@ -98,7 +98,7 @@ Der Flow folgt dem Muster, das Codex-CLI und opencode nutzen: Browser-Redirect n
 
 ### Security
 
-- **Token-Storage**: `access_token`, `refresh_token` und `id_token` (JWT) liegen in `SafeStorageService` (Electron OS-Keychain). Niemals im Klartext, niemals in `data.json`, niemals in Logs.
+- **Token-Storage**: `access_token`, `refresh_token` und `id_token` (JWT) werden ueber `safeStorage.encrypt()` (Format `enc:v1:<base64>`, siehe ADR-019) verschluesselt und in `data.json` unter `chatgptOAuth.accessToken/refreshToken/idToken` abgelegt. Wenn `safeStorage.isAvailable()` false ist (Mobile, Linux ohne Keyring), faellt der Service auf Plaintext zurueck und der Provider markiert sich in der UI als nicht waehlbar. Tokens kommen niemals in Logs.
 - **PKCE-Code-Verifier**: 64 Byte aus `crypto.randomBytes`, SHA-256-Hash als `code_challenge`. Verifier nur im Speicher fuer die Dauer des Flows.
 - **State-Parameter**: 32 Byte Zufall, vor dem Token-Tausch verifiziert. Verhindert CSRF im Loopback-Callback.
 - **Loopback-Bind**: Server bindet ausschliesslich an `127.0.0.1` (nicht `0.0.0.0`), Port-Range 1455 bis 1460.

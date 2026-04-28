@@ -493,3 +493,67 @@ Effort: 1 Wo. Code-Aenderungen primaer in src/core/knowledge/.
 **Naechster Schritt:**
 
 `/architecture` mit Fokus auf ADR-Vorschlag (Loopback-Verortung, Streaming-Transport, Service-Layout) und plan-context-021.md.
+
+---
+
+## architecture-phase 2026-04-28: EPIC-021 ChatGPT OAuth Provider
+
+**Phase:** /architecture komplett. Naechster Schritt /coding.
+
+**Tech-Stack-Begruendung:**
+
+- **Eigener Provider plus Singleton-Service:** Auth-Lifecycle und API-Call sind getrennte Verantwortungen, gleiches Pattern wie Copilot (ADR-037). Provider in `src/api/providers/chatgpt-oauth.ts`, Service in `src/core/auth/ChatGptOAuthService.ts`, Mapper in `src/api/providers/chatgpt-codex-mapper.ts`.
+- **Node-https-Streaming:** Bewaehrtes Pattern aus `src/api/providers/openai.ts:75`. `requestUrl` faellt aus, weil kein `ReadableStream`. Echtes SSE-Streaming statt Buffer-Polling, TTFT unter zwei Sekunden erreichbar.
+- **Renderer-Loopback-Server (Option 1 in ADR-089):** Optionen Main-Prozess-IPC (kein Plugin-API-Hook), Custom-URL-Scheme (Codex-Client-ID akzeptiert nur HTTP-Redirects) und Device-Code-Flow (von Codex-Client-ID nicht unterstuetzt) fielen aus. Renderer mit `require('http')` plus eslint-disable-Begruendung war nicht Wunschloesung, sondern die einzig umsetzbare.
+- **Type-Guards statt zod:** Zod ist heute nicht im Bundle, plus 50 KB Aufschlag fuer drei bis vier Schema-Strukturen nicht gerechtfertigt.
+- **JWT-Mini-Decoder statt jose:** Kein Signatur-Check noetig (Token kommt direkt vom Token-Endpoint ueber TLS), reines Claim-Lesen rechtfertigt keine Lib.
+- **Hardcode-Modell-Liste:** Codex-Backend hat keinen oeffentlichen `/models`-Endpoint (Stand 2026-04-28). Hardcode mit dokumentiertem Update-Pfad. Probe-Request optional als Folge-Feature.
+- **Verschachteltes Settings-Schema:** `chatgptOAuth: { accountId, email, planTier, model, expiresAt, tokens, disclaimerAcknowledgedAt }`. Disconnect-Logik trivial (delete `settings.chatgptOAuth`).
+
+**Verworfene Alternativen:**
+
+- `OpenAiProvider` erweitern: vermischt zwei API-Schemata, Endpoint-Drift im Codex-Backend wuerde BYOK-Pfad beruehren. Verworfen zugunsten ADR-088 Option 2.
+- Main-Prozess-IPC fuer Loopback: kein offizieller Obsidian-Plugin-API-Hook, `process.electron.remote` deprecated. Faktisch nicht umsetzbar.
+- Custom-URL-Scheme `obsidian://`: `auth.openai.com` akzeptiert in der Codex-Client-ID nur HTTP/HTTPS-Redirect-URIs.
+- Device-Code-Flow analog Copilot: fuer die Codex-Client-ID nicht freigeschaltet.
+- `zod` als Schema-Validator: Bundle-Size-Aufschlag rechtfertigt sich erst bei groesserem Schema-Surface.
+- `jose` als JWT-Lib: Overkill fuer Claim-Lesen ohne Signatur-Check.
+
+**Bekannte Risiken (Monitoring waehrend /coding noetig):**
+
+- **Endpoint-Drift Codex-Schema** (hoch, intrinsisch): Mapper-Datei hat Schema-Annahmen mit Datums-Kommentar. Bei unerwarteten Events `console.warn` plus Drift-Indikator. Bei strukturellen Aenderungen klare Fehlermeldung statt stiller Fehlinterpretation.
+- **OpenAI sperrt Codex-Client-ID fuer Drittanbieter** (mittel, hoch): Disclaimer im Settings-UI, klare BYOK-Fallback-Empfehlung in der Doku.
+- **Plugin-Review-Bot beanstandet `require('http')`** (mittel): Praezedenzfaelle (`require('https')` in `openai.ts`, `require('electron')` in SafeStorageService). PR-Begruendung vorbereiten.
+- **Modell-Liste veraltet bei OpenAI-Updates** (hoch): Plugin-Update-Pfad, optional Probe-Request als Folge-Feature.
+- **Mehrere Redirect-URIs in Codex-Client-ID** (niedrig): Fallback auf festen Port 1455 wenn Range nicht akzeptiert wird.
+
+**Open Items (deferred to /coding):**
+
+- **JWT-Claim-Name fuer `chatgpt-account-id`**: empirisch beim ersten Login-Test bestimmen. Vermutet: `https://api.openai.com/auth.chatgpt_account_id` oder `chatgpt_account_id` direkt.
+- **Plan-Tier-Claim-Name**: empirisch bestimmen (`plan`, `subscription_plan`, `tier`).
+- **Vollstaendige Liste Codex-Event-Typen**: nur ueber empirische Tests bestimmbar. Mapper bekommt `default`-Branch.
+- **Probe-Request-Endpoint fuer Modelle**: existiert evtl. `/backend-api/codex/models`. Erst nach Hardcode-Liste klaeren.
+- **Mehrere Redirect-URIs in Codex-Client-ID-Konfig**: ob `auth.openai.com` Port-Range akzeptiert, ist nicht oeffentlich dokumentiert. Bei `/coding` testen.
+
+**Consistency Check:** plan-context-021.md ist mit ADR-088 und ADR-089 konsistent. Tabelle in plan-context-021.md "Consistency Check" zeigt 9 Decision-Punkte alle mit Status OK.
+
+**Artefakte:**
+
+- `_devprocess/architecture/ADR-088-chatgpt-oauth-provider-architecture.md` (Status: Proposed)
+- `_devprocess/architecture/ADR-089-chatgpt-pkce-loopback-flow.md` (Status: Proposed)
+- `_devprocess/requirements/handoff/plan-context-021.md`
+- `_devprocess/architecture/arc42.md` (Section 9 ADR-Tabelle erweitert, Section 11 Risiken erweitert)
+- `_devprocess/context/30_handoffs.md` (dieser Eintrag)
+
+**Naechster Schritt:**
+
+`/coding` mit folgendem Fokus:
+
+1. Critical Review von ADR-088 und ADR-089 gegen den realen Codebase-Stand:
+   - Ist `src/api/providers/openai.ts:75` Node-`https`-Pattern noch aktuell?
+   - Ist die `LLMProvider`-Union an allen exhaustive Switch-Statements gepflegt?
+   - Existiert `SafeStorageService.SafeStorageEnvelope` exakt im erwarteten Schema?
+2. PLAN-Erstellung mit fester Plan-Struktur (Kontext, Aenderungen, Dateien-Zusammenfassung, Nicht betroffen, Verifikation).
+3. Implementierungs-Reihenfolge: FEATURE-021-001 -> FEATURE-021-002 -> FEATURE-021-003.
+4. Build und Deploy nach jedem Implementierungsschritt.
+5. Nach Implementierung: /testing und /security-audit vorschlagen (V-Model-Checklist).

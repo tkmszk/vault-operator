@@ -929,6 +929,8 @@ Siehe einzelne ADRs in `_devprocess/architecture/`:
 | [ADR-072](ADR-072-configurable-agent-storage-root.md) | Konfigurierbarer Agent-Storage-Root (EPIC-005, FEATURE-0507) |
 | [ADR-073](ADR-073-mcp-tool-argument-typesafety.md) | MCP-Tool-Argument Type-Safety (Querschnitt: Review-Bot-Compliance) |
 | [ADR-074](ADR-074-dependency-override-strategy.md) | Dependency-Override-Strategie fuer transitive Vulnerabilities (Querschnitt: Security-Maintenance) |
+| [ADR-088](ADR-088-chatgpt-oauth-provider-architecture.md) | ChatGPT OAuth Provider Architecture (Service plus Mapper, Node-https-Streaming, verschachteltes Settings-Schema, EPIC-021) |
+| [ADR-089](ADR-089-chatgpt-pkce-loopback-flow.md) | ChatGPT PKCE Loopback OAuth Flow (Renderer-Loopback-Server auf 127.0.0.1, Port-Range, EPIC-021) |
 
 ---
 
@@ -960,6 +962,8 @@ Siehe einzelne ADRs in `_devprocess/architecture/`:
 | Memory-Extraktion basiert auf LLM-Qualitaet | Ungenaue Fakten bei schwachen Modellen | Separate memoryModelKey-Einstellung |
 | VaultDNA Reflection kann bei Plugins fehlschlagen | Unvollstaendige Skill-Files | Nutzer kann Skill-Files manuell anpassen |
 | MCP stdio spawnt Subprozesse | Sicherheitsrisiko bei boeswilligen Configs | Shell-Metacharacter-Validation |
+| ChatGPT-OAuth-Provider nutzt undokumentierte Codex-Endpoints (EPIC-021) | Schema kann sich ohne Vorwarnung aendern, OpenAI koennte Drittanbieter-Nutzung sperren | Schema-Mapper isoliert, Datums-Kommentare, Disclaimer im UI, Endpoint-Drift-Indikator (ADR-088, ADR-089) |
+| ChatGPT-OAuth-Loopback nutzt require('http') im Renderer | Plugin-Review-Aufmerksamkeit moeglich | Eslint-disable mit klarer Begruendung, kurze Server-Lifetime, Bind 127.0.0.1, Port-Range 1455 bis 1460 (ADR-089) |
 
 ### Technische Schulden
 
