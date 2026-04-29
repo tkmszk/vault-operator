@@ -327,6 +327,24 @@ Obsilo-Adaption: SubTask-Typen (research, implementation, verification) mit Stat
 | Model Compatibility Check | FEATURE-0605-model-compatibility-check.md | P2-Medium |
 | Obsilo Gateway | FEATURE-0901-obsilo-gateway.md | Nach Stabilisierung (Monetarisierung) |
 
+**EPIC-021: ChatGPT OAuth Provider**
+
+Quelle: User-Request 2026-04-28 (analog zu EPIC-012 Copilot, EPIC-013 Kilo Gateway).
+Epic: `_devprocess/requirements/epics/EPIC-021-chatgpt-oauth-provider.md`
+Handoff: `architect-handoff-021-chatgpt-oauth.md`
+ADRs: `ADR-088-chatgpt-oauth-provider-architecture.md` (Accepted modified by review), `ADR-089-chatgpt-pkce-loopback-flow.md` (Accepted)
+PLAN: `_devprocess/implementation/plans/PLAN-009-feature-021-chatgpt-oauth.md` (Implemented 2026-04-29)
+Phase: Building
+Status: Implemented (verified 2026-04-29)
+
+| Feature | Spec | Prioritaet | Aufwand | Status |
+|---------|------|------------|---------|--------|
+| ChatGPT OAuth Lifecycle (PKCE + Loopback + Refresh) | FEATURE-2101-chatgpt-oauth-lifecycle.md | P0-Critical | M | Implemented (verified 2026-04-29) |
+| Codex Responses-API Handler | FEATURE-2102-chatgpt-codex-api-handler.md | P0-Critical | M | Implemented (verified 2026-04-29) |
+| Settings-UI mit "Mit ChatGPT anmelden" | FEATURE-2103-chatgpt-oauth-settings-ui.md | P0-Critical | S | Implemented (verified 2026-04-29) |
+
+Code geschrieben, gebaut, ins NexusOS-Vault deployt, Login + Smoke-Test durch User bestaetigt. Fuenf Mid-course-Bug-Discoveries waehrend Verifikation gefixt: (a) `redirect_uri` muss `localhost` statt `127.0.0.1` nutzen plus zwei zusaetzliche Codex-Scopes und zwei Codex-spezifische Authorize-Params, (b) Browser-Open via `electron.shell.openExternal()` statt `window.open()` fuer Microsoft-SSO-Kompatibilitaet, (c) Node-`https`-Fetch statt `globalThis.fetch` gegen Electron-Renderer-CORS, (d) Header-Whitelist `Originator: codex_cli_rs` plus `User-Agent: codex_cli_rs/...` plus PascalCase-Account-ID, (e) Provider auf direkten POST an `/codex/responses` umgebaut, kein OpenAI-SDK mehr, eigener SSE-Parser. Verifizierte Default-Modell-Liste: `gpt-5.5`, `gpt-5`, `gpt-5-codex`, `gpt-5-codex-mini`.
+
 **EPIC-022: Skill-Package Ecosystem (Anthropic-kompatibel)**
 
 Quelle: BA-021 + User-Anforderung nach Anthropic-kompatiblem Skill-Format + Coordinator-Pattern.
@@ -544,20 +562,94 @@ Nicht im Scope dieser Welle: TTL fuer externalized tmp files, hash-drift CI-Guar
 
 ---
 
+## Initiative: Memory v2 + UCM Foundation (Phase 6 abgeschlossen, 2026-04-28)
+
+Branch `feature/memory-redesign`. Capability-Set unter EPIC-003 (context-memory-scaling). Ziel: Obsilo-Memory-Subsystem rewriten, Engine als `@obsilo/memory-engine` extrahieren, UCM (Unified Chat Memory, separates Repo) baut darauf auf.
+
+**Source-Artefakte:**
+
+- BA: [BA-UNIFIED-CHAT-MEMORY-V2](../analysis/BA-UNIFIED-CHAT-MEMORY-V2.md) (UCM-Konsumenten-Kontext, Status: Draft)
+- Source-Spec: [OBSILO-MEMORY-V2-FULL-REWRITE](../requirements/OBSILO-MEMORY-V2-FULL-REWRITE.md) (Source-Reference, vor Codebase-Validierung)
+- Master-Plan: [PLAN-001-memory-v2-master](../implementation/plans/PLAN-001-memory-v2-master.md) (validierter Pfad alpha)
+- ADRs: [ADR-076 Episode-Fact-Boundary](../architecture/ADR-076-episode-fact-boundary.md), [ADR-077 Storage-Schema](../architecture/ADR-077-memory-v2-storage-schema.md), [ADR-078 URI-Versioning](../architecture/ADR-078-uri-versioning-schema.md), [ADR-079 Knowledge-DB-Haertung](../architecture/ADR-079-knowledge-db-hardening.md)
+
+**Zu superseden / supplementieren:** ADR-013 (Memory Architecture), ADR-018 (Episodic Task Memory), ADR-058 (Recipe-Promotion), ADR-059 (Memory Decay Prevention), ADR-060 (Session Summary Reliability)
+
+**Phasen-Backlog (8 Phasen, 11.5 Wochen brutto):**
+
+| Phase | Status | Feature-ID (vorgesehen) | Hauptdeliverable | Vorbedingung |
+|-------|--------|------------------------|------------------|--------------|
+| 0 Spikes + ADRs | Implemented (2026-04-27, PLAN-002) | (kein Feature, ADR-Arbeit) | 3 Spikes (ATTACH+CTE-Performance, FTS5-WASM-Bundle-Size, Single-Call-Token-Profil), ADR-076-079 finalisiert, ADR-062-Implementation-Spec | Branch existiert |
+| 0.5 Knowledge-DB-Haertung | Implemented (2026-04-27, PLAN-003) | FEATURE-0314 | BUG-012-Fix (Single-File-Atomic-Commit pro DB + Vault-Mode-Haertung mit Verify), Vault-Rename-Cascade (Listener immer aktiv, nicht mehr im `semanticAutoIndexOnChange`-Gate; live verifiziert mit `Notes/Dominik Klumpp.md` -> 57 Reihen sauber migriert), embedding_model-Spalte (v9), Daily-Snapshot-Job, integrity_check + Auto-Recovery aus `.bak`, WriterLock am `obsidian-sync`-Pfad in `KnowledgeDB.open()`/`close()` mit Notice via `WriterLockHeldError`. URI-Migration im Hotfix verworfen, neue Tabellen ab Phase 1 nutzen `vault://`/`session://`/`episode://` direkt. **470 Tests gruen** | Phase 0 ADRs gruen |
+| 1 Engine-Foundation | Implemented (2026-04-27, PLAN-004) | FEATURE-0315 | memory.db v1->v2 additiv (9 neue Tabellen + memory_schema_meta), FactStore/EdgeStore/CommunicationStyleStore mit Constructor-Injection, AuditLog-Helper, EmbeddingService als thin adapter, SourceAdapter+AdapterRegistry+UriResolver (9 Standard-Schemata), HistoryDB-Skelett, ADR-062 KV-Cache-Layout via 4 stability tests verifiziert. Engine-Coupling 0 (kein `obsidian`-Import in `src/core/memory/*.ts`). **568 Tests gruen, +90 neu fuer Phase 1**. Caller-Migration auf EmbeddingService folgt in Phase 2 | Phase 0.5 gruen |
+| 2 Migration + Vault-RRF-Quick-Win | Implemented (2026-04-27, PLAN-005) | FEATURE-0316 | RRF-Helper als Engine-Public-Utility, FactExporter (facts -> markdown), MemoryAtomizer (LLM Tool-Call), MemoryMigrationJob (5 MD -> Facts, soul.md -> Style, knowledge.md skip, Backup), Hybrid `semantic_search` mit 3-Signal-RRF (Cosine + TF-IDF + Tag-Match neu; Edge-Walk + Trigram deferred), ObsiloEmbeddingProvider als thin adapter, Migration-Approval-UI im MemoryTab, Recall-Eval Snapshot. **Live verifiziert** mit "Mark Zimmermann"/"Agent Factory" Suchen. **632 Tests gruen, +85 neu**. Live-Recall-Eval (SC-03 +30%) folgt manuell auf Sebastians Daten | Phase 1 gruen |
+| 3 Dynamic Context Composition | Implemented (2026-04-28, PLAN-006) | FEATURE-0317 | TopicInference (Centroid-Cosine), UserProfileView, RecallHit-Type + isColdStart, ContextRanker (5 Boost-Regeln), KnowledgeGraphAdapter + LocalKnowledgeAdapter (JS-BFS, ATTACH verworfen per SPIKE-001), UnifiedGraphService, ContextComposer mit Soft-Topic-Lock + Drift-Detection, Stale-Edge-Lazy-Detection in EdgeStore, recall_memory Agent-Tool, Plugin-MCP get_vault_implicit_edges + get_vault_note_metadata, McpKnowledgeAdapter + StandardAdapters (file/http/cloud-stub), engineVersion-Flag mit AgentSidebarView Cut-Over, MemoryV2Telemetry. **718 Tests gruen, +74 neu**. Default `v1`, manueller Switch in Settings -> Memory -> Memory engine | Phase 2 + RRF battle-tested |
+| 4 Single-Call Update | Implemented (2026-04-27, PLAN-007) | FEATURE-0318 | MentionParser, EdgeStore-Provisional, AgingService (kind-aware half-life + use-count boost), TokenBudgetGuard (daily caps + auto-reset), DriftEventBus (pub-sub between read/write), ExtractionQueue.bypassThrottle, SingleCallExtractor (one tool-call yields session_summary + episode_outcome + facts[] + mentions[] + delta_summary + drift signal), FactIntegrator (4 relation classes new/update/extend/derive mit cosine-fallback), ThreadDeltaStore + Schema v3->v4 (last_extracted_message_index + delta_summary), SingleCallProcessor (replaces SessionExtractor + LongTermExtractor, no nostalgia), telemetry-Verdrahtung in MemoryV2Telemetry (single_call/integration/aging/budget channels), 12-Fixture-Eval-Set fuer Validation-Path. **844 Tests gruen, +213 neu**. Combined Note-Index-Pass deferred -- separater Hot-Path-Refactor in eigenem Plan | Phase 3 stabil |
+| 4.1 Combined Note-Index-Pass | Deferred (Folge-Plan) | FEATURE-0318b | Vault-Side: 3 separate LLM-Calls pro Note (note_freshness + implicit_edges + tag suggestions) -> ein structured-output Call. Risiko hoch (hot-path), separat planen | Phase 4 stabil |
+| 4.5 Agent-Self Layer | Implemented (2026-04-28, PLAN-008) | FEATURE-0319b | CapabilityManifest (kuratierte Tool/UI/Setting/Mode-Liste + djb2-Hash), SoulView (Read-API auf reservierter `profile_id='_obsilo'`-Konvention, Top-3 pro Kategorie nach importance + last_used_at), ContextComposer-Soul-Block prepended cache-stabil im SystemPrompt, `update_soul`-Tool fuer agent-driven L2-Edits (value/anti_pattern/identity/communication, Insert + Supersede), `inspect_self`-Tool (settings mit Redaction, tools, capabilities; code-area Phase 2), Plugin-Onload Capability-Sync mit Hash-Vergleich + Deprecate/Insert-Cycle, Settings-UI "Obsilo's soul" mit Add/Remove + Capability-Diagnose, Legacy soul.md Migrations-Importer (idempotent), History-UI Side-Features: Rename, Memory-Filter-Toggle, Star-Status-Indicator (outline + accent statt durchgestrichen). **886 Tests gruen, +42 neu**, 3 neue Eval-Fixtures (soul-edit/capability-inquiry/settings-inquiry) | Phase 4 stabil |
+| 5 Living Document UX | Implemented (2026-04-28) | FEATURE-0319 | Save-to-Memory-Star (Header weg, History-Row + "..."-Menu + command-palette "Save conversation to memory"), `mark_for_memory` Agent-Tool, Re-Extraction-Throttle (60s default + bypassThrottle fuer Star/mark_for_memory), Aging-Scheduler in onload (24h-cooldown via lastAgingRunAt, 2-tier halflife: single-shot decays, pattern stays), Two-Tier-Aging-Refinement (HALF_LIFE_DAYS_BY_TIER, PATTERN_THRESHOLD=3 confirmation_count), Pinned-Conversation Lower Threshold (1 message statt extractionThreshold wenn schon facts in memory), Cascade-Delete (history-delete deprecated alle facts + sessions row + conversation_threads row), Cold-Start-Hint im Soul-Block (proaktiver mark_for_memory/update_soul-Aufruf), FactIntegrator-Dedup-Pre-Check (cosine ≥ 0.95 → confirm, 0.85-0.95 → auto-promote zu update; faengt LLM-side relation=new-Duplikate ab), ThreadAdapter (Engine-Pfad fuer thread://-URIs gebaut, host-side Wiring deferred zu UCM). **907 Tests gruen, +21 neu vs Phase 4.5**. Auto-Suggestion (proaktive Frage) + thread://-Host-Wiring deferred zu UCM-Initiative | Phase 4 produktiv stabil |
+| 6 History Search | Implemented (2026-04-28) | FEATURE-0320 | HistoryDB im plugin onload geoeffnet, HistoryIndexer mit backfillAll (abortable) + onConversationSaved (incremental tail-append, idempotent via UNIQUE(session_id,chunk_index)), `search_history`-Tool (keyword via SQL LIKE, role/session filter, top_k 1-30, rendert obsidian://obsilo-chat backlinks). UI-Sidebar-Search deferred -- Agent kann via tool suchen, eigenes UI lohnt sich erst wenn das Tool als unzureichend empfunden wird. **914 Tests gruen, +7 neu vs Phase 5** | Phase 5 gruen |
+| 7 Engine-Extract | Planned | FEATURE-0321 | Package `@obsilo/memory-engine`, Public-API frozen, Adapter-Interface fuer Knowledge-DB, Konfig-Abstraktion, API-Doc + Migration-Guide | Phase 6 gruen + 2 Wo produktiver Use |
+| Querschnitt | Planned | FEATURE-0322 | Privacy & Forget-Right: Soft-Delete + Cascade auf 4 Granularitaets-Ebenen, Hard-Delete-Job, Backup-Sweep, Agent-Tools `delete_fact`/`delete_facts_by_entity`/`delete_conversation`/`delete_facts_by_vault_ref` | FEATURE-0315, 0319 |
+| Querschnitt | Planned | FEATURE-0323 | Memory-UX, Onboarding & Settings-Migration: Smart-Defaults v2.6 -> v2 mit Wizard-Fallback, OnboardingService-Erweiterung + Inline-Coach-Marks, strukturierte Fehler-Codes fuer Agent-als-Fehler-UI | FEATURE-0319, FEATURE-0405 |
+| Differenzierung | Planned | FEATURE-0324 | Inference-Pass fuer Derives: Pattern-basierte Memory-Evolution analog Supermemory, Background-Job, Confidence-Bands | FEATURE-0315, 0317, 0318 |
+| Differenzierung | Planned | FEATURE-0325 | Vault-Note-zu-Fact-Extraction: Documents-Pipeline analog Supermemory, dirty-tracking + cascade, einzigartige bidirektionale Obsidian-Bridge | FEATURE-0314, 0315, 0317, 0318, 0322 |
+
+**Bekannte Risiken (zusaetzlich zu Source-Doc R1-R9):**
+
+- R10 ATTACH+CTE-Performance kippt -> JS-BFS-Fallback
+- R11 Custom-sql.js-WASM-Bundle sprengt Limit -> Trigram-Index-Fallback
+- R12 Single-Call-Extraction-JSON instabil -> Tool-Calling mit Schema, Eval-Test-Set
+- R13 Vault-Rename-Cascade Edge-Cases -> Phase 0.5 fault-injection-Test-Suite
+- R14 Topic-Centroid-Drift bei Modell-Wechsel -> embedding_model-Filter im Centroid-Compute
+- R15 Audit-Log-Volumen explodiert -> Inline-Counter statt Audit-Row fuer Use-Events
+
+**Bug-Resolutions:**
+
+- BUG-012 (KnowledgeDB Corruption, P1): RESOLVED 2026-04-27 via FEATURE-0314 (PLAN-003)
+- Vault-Rename-Cascade-Bug (latent, vermutlich heute defekt): in Phase 0.5 gefixt
+- Embedding-Model-Drift (latent): in Phase 0.5 mit embedding_model-Spalte adressiert
+- [BUG-029](../analysis/BUG-029-writerlock-not-wired.md) (WriterLock nicht verdrahtet, P2): RESOLVED 2026-04-27. WriterLock am `obsidian-sync`-Pfad in `KnowledgeDB.open()`/`close()` verdrahtet, `WriterLockHeldError` triggert 10-s-Notice
+- [BUG-030](../analysis/BUG-030-icloud-vault-rename-not-cascaded.md) (Rename-Cascade greift nicht, P2): RESOLVED 2026-04-27. Echte Ursache war `semanticAutoIndexOnChange: false` in data.json -- Listener-Block uebersprungen. Fix: Listener aus dem Settings-Gate herausgezogen, Cascade laeuft jetzt immer wenn KnowledgeDB offen. Live verifiziert mit `Notes/Dominik Klumpp.md` (57 Reihen migriert). Initial gebauter `RenamePairDetector` zurueckgerollt (auf Fehldiagnose gebaut). Lehre in `feedback_check_settings_first.md` festgehalten
+
+**Naechster Schritt:** Phase 7 (FEATURE-0321) -- Engine-Extract als `@obsilo/memory-engine` Package mit frozen Public-API, Adapter-Interface fuer Knowledge-DB, Konfig-Abstraktion, API-Doc + Migration-Guide. Voraussetzung "Phase 6 gruen + 2 Wo produktiver Use" -- d.h. erst nach realer Nutzung im Phase-5/6-Stand stabil genug fuer Extract. Bis dahin: querschnitts-Themen FEATURE-0322 (Privacy/Forget-Right Cascade) und FEATURE-0323 (Onboarding-Wizard) offen, plus open concepts (Memory-Budget-Pressure-Eviction, stricter Consistency-Check, Aging-Scheduler ausserhalb onload, Auto-Suggestion-UI, thread://-UCM-Wiring) je nach Drift.
+
+**Future-Considerations nach C-Triage 2026-04-26:**
+
+In MVP eingearbeitet:
+
+- **C2 Daily-Snapshot-Backups** -> in FEATURE-0314 (DoD)
+- **C4 Telemetrie / Observability** -> in FEATURE-0317 + FEATURE-0318 (Logs nach `_devprocess/logs/memory-v2/`)
+- **C5 Token-Cost-Cap pro Tag mit Auto-Disable** -> in FEATURE-0318 (DoD)
+- **C6 Embeddings-Tab-Infotext-Hint** -> in FEATURE-0323 (Side-Edit)
+- **C8 BA Section 5.1.1 Selling-Point-Profil** -> in BA-UNIFIED-CHAT-MEMORY-V2
+
+Bleibt Future-Considerations:
+
+- **C1 At-rest-Encryption** fuer DBs (Vault-resident DBs wandern unverschluesselt durch iCloud) -- Trigger: wenn UCM Cloud-Service-Variante kommt
+- **C3 Performance-Spike bei Skalierung** (100k Facts, 1M History-Chunks) -- Trigger: wenn Sebastians DB ueber 50k Facts oder 200MB waechst
+- **C7 Mobile-Support-Klarheit** (iOS/iPadOS, BA-023) -- Trigger: BA-023 wird Re-Triage'd. Architektur-Constraints sind in PLAN-001 verankert.
+
+**UCM-Vorbedingung:** UCM-Bau startet erst nach Phase 7 (Engine-Extract), realistisch Q3/Q4 2026 (siehe BA-UNIFIED-CHAT-MEMORY-V2 Sektion 7.5).
+
+---
+
 ## Naechste Prioritaeten
 
 ### Kurzfristig (aktiv)
 
-1. **EPIC-022 Skill-Package Ecosystem** -- BA/Epic/Features/ADR-075 geschrieben (2026-04-17). Coding wartet auf User-Freigabe. FEATURE-2201 (Folder-Struktur) ist Fundament; Release-Minimum ist 2201+2202 als v2.6.0.
+1. **Memory v2 Initiative** -- siehe Block oben, Phase 0 (Spikes + ADRs) startet mit `/requirements-engineering`
+2. **EPIC-022 Skill-Package Ecosystem** -- BA/Epic/Features/ADR-075 geschrieben (2026-04-17). Coding wartet auf User-Freigabe. FEATURE-2201 (Folder-Struktur) ist Fundament; Release-Minimum ist 2201+2202 als v2.6.0.
 2. **EPIC-019 Knowledge Maintenance** -- Phase 2 groesstenteils erledigt. Offen bleiben FEATURE-1903 (Template-Onboarding einmalig) und FEATURE-1907 (Chat UI Polish). FEATURE-1900 + 1904 + 1906 waren bereits implementiert, nur Backlog-Stand war veraltet.
 3. **MCP Remote Auth (FEATURE-1404)** -- Eigener Feature-Branch, nicht Wave 2. Heute: Bearer-Token-Auth (McpBridge + Cloudflare-Relay-Worker). Spec fordert OAuth 2.1 + PKCE (Authorization-Endpoint, PKCE-Challenges, Refresh-Tokens, Client-Registration, Settings-UI) -- ~500-1000 LOC plus Security-Review. Zu gross fuer inkrementelle Wave-Arbeit.
 4. ~~**Gemini Provider (ADR-064)**~~ -- Already implemented in the main codebase: `ProviderType 'gemini'`, built-in models, UI labels/colors, model fetching, ModelConfigModal wiring, model-registry entries. Nothing left to do. Flagged in Wave 2 review 2026-04-17.
 5. **Wave-2 Triage** -- BUG-016, Excalidraw-Arrows, Hard Tool-Filter (siehe oben)
+6. **EPIC-021 ChatGPT OAuth Provider** -- Epic + 3 Features + Handoff geschrieben (2026-04-28). ADR (ADR-076 oder Folge-Nummer) ueber `/architecture` ausstehend. Implementierungs-Reihenfolge: 2101 OAuth-Service -> 2102 Codex Handler -> 2103 Settings UI.
 
 ### Kurzfristig (danach)
 
 1. ~~**Deferred Tool Loading (FEATURE-1600)**~~ -- Implemented in Wave 2. 24 specialised tools hidden from the default prompt, activated on demand via the new `find_tool` meta-tool. Live token impact TBD after sustained use.
-2. **Memory Side-Query (FEATURE-1601)** -- macht Memory skalierbar, relevante Memories per Side-Query
+2. ~~**Memory Side-Query (FEATURE-1601)**~~ -- subsumed by Memory v2 (siehe Initiative oben, Phase 3 ContextComposer + recall_memory mit multiHop). Standalone-Implementierung obsolet.
 3. **Default PPTX Templates (FEATURE-1101)** -- professionelle Vorlagen als Plugin-Assets
 4. **Token Budget Management (FEATURE-0603)** -- limitiert Kontext-Ueberladung
 5. **On-Demand Image Extraction (FEATURE-0604)** -- komplettiert Document Parsing
