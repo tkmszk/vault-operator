@@ -199,6 +199,44 @@ Implemented as designed with these additions:
 
 Measured: 601k chars externalized in a complex task, preventing ~1M+ token accumulation.
 
+## Revision (2026-04-29) -- read_file/read_document excluded again
+
+**Trigger:** Meeting-Summary (50 min Transcript, 20.237 chars) dauerte 5+ Minuten
+statt 30-90 Sekunden. Token-Verbrauch: 759k in / 18k out fuer eine Aufgabe, die
+unter 30k Token loesbar sein muss.
+
+**Root Cause:** Die Implementation Note vom 2026-04-05 hat das urspruengliche
+ADR-Design (read_file NICHT externalisieren) ohne dokumentierte Begruendung
+umgekehrt. In Kombination mit der "Use read_file to re-read the full content"-
+Botschaft im Referenz-Format und dem Tool-Result-Cache entstand eine Sackgasse:
+
+```
+read_file -> externalize -> 400-char preview im Kontext
+agent: "Inhalt fehlt, ich lade nach"
+read_file (gleicher Pfad) -> Cache HIT -> identische 400-char preview
+agent: search_files / read_document / spawn_subtask -> alle laufen in dieselbe Falle
+```
+
+Bei summarisierenden Aufgaben (Meeting-Summary, Translate, Refactor) braucht
+der Agent den vollen Inhalt im Kontext -- eine Vorschau ist konzeptionell falsch.
+Die ursprungliche Designentscheidung war richtig.
+
+**Aenderung:**
+- `read_file` und `read_document` zurueck in `SKIP_EXTERNALIZATION`
+- `MAX_CONTENT_CHARS` in ReadFileTool von 20k auf 50k angehoben (Claude-Code-aligned,
+  deckt typische 60-90min Transcripts ohne Truncation)
+- Truncation-Hint "Use search_files for specific content" nur noch bei > 10% Overflow
+  (verhindert Schnitzeljagd bei 1% Overflow)
+
+**Erwartete Auswirkung:** Meeting-Summary auf typische Transcript-Groesse zurueck
+auf 30-90s. Externalization wirkt weiterhin fuer search_files/semantic_search/
+web_fetch, wo der Agent Top-K-Treffer und nicht den Volltext braucht.
+
+**Verworfene Alternativen:**
+- Threshold pro Tool (zu komplex, ueberlebt nicht)
+- Truncation auf 100k erhoehen ohne SKIP (loest die Cache-Sackgasse nicht)
+- Cache fuer read_file deaktivieren (versteckt das Symptom, nicht die Ursache)
+
 Key files:
 - `src/core/tool-execution/ResultExternalizer.ts` (externalization logic)
 - `src/core/tool-execution/ToolExecutionPipeline.ts` (integration point)
