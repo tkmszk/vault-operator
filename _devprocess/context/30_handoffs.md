@@ -654,3 +654,32 @@ Effort: 1 Wo. Code-Aenderungen primaer in src/core/knowledge/.
 **Naechster Schritt:**
 
 V-Model-Checklist: nach /coding kommt /testing plus /security-audit. Beides empfohlen, weil Token-Handling und Drittanbieter-Endpoints sicherheitsrelevant sind.
+
+---
+
+## 2026-04-29 -- AUDIT-013 abgeschlossen, Fix-Loop closed
+
+**Audit-Report:** [AUDIT-013](../analysis/security/AUDIT-013-obsilo-2026-04-29.md)
+
+**Risk-Verdict:** Low (von High before fix)
+**Release-Empfehlung:** GREEN -- Fix-Loop hat alle Critical + High + Medium Findings geschlossen.
+
+**Fixed in dieser Audit-Welle:**
+- C-1: MCP execute_vault_op Pipeline-Bypass -- interim deny-list mit AGENT_INTERNAL_TOOLS + Write-Tools
+- H-1: IgnoreService Filter in SearchFilesTool
+- H-2: IgnoreService Filter in MCP searchVault (semantic + keyword + graph + implicit)
+- H-3: McpBridge buildResourceList + readResource: ignoreService + validateMcpVaultPath + URI-Length-Cap + .md-Restriction
+- H-4: Trust-Boundary-Wrap (`<vault-content trust="user-data">`) in readResource, readNotes, search results, graph + implicit excerpts
+- H-5: Timing-safe Bearer-Token-Vergleich via crypto.timingSafeEqual
+- M-1: AGENT_INTERNAL_TOOLS-Filter auch im Handler-Dispatch (nicht nur Listung)
+- M-2: Telemetry promptPreview opt-in via Settings-Flag (Default false)
+
+**Architektur-Empfehlung fuer naechsten /architecture-Cycle:**
+- C-1 wurde mit interim deny-list gefixt. Der proper fix routet execute_vault_op durch ToolExecutionPipeline. Sollte als ADR fuer einen kommenden Welle dokumentiert werden -- die deny-list ist eine Wartungs-Schuld (jeder neue Write-Tool muss manuell eingetragen werden).
+- IgnoreService-Semantik: aktuell wird der Index ungefiltert gebaut, die Filterung passiert auf Read. Architektur-Frage fuer spaeter: soll IgnoreService auch im SemanticIndex-Build greifen?
+
+**Deferred (P3, Low):**
+- L-1, L-2, L-3: false positive oder bereits mitigated -- keine Backlog-Eintraege noetig
+- L-4: 4 moderate npm-Advisories in uuid via exceljs/mermaid -- unsere Code-Pfade nicht betroffen, deferred zur naechsten Dependency-Bump-Welle
+
+**Tests:** 1023 / 1023 gruen nach Fixes, keine Regressions.
