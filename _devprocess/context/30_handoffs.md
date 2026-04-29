@@ -654,3 +654,32 @@ Effort: 1 Wo. Code-Aenderungen primaer in src/core/knowledge/.
 **Naechster Schritt:**
 
 V-Model-Checklist: nach /coding kommt /testing plus /security-audit. Beides empfohlen, weil Token-Handling und Drittanbieter-Endpoints sicherheitsrelevant sind.
+
+---
+
+## 2026-04-29 -- AUDIT-013 abgeschlossen, Fix-Loop closed
+
+**Audit-Report:** [AUDIT-013](../analysis/security/AUDIT-013-obsilo-2026-04-29.md)
+
+**Risk-Verdict:** Low (von High before fix)
+**Release-Empfehlung:** GREEN -- Fix-Loop hat alle Critical + High + Medium Findings geschlossen.
+
+**Fixed in dieser Audit-Welle:**
+- C-1: MCP execute_vault_op Pipeline-Bypass -- interim deny-list mit AGENT_INTERNAL_TOOLS + Write-Tools
+- H-1: IgnoreService Filter in SearchFilesTool
+- H-2: IgnoreService Filter in MCP searchVault (semantic + keyword + graph + implicit)
+- H-3: McpBridge buildResourceList + readResource: ignoreService + validateMcpVaultPath + URI-Length-Cap + .md-Restriction
+- H-4: Trust-Boundary-Wrap (`<vault-content trust="user-data">`) in readResource, readNotes, search results, graph + implicit excerpts
+- H-5: Timing-safe Bearer-Token-Vergleich via crypto.timingSafeEqual
+- M-1: AGENT_INTERNAL_TOOLS-Filter auch im Handler-Dispatch (nicht nur Listung)
+- M-2: Telemetry promptPreview opt-in via Settings-Flag (Default false)
+
+**Architektur-Folgewelle in selbiger Session abgeschlossen (ADR-091):**
+- C-1 ist jetzt PROPER FIXED. `execute_vault_op` routet durch `ToolExecutionPipeline`; die hand-gepflegte `MCP_DENY_TOOLS`-Liste ist weg. Schema-Validation, IgnoreService, Approval-Flow (fail-closed fuer Writes), Checkpoints, Cache und Operation-Log greifen uniform. Neue Write-Tools erben den Schutz automatisch, kein Maintenance-Aufwand mehr.
+- IgnoreService-Build-Semantik ist aufgeloest. SemanticIndex bekommt `isIgnored`-Predicate in den Optionen; ignorierte Files landen nicht mehr im Embedding-Store. Read-time-Filter bleibt als Defense-in-Depth.
+
+**Deferred (P3, Low):**
+- L-1, L-2, L-3: false positive oder bereits mitigated -- keine Backlog-Eintraege noetig
+- L-4: 4 moderate npm-Advisories in uuid via exceljs/mermaid -- unsere Code-Pfade nicht betroffen, deferred zur naechsten Dependency-Bump-Welle
+
+**Tests:** 1023 / 1023 gruen nach Fixes, keine Regressions.
