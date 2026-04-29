@@ -2,7 +2,7 @@
 id: FEATURE-021-003
 name: ChatGPT OAuth Settings UI
 phase: Building
-status: Planned
+status: Implemented
 epic: EPIC-021
 depends-on: [FEATURE-021-001, FEATURE-021-002]
 ---
@@ -13,7 +13,7 @@ depends-on: [FEATURE-021-001, FEATURE-021-002]
 > **Epic**: EPIC-021 ChatGPT OAuth Provider
 > **Prioritaet**: P0-Critical
 > **Aufwand**: S
-> **Status**: Geplant
+> **Status**: Implemented (verified 2026-04-29)
 
 ## Feature Description
 

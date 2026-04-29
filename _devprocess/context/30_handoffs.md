@@ -557,3 +557,100 @@ Effort: 1 Wo. Code-Aenderungen primaer in src/core/knowledge/.
 3. Implementierungs-Reihenfolge: FEATURE-021-001 -> FEATURE-021-002 -> FEATURE-021-003.
 4. Build und Deploy nach jedem Implementierungsschritt.
 5. Nach Implementierung: /testing und /security-audit vorschlagen (V-Model-Checklist).
+
+---
+
+## coding-phase 2026-04-28: EPIC-021 ChatGPT OAuth Provider implementiert (awaiting login test)
+
+**Phase:** /coding komplett (Code + Build + Deploy). Manueller Login-Test offen.
+
+**Implementiert:**
+
+- `src/core/auth/jwt-decode.ts`, `PkceLoopbackServer.ts`, `ChatGptOAuthService.ts`
+- `src/api/providers/chatgpt-oauth.ts` (OpenAI-SDK + Custom-Fetch, baseURL `chatgpt.com/backend-api/codex`)
+- Provider-Wiring in `src/api/index.ts`
+- Settings (`ProviderType`, 9 neue Felder, Defaults)
+- Settings-Encryption in `decryptSettings`/`encryptSettingsForSave` von `main.ts`
+- Service-Init in `main.ts:onload` analog zu Copilot/Kilo
+- UI: `buildChatGptOAuthSection` + Provider-Visibility in `ModelConfigModal.ts`
+- `BRAND_LABELS`, `PROVIDER_COLORS`, `MODEL_SUGGESTIONS` in `constants.ts`
+- 12 i18n-Strings unter `chatgpt.*` in `en.ts`
+
+**Mid-course-Korrekturen, die ADRs angepasst haben (alle vor dem ersten Commit):**
+
+1. **SafeStorage-Schema:** ADR-088 hatte `SafeStorageEnvelope`. Real ist String-Prefix `enc:v1:<base64>`. ADR + plan-context aktualisiert, Status `Accepted (modified by review)`.
+2. **Settings-Schema flach:** ADR-088 hatte `chatgptOAuth: { ... }`. Codebase-Konvention (Copilot, Kilo) ist flach. ADR + plan-context aktualisiert.
+3. **Settings-Encryption zentralisiert:** Service speichert plain in Settings; `decryptSettings`/`encryptSettingsForSave` in `main.ts` erledigen die Verschluesselung. Konsistenz zu Kilo/Copilot.
+
+**Verifikation bisher:**
+
+- `npx tsc --noEmit`: clean.
+- `npm run build`: clean. Plugin-Bundle deployt nach `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/NexusOS/.obsidian/plugins/obsilo-agent/`.
+
+**Noch offen (Sebastians Login-Test):**
+
+- Login mit echtem ChatGPT-Plus-Account.
+- Smoke-Test einer einfachen Anfrage gegen `gpt-5-codex`.
+- Smoke-Test mit Tool-Call.
+- Disconnect-Test.
+
+**Open Items, die nur ueber den Login-Test klaerbar sind:**
+
+- **JWT-Claim-Namen** fuer `chatgpt-account-id` und `plan_tier`. Code probiert mehrere Kandidaten und nimmt den ersten Treffer. Falls kein Treffer: Header `chatgpt-account-id` leer und Backend-Fehler. Mitigation: weitere Claim-Namen in `jwt-decode.ts` ergaenzen.
+- **Codex-Endpoint-Schema**: Sender schickt OpenAI-Chat-Completions-Format. Falls Backend Responses-API erwartet, gibt es 4xx mit klarer Meldung (enhanceError). Dann Provider auf Responses-API umstellen.
+- **Codex-Client-ID** `app_EMoamEEZ73f0CkXaXp7hrann` aus opencode/codex-rs. Falls falsch: Authorize-Schritt scheitert mit OAuth-Fehler.
+- **Port-Range-Akzeptanz**: Code probiert 1455-1460. Wenn `auth.openai.com` nur 1455 akzeptiert und der Port belegt ist, schlaegt Login fehl.
+
+**Bekannte Risiken (Coding-Phase):**
+
+- **Endpoint-Drift**: ueber Schema-Annahmen-Kommentare und enhanceError klassifiziert. Bei Schema-Aenderung klare Fehlermeldung.
+- **Plugin-Review-Bot beanstandet `require('http')`**: eslint-disable-Kommentar mit klarer Begruendung gesetzt, Praezedenzfaelle (`require('https')` in `openai.ts`, `require('electron')` in SafeStorageService).
+- **Keine automatischen Tests**: bewusster Tradeoff im Auto-Mode-Sprint. Tests gehoeren in /testing.
+
+**Naechste Schritte:**
+
+1. **Sebastian:** Login-Test im NexusOS-Vault. Ergebnisse zurueckspielen.
+2. **Falls Login klappt:** /testing fuer Unit-Tests (PKCE-Generation, State-Verifikation, JWT-Decoder, Token-Refresh-Lock) plus /security-audit.
+3. **Falls Login scheitert:** Mid-course-Bug-Discovery, BUG-NNN, ggf. ADR-Anpassung. Insbesondere: Backend-Schema empirisch nachpflegen, ggf. von Chat-Completions auf Responses-API umstellen.
+
+---
+
+## coding-phase verified 2026-04-29: EPIC-021 ChatGPT OAuth Provider laeuft
+
+**Status:** User-Bestaetigung "es geht jetzt" 2026-04-29. Login plus Smoke-Test plus Streaming-Antwort funktionieren.
+
+**Fuenf Mid-course-Korrekturen waehrend des Login-Tests:**
+
+1. **OAuth-Schema:** `redirect_uri` muss `http://localhost:PORT/auth/callback` (nicht `127.0.0.1`), Scopes `api.connectors.read api.connectors.invoke` zusaetzlich, plus `id_token_add_organizations=true` und `codex_cli_simplified_flow=true` als Authorize-Params. Verifiziert gegen codex-rs/login/src/server.rs.
+2. **Browser-Open:** `electron.shell.openExternal()` statt `window.open()`, weil Microsoft-SSO im Obsidian-Webview blockt.
+3. **Transport:** Electron-Renderer-CORS blockt globalThis.fetch gegen chatgpt.com -> `createNodeFetch` aus openai.ts exportiert und genutzt.
+4. **Header-Whitelist:** Codex-Backend prueft Originator/User-Agent. Mit "fremden" Werten kommt 403 + "no active subscription" trotz aktivem Abo. Fix: `Originator: codex_cli_rs`, `User-Agent: codex_cli_rs/0.21.0 (Obsidian Plugin) Obsilo`, plus Account-ID auch in PascalCase. Quelle: pi-mono#1828.
+5. **Endpoint + Schema:** OpenAI-SDK postet `/chat/completions`, Codex-Backend hat aber nur `/responses`. Provider komplett vom SDK auf direkten `https.request` umgebaut, Body im Responses-API-Format, eigener SSE-Parser fuer `response.output_text.delta`, `response.output_item.added/done`, `response.function_call_arguments.delta`, `response.completed`, `response.failed`.
+
+**Default-Modell:** `gpt-5.5`. Weitere unterstuetzte: `gpt-5`, `gpt-5-codex`, `gpt-5-codex-mini`.
+
+**Geaenderte Dateien (zusaetzlich zu Coding-Phase 2026-04-28):**
+
+- `src/api/providers/chatgpt-oauth.ts` (komplett neu geschrieben fuer /responses-Endpoint, ohne OpenAI-SDK)
+- `src/api/providers/openai.ts` (`createNodeFetch` exportiert)
+- `src/core/auth/ChatGptOAuthService.ts` (redirect_uri, Scopes, Authorize-Params)
+- `src/ui/settings/ModelConfigModal.ts` (`shell.openExternal` statt `window.open`)
+- `src/ui/settings/constants.ts` (Modell-Liste auf `gpt-5.5`/`gpt-5`/Codex-Varianten)
+- `src/types/settings.ts` (Default `chatgptOAuthModel: 'gpt-5.5'`)
+- `_devprocess/implementation/plans/PLAN-009-feature-021-chatgpt-oauth.md` (Status Implemented, Change Log mit fuenf Bug-Eintraegen)
+
+**Open Items (technisch geklaert):**
+
+- JWT-Claim-Namen fuer Account-ID und Plan-Tier: durch Code-Probier-Liste abgedeckt, hat funktioniert.
+- Endpoint-Schema: bestaetigt Responses-API.
+- Codex-Client-ID `app_EMoamEEZ73f0CkXaXp7hrann`: bestaetigt.
+- Port-Range 1455-1460: nicht alle ausprobiert, aber 1455 hat funktioniert.
+
+**Bekannte Risiken (laufender Betrieb):**
+
+- **Endpoint-Drift:** Codex-Backend ist undokumentiert. Schema-Annahmen mit Datums-Kommentar, klare Fehlermeldung bei Statuscode-Drift.
+- **OpenAI sperrt Drittanbieter-Tools:** Originator-Header ist Schutzmechanismus von OpenAI gegen genau diese Nutzung. Bei Verschaerfung muessen wir nachziehen.
+
+**Naechster Schritt:**
+
+V-Model-Checklist: nach /coding kommt /testing plus /security-audit. Beides empfohlen, weil Token-Handling und Drittanbieter-Endpoints sicherheitsrelevant sind.

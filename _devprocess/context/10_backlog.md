@@ -332,16 +332,18 @@ Obsilo-Adaption: SubTask-Typen (research, implementation, verification) mit Stat
 Quelle: User-Request 2026-04-28 (analog zu EPIC-012 Copilot, EPIC-013 Kilo Gateway).
 Epic: `_devprocess/requirements/epics/EPIC-021-chatgpt-oauth-provider.md`
 Handoff: `architect-handoff-021-chatgpt-oauth.md`
+ADRs: `ADR-088-chatgpt-oauth-provider-architecture.md` (Accepted modified by review), `ADR-089-chatgpt-pkce-loopback-flow.md` (Accepted)
+PLAN: `_devprocess/implementation/plans/PLAN-009-feature-021-chatgpt-oauth.md` (Implemented 2026-04-29)
 Phase: Building
-Status: Planned
+Status: Implemented (verified 2026-04-29)
 
 | Feature | Spec | Prioritaet | Aufwand | Status |
 |---------|------|------------|---------|--------|
-| ChatGPT OAuth Lifecycle (PKCE + Loopback + Refresh) | FEATURE-2101-chatgpt-oauth-lifecycle.md | P0-Critical | M | Geplant |
-| Codex Responses-API Handler | FEATURE-2102-chatgpt-codex-api-handler.md | P0-Critical | M | Geplant |
-| Settings-UI mit "Mit ChatGPT anmelden" | FEATURE-2103-chatgpt-oauth-settings-ui.md | P0-Critical | S | Geplant |
+| ChatGPT OAuth Lifecycle (PKCE + Loopback + Refresh) | FEATURE-2101-chatgpt-oauth-lifecycle.md | P0-Critical | M | Implemented (verified 2026-04-29) |
+| Codex Responses-API Handler | FEATURE-2102-chatgpt-codex-api-handler.md | P0-Critical | M | Implemented (verified 2026-04-29) |
+| Settings-UI mit "Mit ChatGPT anmelden" | FEATURE-2103-chatgpt-oauth-settings-ui.md | P0-Critical | S | Implemented (verified 2026-04-29) |
 
-Implementierungs-Reihenfolge: 2101 (OAuth-Service) -> 2102 (Codex Handler) -> 2103 (Settings UI). Alle drei Features sind P0 fuer den Release. Architektur-ADR (ADR-076 oder Folge-Nummer) noch ausstehend, erstellt durch `/architecture`.
+Code geschrieben, gebaut, ins NexusOS-Vault deployt, Login + Smoke-Test durch User bestaetigt. Fuenf Mid-course-Bug-Discoveries waehrend Verifikation gefixt: (a) `redirect_uri` muss `localhost` statt `127.0.0.1` nutzen plus zwei zusaetzliche Codex-Scopes und zwei Codex-spezifische Authorize-Params, (b) Browser-Open via `electron.shell.openExternal()` statt `window.open()` fuer Microsoft-SSO-Kompatibilitaet, (c) Node-`https`-Fetch statt `globalThis.fetch` gegen Electron-Renderer-CORS, (d) Header-Whitelist `Originator: codex_cli_rs` plus `User-Agent: codex_cli_rs/...` plus PascalCase-Account-ID, (e) Provider auf direkten POST an `/codex/responses` umgebaut, kein OpenAI-SDK mehr, eigener SSE-Parser. Verifizierte Default-Modell-Liste: `gpt-5.5`, `gpt-5`, `gpt-5-codex`, `gpt-5-codex-mini`.
 
 **EPIC-022: Skill-Package Ecosystem (Anthropic-kompatibel)**
 

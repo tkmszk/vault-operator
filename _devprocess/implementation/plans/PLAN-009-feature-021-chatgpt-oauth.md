@@ -1,7 +1,7 @@
 ---
 id: PLAN-009
 title: ChatGPT OAuth Provider (EPIC-021)
-status: Active
+status: Implemented
 date: 2026-04-28
 feature-refs: [FEATURE-021-001, FEATURE-021-002, FEATURE-021-003]
 adr-refs: [ADR-088, ADR-089]
@@ -111,7 +111,54 @@ ADR-089 -> Tasks Phase A: PkceLoopbackServer.
 |-------|---------|-------|
 | 2026-04-28 | initial | Plan erstellt aus Critical Review |
 | 2026-04-28 | requirement | SafeStorage-Schema flach statt Envelope (Codebase-Pattern, ADR-088 Implementation Notes ergaenzt) |
+| 2026-04-28 | design | Service speichert plain in Settings, encryptSettingsForSave/decryptSettings in main.ts erweitern. ChatGptOAuthService.saveToSettings ohne eigene safeStorage.encrypt-Schicht (Konsistenz zu Kilo/Copilot) |
+| 2026-04-28 | bug (mid-course) | Erste Login-Versuch User scheitert. Verifiziert gegen codex-rs/login/src/server.rs (WebSearch + WebFetch): drei Annahmen waren falsch. (a) redirect_uri muss `http://localhost:PORT/auth/callback` sein, nicht `http://127.0.0.1:PORT`. (b) Scope muss `api.connectors.read api.connectors.invoke` zusaetzlich enthalten. (c) Authorize-URL braucht `id_token_add_organizations=true` und `codex_cli_simplified_flow=true`. Plus: Default-Modell `gpt-5.5` statt `gpt-5-codex` (Hermes-Hinweis vom User). Korrigiert in `ChatGptOAuthService.startAuthFlow` und `buildAuthorizeUrl` plus Modell-Liste. Rebuild + Redeploy 2026-04-28. |
+| 2026-04-28 | bug (mid-course) | Login klappte, Microsoft-SSO scheiterte aber im Obsidian-Webview. Fix: `electron.shell.openExternal()` statt `window.open()` in `ModelConfigModal.startChatGptOAuth`. |
+| 2026-04-29 | bug (mid-course) | API-Call lief in `Connection error (undefined)`. Ursache: Electron-Renderer blockt CORS gegen chatgpt.com. Fix: createNodeFetch aus openai.ts exportiert, Provider nutzt Node-`https` statt globalThis.fetch. |
+| 2026-04-29 | bug (mid-course) | Backend antwortete mit "kein Plus-Abo" obwohl Abo aktiv. Ursache: Codex-Backend whitelisted Originator-Header. Fix: `Originator: codex_cli_rs`, `User-Agent: codex_cli_rs/0.21.0 ...`, Account-ID auch in PascalCase (`ChatGPT-Account-ID`). Verifiziert gegen pi-mono#1828. |
+| 2026-04-29 | bug (mid-course) | Verbindung kam, aber Anfrage ohne Erfolg. Ursache: OpenAI-SDK postet an `/chat/completions`, Codex-Backend hat aber nur `/responses`. Provider komplett umgebaut: kein SDK mehr, direkter `https.request` an `chatgpt.com/backend-api/codex/responses`, Body im Responses-API-Format (`instructions` + `input` mit `type:'message'`-Items, `function_call`/`function_call_output`-Items), eigener SSE-Parser fuer `response.output_text.delta`, `response.output_item.added/done`, `response.function_call_arguments.delta`, `response.completed`, `response.failed`. **User-Bestaetigung 2026-04-29: es geht.** |
 
 ## Implementation Notes
 
-(Wird beim Final-Sync ausgefuellt mit Commit-SHAs, Abweichungen, Cycle-Time.)
+**Status 2026-04-28:** Code geschrieben, gebaut, ins Vault deployed. Der manuelle Login-Test mit echtem ChatGPT-Plus-Account ist nicht durch den Skill ausgefuehrt worden, weil Browser-Interaktion ausserhalb der Reichweite ist. Der Test gehoert dem Nutzer.
+
+**Geschriebene Dateien:**
+
+- `src/core/auth/jwt-decode.ts` (neu, 53 LOC)
+- `src/core/auth/PkceLoopbackServer.ts` (neu, 192 LOC)
+- `src/core/auth/ChatGptOAuthService.ts` (neu, 357 LOC)
+- `src/api/providers/chatgpt-oauth.ts` (neu, 327 LOC)
+- `src/api/index.ts` (Provider-Switch erweitert)
+- `src/types/settings.ts` (`ProviderType` erweitert um `'chatgpt-oauth'`, 9 neue Settings-Felder, Defaults)
+- `src/ui/settings/constants.ts` (`BRAND_LABELS`, `PROVIDER_COLORS`, `MODEL_SUGGESTIONS` erweitert)
+- `src/ui/settings/ModelConfigModal.ts` (`buildChatGptOAuthSection`, `updateChatGptOAuthStatus`, `startChatGptOAuth`, Provider-Liste, Visibility-Logic)
+- `src/i18n/locales/en.ts` (12 neue `chatgpt.*`-Strings)
+- `src/main.ts` (Service-Init, `decryptSettings` und `encryptSettingsForSave` erweitert)
+
+**Verifikation bisher:**
+
+- `npx tsc --noEmit`: clean (kein TypeScript-Error)
+- `npm run build`: clean (esbuild production-build erfolgreich, Plugin-Bundle in NexusOS-Vault deployt)
+
+**Verifikation offen:**
+
+- Manueller Login mit echtem ChatGPT-Plus-Account (Sebastian).
+- Smoke-Test einer einfachen Anfrage gegen `gpt-5-codex`.
+- Smoke-Test mit Tool-Call.
+- Disconnect-Test.
+
+**Open Items, die nur ueber den Login-Test klaerbar sind:**
+
+- **JWT-Claim-Name fuer `chatgpt-account-id`:** Code probiert in dieser Reihenfolge: `https://api.openai.com/auth.chatgpt_account_id`, `chatgpt_account_id`, `account_id`. Falls keiner trifft, ist `accountId` leer und der `chatgpt-account-id`-Header fehlt -> Backend-Fehler erwartet. Mitigation: in `jwt-decode.ts` weitere Claim-Namen ergaenzen.
+- **Plan-Tier-Claim:** Code probiert `https://api.openai.com/auth.chatgpt_plan_type`, `chatgpt_plan_type`, `plan`, `subscription_plan`. Falls keiner trifft, zeigt UI "ChatGPT" generisch.
+- **Codex-Endpoint-Schema:** Provider sendet OpenAI-Chat-Completions-Format. Falls Codex-Backend stattdessen Responses-API verlangt, gibt es 4xx-Fehler. Mitigation: enhanceError() liefert Statuscode-Klassifikation.
+- **Codex-Client-ID-Wert:** `app_EMoamEEZ73f0CkXaXp7hrann` ist die in opencode/codex-rs verwendete Konstante. Falls falsch, scheitert der Authorize-Schritt.
+- **Port-Range Akzeptanz:** Code probiert 1455 bis 1460. `auth.openai.com` muss alle als Redirect-URIs akzeptieren. Falls nur 1455 akzeptiert wird und der Port belegt ist, schlaegt der Login fehl mit klarer Meldung.
+
+**Mid-course-Korrekturen waehrend des Codings:**
+
+1. **SafeStorage-Schema:** ADR-088 hatte `SafeStorageEnvelope`. Real ist es `enc:v1:<base64>`-Strings. ADR plus plan-context updated.
+2. **Settings-Schema flach statt verschachtelt:** ADR-088 hatte `chatgptOAuth: { ... }`. Codebase-Konvention (Copilot, Kilo) ist flach. ADR plus plan-context updated.
+3. **Settings-Encryption ueber main.ts statt im Service:** Service speicherte intern verschluesselt, das war inkonsistent zu Kilo/Copilot. Service speichert jetzt plain, `decryptSettings`/`encryptSettingsForSave` in main.ts erledigen die Verschluesselung.
+
+**Backlog-Verschiebungen:** keine. Drei Features bleiben in EPIC-021 wie geplant.

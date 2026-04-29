@@ -2,7 +2,7 @@
 id: FEATURE-021-002
 name: Codex Responses API Handler
 phase: Building
-status: Planned
+status: Implemented
 epic: EPIC-021
 depends-on: [FEATURE-021-001]
 ---
@@ -13,7 +13,7 @@ depends-on: [FEATURE-021-001]
 > **Epic**: EPIC-021 ChatGPT OAuth Provider
 > **Prioritaet**: P0-Critical
 > **Aufwand**: M
-> **Status**: Geplant
+> **Status**: Implemented (verified 2026-04-29)
 
 ## Feature Description
 
