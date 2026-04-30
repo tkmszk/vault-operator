@@ -1,6 +1,6 @@
 # FEATURE: Rules
 
-> **Backlog row:** `_devprocess/context/10_backlog.md` -> FEAT-02-01.
+> **Backlog row:** `_devprocess/context/BACKLOG.md` -> FEAT-02-01.
 > **Code pointer:** ARCHITECTURE.map concept `rules-loader` (under
 > `src/core/context/`).
 

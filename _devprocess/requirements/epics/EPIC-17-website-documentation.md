@@ -54,7 +54,7 @@ UNSERE LOESUNG strukturiert Wissen nach Nutzer-Beduerfnissen statt nach technisc
 ## Dependencies & Risks
 
 ### Dependencies
-- **Backlog (10_backlog.md)**: Muss aktuell sein als Content-Quelle fuer Roadmap und Feature-Abdeckung (erledigt)
+- **Backlog (BACKLOG.md)**: Muss aktuell sein als Content-Quelle fuer Roadmap und Feature-Abdeckung (erledigt)
 - **Feature-Specs**: Muessen als Referenz fuer Content-Erstellung vorliegen (erledigt)
 
 ### Risks

@@ -266,7 +266,7 @@ _devprocess/
   context/
     01_product-vision.md          Produktkontext-Dokumente
     ...                           (alle mit Ueberschriften-Skeleton)
-    10_backlog.md                 Lebendes Backlog
+    BACKLOG.md                 Lebendes Backlog
   implementation/                 Technische Referenz-Docs (TECH-*, IMPL-*)
   prompts/
     security-scan.md              Security-Scanner-Prompt fuer Claude Code
@@ -549,7 +549,7 @@ project-scaffold/
       security/
         .gitkeep
     context/
-      01_product-vision.md ... 10_backlog.md
+      01_product-vision.md ... BACKLOG.md
     implementation/
       .gitkeep
     prompts/
@@ -616,7 +616,7 @@ Feste Defaults (nicht abgefragt):
 ### Feature entwickeln
 
 ```
-1. Feature im Backlog eintragen     -> _devprocess/context/10_backlog.md
+1. Feature im Backlog eintragen     -> _devprocess/context/BACKLOG.md
 2. Feature-Spec schreiben            -> _devprocess/requirements/features/FEATURE-NNN-name.md
 3. Claude: Plan erstellen            -> Plan-Mode
 4. Claude: Implementieren            -> Build+Deploy nach jedem Schritt
@@ -661,7 +661,7 @@ Feste Defaults (nicht abgefragt):
 | Architektur-Doku | `_devprocess/architecture/arc42-skeleton.md` |
 | ADRs | `_devprocess/architecture/ADR-*.md` |
 | Feature-Specs | `_devprocess/requirements/features/FEATURE-*.md` |
-| Backlog | `_devprocess/context/10_backlog.md` |
+| Backlog | `_devprocess/context/BACKLOG.md` |
 | Security-Scan-Reports | `_devprocess/analysis/security/SCAN-*.md` |
 | **Agent-Artefakte** | |
 | Business Analysis | `_devprocess/analysis/BA-*.md` |

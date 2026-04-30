@@ -321,7 +321,7 @@ Die Tool-Results akkumulieren ohne Kompression in der History.
 
 ### C. References
 
-- FIX-12 im Backlog: `_devprocess/context/10_backlog.md`
+- FIX-12 im Backlog: `_devprocess/context/BACKLOG.md`
 - ADR-58: Semantic Recipe Promotion (Grundlage fuer Fast Path)
 - FEAT-16-00: Deferred Tool Loading (geplant, wird durch Fast Path teilweise ersetzt)
 - Anthropic Prompt Caching Docs: https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching

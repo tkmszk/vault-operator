@@ -369,4 +369,4 @@ Die bestehenden Loesungen sind CRUD-fokussiert. Obsilo waere der erste **Intelli
 - Anthropic Connectors Directory: https://claude.ai/connectors
 - Wettbewerbs-Recherche: Siehe Abschnitt 8 (6+ Obsidian MCP-Server, kein offizieller Connector)
 - Obsilo Architektur: `_devprocess/architecture/arc42.md`
-- Obsilo Backlog: `_devprocess/context/10_backlog.md`
+- Obsilo Backlog: `_devprocess/context/BACKLOG.md`

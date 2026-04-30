@@ -58,7 +58,7 @@ created: 2026-04-26
 ```
 
 **Kein** `status:` Feld. Status lebt im Backlog
-(`context/10_backlog.md`).
+(`context/BACKLOG.md`).
 
 FIX und IMP brauchen zusaetzlich `feature:` und `epic:`:
 
@@ -111,4 +111,4 @@ Templates:
 - **PLAN-NN** (Implementation-Plan) -> `_devprocess/implementation/plans/`
 - **ADR-NN** (Architektur-Entscheidung) -> `_devprocess/architecture/`
 - **BA-NN, RESEARCH-NN, AUDIT-...** -> `_devprocess/analysis/`
-- **Status-Tracking** -> `_devprocess/context/10_backlog.md`
+- **Status-Tracking** -> `_devprocess/context/BACKLOG.md`

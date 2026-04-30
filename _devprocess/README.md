@@ -47,21 +47,21 @@ gesamte Klasse auf 3-stellig erweitert. Vorher nicht.
 
 | Frage                              | Quelle                                                      |
 |------------------------------------|-------------------------------------------------------------|
-| Status eines Artefakts             | `context/10_backlog.md` (Backlog-Zeile)                     |
-| Beziehungen / Graph                | `context/10_backlog.md` (Refs-Spalte)                       |
+| Status eines Artefakts             | `context/BACKLOG.md` (Backlog-Zeile)                     |
+| Beziehungen / Graph                | `context/BACKLOG.md` (Refs-Spalte)                       |
 | Wo lebt Konzept X im Code?         | `src/ARCHITECTURE.map` Section 1                            |
 | Welche ADR ist relevant?           | `src/ARCHITECTURE.map` Section 2 (ADR Catalog)              |
 | Stabile technische Regeln          | `rules/technical.md`                                        |
 | Architektur-Entscheidung im Detail | `architecture/ADR-{nn}-{slug}.md`                           |
 | Bug-Detail                         | `requirements/fixes/FIX-{ee}-{ff}-{nn}-{slug}.md`           |
 | Improvement-Detail                 | `requirements/improvements/IMP-{ee}-{ff}-{nn}-{slug}.md`    |
-| Phase-Uebergang                    | `context/30_handoffs.md` (append-only Log)                  |
-| Cycle-Time / Drift                 | `context/40_metrics.md` (Signal-Layer)                      |
+| Phase-Uebergang                    | `context/HANDOFFS.md` (append-only Log)                  |
+| Cycle-Time / Drift                 | `context/METRICS.md` (Signal-Layer)                      |
 
 ## Single Source of Truth Regel
 
 Status, Phase, Last-change, Claim und Commit-SHA aller Artefakte
-leben in der Backlog-Zeile (`context/10_backlog.md`), NICHT im
+leben in der Backlog-Zeile (`context/BACKLOG.md`), NICHT im
 Frontmatter oder Body der Artefakt-Dateien.
 
 Code-Pfade leben in `src/ARCHITECTURE.map` plus JSDoc-Header in

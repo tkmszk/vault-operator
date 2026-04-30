@@ -3,7 +3,7 @@
 Priority: P0
 Related Epic: Vault Operations & Content Synthesis (siehe FEAT-01-03-vault-ops.md, Epic Context)
 
-> **Backlog row:** `_devprocess/context/10_backlog.md` -> FEAT-01-05.
+> **Backlog row:** `_devprocess/context/BACKLOG.md` -> FEAT-01-05.
 > **Code pointer:** ARCHITECTURE.map concept `tool-registry` (the
 > `edit_file` and `append_to_file` tools live under
 > `src/core/tools/` per the wayfinder).

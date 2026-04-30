@@ -34,7 +34,7 @@ pair-id: sebastian-opus-4.7
 ```
 
 **Kein** `status:` Feld. Status, Phase, Claim, Commit-SHA leben in der
-Backlog-Zeile (`context/10_backlog.md`).
+Backlog-Zeile (`context/BACKLOG.md`).
 
 ## Coverage Gate
 

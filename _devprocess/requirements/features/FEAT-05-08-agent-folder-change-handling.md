@@ -6,7 +6,7 @@
 > **Effort Estimate**: S
 > **Issue-Bezug**: [#26](https://github.com/pssah4/obsilo/issues/26) follow-up
 > **Abhaengig von**: FEAT-05-07 (Konfigurierbarer Agent-Folder, released v2.5.0/v2.5.1)
-> **Backlog row:** `_devprocess/context/10_backlog.md` -> FEAT-05-08
+> **Backlog row:** `_devprocess/context/BACKLOG.md` -> FEAT-05-08
 > (Status, Phase, Commit-SHA leben dort.)
 > **Code pointer:** ARCHITECTURE.map concept `update-settings-tool`.
 

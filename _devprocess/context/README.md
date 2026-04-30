@@ -6,7 +6,7 @@ Artefakte.
 
 ## Dateien
 
-### `10_backlog.md` -- Single Source of Truth
+### `BACKLOG.md` -- Single Source of Truth
 
 **Was:** EINE Zeile pro Artefakt (Feature, Epic, ADR, Plan, Fix, IMP),
 mit Status, Phase, Refs (Beziehungs-Graph), Claim, Last-change und
@@ -24,7 +24,7 @@ Items-Sektion.
 
 **Format:** siehe `skills/requirements-engineering/templates/BACKLOG-TEMPLATE.md`.
 
-### `30_handoffs.md` -- Phase-zu-Phase-Uebergaben
+### `HANDOFFS.md` -- Phase-zu-Phase-Uebergaben
 
 **Was:** Append-only Log der Handoffs zwischen V-Model-Phasen. Jede
 Phase-skill schreibt am Ende einen Eintrag mit: Artefakte produziert,
@@ -40,7 +40,7 @@ Phase-skill. Append-only, niemals frueheren Eintrag aendern.
 Wenn die naechste Phase-skill spaeter wieder einsteigt, liefert der
 letzte Handoff-Eintrag den noetigen Kontext.
 
-### `40_metrics.md` -- Signal-Layer
+### `METRICS.md` -- Signal-Layer
 
 **Was:** Append-additive Tabellen mit Cycle-Time pro Feature, Drift-
 Count zwischen Code und Doku, Hypothesis-Validierung, Phase-
@@ -62,9 +62,9 @@ Codebase-Reconciliation, Mid-course-Trigger).
 
 ## Welche Dateien brauche ich wirklich?
 
-- **`10_backlog.md`** ist Pflicht. Ohne es gibt es keine Single
+- **`BACKLOG.md`** ist Pflicht. Ohne es gibt es keine Single
   Source of Truth.
-- **`30_handoffs.md`** ist wichtig fuer Multi-Session-Arbeit und
+- **`HANDOFFS.md`** ist wichtig fuer Multi-Session-Arbeit und
   Multi-Agent-Setups. Bei Solo-Agent-Single-Stream verzichtbar.
-- **`40_metrics.md`** ist optional. Sinnvoll wenn Drift beobachtet
+- **`METRICS.md`** ist optional. Sinnvoll wenn Drift beobachtet
   werden soll. Bei kleinen Projekten verzichtbar.

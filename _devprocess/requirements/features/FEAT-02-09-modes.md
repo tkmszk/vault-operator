@@ -1,6 +1,6 @@
 # FEATURE: Modes
 
-> Backlog row: `_devprocess/context/10_backlog.md` -> FEAT-02-09.
+> Backlog row: `_devprocess/context/BACKLOG.md` -> FEAT-02-09.
 > Code pointer: ARCHITECTURE.map concept `mode-service` and
 > `modes-builtin` (run `grep "mode" src/ARCHITECTURE.map`).
 

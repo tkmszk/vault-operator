@@ -32,7 +32,7 @@ Bei Ueberschreiten von `99` wird auf 3-stellig erweitert.
 
 Lebt im Backlog. NICHT im Frontmatter dieser Dateien.
 
-`grep "BA-13" _devprocess/context/10_backlog.md` liefert Status.
+`grep "BA-13" _devprocess/context/BACKLOG.md` liefert Status.
 
 ## Was hier NICHT hingehoert
 

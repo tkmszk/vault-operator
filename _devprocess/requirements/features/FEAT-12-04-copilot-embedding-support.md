@@ -4,7 +4,7 @@
 > **Epic**: EPIC-12 - GitHub Copilot LLM Provider Integration
 > **Priority**: P1-High
 > **Effort Estimate**: S
-> **Backlog row:** `_devprocess/context/10_backlog.md` -> FEAT-12-04
+> **Backlog row:** `_devprocess/context/BACKLOG.md` -> FEAT-12-04
 > (Status: Won't fix. Copilot API liefert keinen `/embeddings`-Endpoint;
 > github-copilot ist im Code aktiv aus EMBEDDING_PROVIDERS ausgeschlossen.)
 > **Code pointer:** ARCHITECTURE.map concept `embeddings-tab`,

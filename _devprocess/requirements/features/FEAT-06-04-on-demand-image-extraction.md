@@ -4,7 +4,7 @@
 > **Epic**: EPIC-06 - Files-to-Chat
 > **Priority**: P1-High
 > **Effort Estimate**: M
-> **Backlog row:** `_devprocess/context/10_backlog.md` -> FEAT-06-04
+> **Backlog row:** `_devprocess/context/BACKLOG.md` -> FEAT-06-04
 > (Status: Geplant. Das im Spec genannte Tool `extract_document_images`
 > existiert noch nicht im Code; lediglich ein String-Hinweis in den
 > Parsern erwaehnt es, was zu einer Drift-Quelle wurde. Wird im

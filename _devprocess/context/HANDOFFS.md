@@ -360,7 +360,7 @@ Output erwartet:
 
 **Writebacks ausgefuehrt:** ADR-79, ADR-80, FEAT-03-14, FEAT-03-15 mit Code-Review-Findings-Sections versehen.
 
-**40_metrics.md Drift-Row:** 12 ADRs reviewed, 4 Drift flagged, 4 resolved, 0 open.
+**METRICS.md Drift-Row:** 12 ADRs reviewed, 4 Drift flagged, 4 resolved, 0 open.
 
 **PLAN-002 angelegt:** Phase 0 Spikes (ATTACH+CTE-Performance, FTS5-Bundle-Size, Single-Call-Token-Profil) als Quality-Gate vor Phase-0.5-Implementation. Status `Draft`.
 
@@ -488,7 +488,7 @@ Effort: 1 Wo. Code-Aenderungen primaer in src/core/knowledge/.
 - `_devprocess/requirements/features/FEAT-21-02-chatgpt-codex-api-handler.md`
 - `_devprocess/requirements/features/FEAT-21-03-chatgpt-oauth-settings-ui.md`
 - `_devprocess/requirements/handoff/architect-handoff-021-chatgpt-oauth.md`
-- `_devprocess/context/10_backlog.md` (Eintrag unter "Aktueller Feature-Status" + "Naechste Prioritaeten")
+- `_devprocess/context/BACKLOG.md` (Eintrag unter "Aktueller Feature-Status" + "Naechste Prioritaeten")
 
 **Naechster Schritt:**
 
@@ -543,7 +543,7 @@ Effort: 1 Wo. Code-Aenderungen primaer in src/core/knowledge/.
 - `_devprocess/architecture/ADR-89-chatgpt-pkce-loopback-flow.md` (Status: Proposed)
 - `_devprocess/requirements/handoff/plan-context-021.md`
 - `_devprocess/architecture/arc42.md` (Section 9 ADR-Tabelle erweitert, Section 11 Risiken erweitert)
-- `_devprocess/context/30_handoffs.md` (dieser Eintrag)
+- `_devprocess/context/HANDOFFS.md` (dieser Eintrag)
 
 **Naechster Schritt:**
 

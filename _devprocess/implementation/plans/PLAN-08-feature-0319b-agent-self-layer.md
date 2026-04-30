@@ -268,7 +268,7 @@ available tools.
 
 ### Aufgabe 13 -- Backlog + Memory-Status updates
 
-- _devprocess/context/10_backlog.md: Phase 4.5 als "Implemented" markieren mit Commit-Refs.
+- _devprocess/context/BACKLOG.md: Phase 4.5 als "Implemented" markieren mit Commit-Refs.
 - ~/.claude/.../project_memory_v2_status.md: Phase 4.5-Block ergaenzen.
 
 ## Dateien-Zusammenfassung
