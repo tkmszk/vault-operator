@@ -11,7 +11,7 @@ was uebergeben wurde und was der naechste Schritt ist.
 
 **Artefakte erzeugt:**
 
-- BA: [BA-023-mobile-support.md](../analysis/BA-023-mobile-support.md) (815 Zeilen, Status: Draft)
+- BA: [BA-23-mobile-support.md](../analysis/BA-23-mobile-support.md) (815 Zeilen, Status: Draft)
 - As-Is-Evidenz: inline im Explore-Subagent-Report vom 2026-04-22 (22 HARD + 15 SOFT + 8 DEGRADED Blocker, Pfad:Zeile-genau)
 
 **Scope:** MVP, Companion-Modus statt Full-Parity. Personal-First (P1: Sebastian) mit Community-Hypothese (P2: Obsilo-Community, H-08).
@@ -66,7 +66,7 @@ P2:
 
 ```
 /requirements-engineering
-Input: _devprocess/analysis/BA-023-mobile-support.md
+Input: _devprocess/analysis/BA-23-mobile-support.md
 Ziel: EPIC-023 anlegen, Features FEATURE-2301..FEATURE-23NN breakdown, Success Criteria tech-agnostisch, architect-handoff-023.md
 ```
 
@@ -98,21 +98,21 @@ Ziel: EPIC-023 anlegen, Features FEATURE-2301..FEATURE-23NN breakdown, Success C
 
 ---
 
-## 2026-04-17 -- EPIC-022 Skill-Package Ecosystem: RE -> Architecture -> Coding
+## 2026-04-17 -- EPIC-22 Skill-Package Ecosystem: RE -> Architecture -> Coding
 
 **Phase:** Requirements Engineering + Architecture abgeschlossen. Ready for Coding.
 
 **Artefakte erzeugt:**
 
-- BA: `_devprocess/analysis/BA-021-skill-package-ecosystem.md`
-- Epic: `_devprocess/requirements/epics/EPIC-022-skill-package-ecosystem.md`
+- BA: `_devprocess/analysis/BA-21-skill-package-ecosystem.md`
+- Epic: `_devprocess/requirements/epics/EPIC-22-skill-package-ecosystem.md`
 - Features:
-  - `_devprocess/requirements/features/FEATURE-2201-skill-folder-structure.md` (P0, M)
-  - `_devprocess/requirements/features/FEATURE-2202-skill-zip-import.md` (P0, S)
-  - `_devprocess/requirements/features/FEATURE-2203-skill-scripts.md` (P1, M)
-  - `_devprocess/requirements/features/FEATURE-2204-coordinator-skill.md` (P1, M)
+  - `_devprocess/requirements/features/FEAT-22-01-skill-folder-structure.md` (P0, M)
+  - `_devprocess/requirements/features/FEAT-22-02-skill-zip-import.md` (P0, S)
+  - `_devprocess/requirements/features/FEAT-22-03-skill-scripts.md` (P1, M)
+  - `_devprocess/requirements/features/FEAT-22-04-coordinator-skill.md` (P1, M)
 - Handoff: `_devprocess/requirements/handoff/architect-handoff-022.md`
-- ADR: `_devprocess/architecture/ADR-075-skill-package-architecture.md` (Proposed)
+- ADR: `_devprocess/architecture/ADR-75-skill-package-architecture.md` (Proposed)
 - Plan-Context: `_devprocess/requirements/handoff/plan-context-022.md`
 
 **Scope:**
@@ -139,7 +139,7 @@ Pattern mit `*.skill.md` Sub-Rollen. Backward-Compat zu v2.5.x Single-File-Skill
 ```
 /coding
 Input: _devprocess/requirements/handoff/plan-context-022.md
-Reihenfolge: FEATURE-2201 -> 2202 -> 2203 -> 2204 (2201 ist Fundament fuer alle anderen)
+Reihenfolge: FEAT-22-01 -> 2202 -> 2203 -> 2204 (2201 ist Fundament fuer alle anderen)
 Release-Plan: 2201+2202 = v2.6.0 Minimum. 2203+2204 = v2.6.1/.2 additiv.
 ```
 
@@ -157,36 +157,36 @@ Release-Plan: 2201+2202 = v2.6.0 Minimum. 2203+2204 = v2.6.1/.2 additiv.
 
 - `_devprocess/analysis/BA-UNIFIED-CHAT-MEMORY-V2.md` (Status: Draft) -- UCM-Konsumenten-Kontext
 - `_devprocess/requirements/OBSILO-MEMORY-V2-FULL-REWRITE.md` (Status: Source-Reference) -- urspruengliche Implementation-Skizze
-- `_devprocess/implementation/plans/PLAN-001-memory-v2-master.md` (Status: Draft) -- validierter Master-Plan mit 8 Phasen, 11.5 Wochen
-- `_devprocess/architecture/ADR-076-episode-fact-boundary.md` (Proposed)
-- `_devprocess/architecture/ADR-077-memory-v2-storage-schema.md` (Proposed)
-- `_devprocess/architecture/ADR-078-uri-versioning-schema.md` (Proposed)
-- `_devprocess/architecture/ADR-079-knowledge-db-hardening.md` (Proposed)
+- `_devprocess/implementation/plans/PLAN-01-memory-v2-master.md` (Status: Draft) -- validierter Master-Plan mit 8 Phasen, 11.5 Wochen
+- `_devprocess/architecture/ADR-76-episode-fact-boundary.md` (Proposed)
+- `_devprocess/architecture/ADR-77-memory-v2-storage-schema.md` (Proposed)
+- `_devprocess/architecture/ADR-78-uri-versioning-schema.md` (Proposed)
+- `_devprocess/architecture/ADR-79-knowledge-db-hardening.md` (Proposed)
 
-**Triage:** Capability-Set unter EPIC-003 (context-memory-scaling). 8 Phasen werden 8 FEATUREs (FEATURE-0314 bis FEATURE-0321). Mehrere ADRs (4 vorbereitet, weitere nach Bedarf).
+**Triage:** Capability-Set unter EPIC-03 (context-memory-scaling). 8 Phasen werden 8 FEATUREs (FEAT-03-14 bis FEAT-03-21). Mehrere ADRs (4 vorbereitet, weitere nach Bedarf).
 
 **Vorhandene Bezugs-Artefakte:**
 
-- EPIC-003-context-memory-scaling (Parent)
-- FEATURE-0304-memory-personalization (vorhanden, wird durch Memory v2 superseded)
-- FEATURE-1411-memory-transparency (vorhanden, integriert in Memory v2 UI)
-- FEATURE-0306-context-condensing (vorhanden, bleibt orthogonal)
-- FEATURE-1802-context-externalization (vorhanden, bleibt orthogonal)
-- ADR-013, ADR-018, ADR-058, ADR-059, ADR-060 (Memory-bezogen, werden im Verlauf supersediert oder supplementiert)
+- EPIC-03-context-memory-scaling (Parent)
+- FEAT-03-04-memory-personalization (vorhanden, wird durch Memory v2 superseded)
+- FEAT-14-11-memory-transparency (vorhanden, integriert in Memory v2 UI)
+- FEAT-03-06-context-condensing (vorhanden, bleibt orthogonal)
+- FEAT-18-02-context-externalization (vorhanden, bleibt orthogonal)
+- ADR-13, ADR-18, ADR-58, ADR-59, ADR-60 (Memory-bezogen, werden im Verlauf supersediert oder supplementiert)
 
-**Codebase-Analyse durchgefuehrt:** Tiefenanalyse Memory-Subsystem + Best-Practice-Recherche 2026 (Mem0, A-MEM, Letta, Zep, Anthropic Prompt Caching, sql.js+FTS5+sqlite-vec). 15 kritische Diskrepanzen zwischen Source-Spec und Codebase identifiziert, in PLAN-001 dokumentiert und addressed.
+**Codebase-Analyse durchgefuehrt:** Tiefenanalyse Memory-Subsystem + Best-Practice-Recherche 2026 (Mem0, A-MEM, Letta, Zep, Anthropic Prompt Caching, sql.js+FTS5+sqlite-vec). 15 kritische Diskrepanzen zwischen Source-Spec und Codebase identifiziert, in PLAN-01 dokumentiert und addressed.
 
 **RE-Auftrag:**
 
-1. 8 FEATUREs unter EPIC-003 anlegen (FEATURE-0314 bis FEATURE-0321), pro Feature 1 Phase aus PLAN-001
-2. Akzeptanzkriterien aus PLAN-001-Phasen-Tabelle ableiten, plus die 15 Diskrepanzen aus PLAN-001 als FEATURE-spezifische Kriterien zuordnen
-3. ASRs/NFRs aus PLAN-001 "Eval & Quality Gates" und "Risks R10-R15"
-4. architect-handoff.md schreiben: Engine-API-Design ist der zentrale Architektur-Vertrag (UCM-Konsument), ATTACH-DATABASE-Pattern + URI-Schema (ADR-078) sind Cross-Cutting
+1. 8 FEATUREs unter EPIC-03 anlegen (FEAT-03-14 bis FEAT-03-21), pro Feature 1 Phase aus PLAN-01
+2. Akzeptanzkriterien aus PLAN-01-Phasen-Tabelle ableiten, plus die 15 Diskrepanzen aus PLAN-01 als FEATURE-spezifische Kriterien zuordnen
+3. ASRs/NFRs aus PLAN-01 "Eval & Quality Gates" und "Risks R10-R15"
+4. architect-handoff.md schreiben: Engine-API-Design ist der zentrale Architektur-Vertrag (UCM-Konsument), ATTACH-DATABASE-Pattern + URI-Schema (ADR-78) sind Cross-Cutting
 5. Bestehende Memory-FEATUREs (0304, 1411) aktualisieren: Status auf "Subsumed by Memory v2" markieren, Cross-Reference auf neue FEATUREs
 
 **Offene Entscheidungen, die RE klaeren oder als ASR formulieren sollte:**
 
-- Custom-sql.js-WASM-Build vs Trigram-Fallback: nach Phase-0-Spike entscheidbar, FEATURE-0315 sollte Akzeptanzkriterium pro Variante haben
+- Custom-sql.js-WASM-Build vs Trigram-Fallback: nach Phase-0-Spike entscheidbar, FEAT-03-15 sollte Akzeptanzkriterium pro Variante haben
 - Embedding-Modell-Default fuer Migration: derzeit konfigurierbar, Memory v2 braucht Default-Strategy
 - Custom-WASM-Bundle-Size-Limit: Plugin Review-Bot Kontext
 
@@ -194,36 +194,36 @@ Release-Plan: 2201+2202 = v2.6.0 Minimum. 2203+2204 = v2.6.1/.2 additiv.
 
 ```
 /requirements-engineering
-Input: _devprocess/implementation/plans/PLAN-001-memory-v2-master.md (primaer)
+Input: _devprocess/implementation/plans/PLAN-01-memory-v2-master.md (primaer)
        + alle 4 ADRs + BA-UNIFIED-CHAT-MEMORY-V2 + OBSILO-MEMORY-V2-FULL-REWRITE
-Output: 8 FEATURE-0314 bis FEATURE-0321 + architect-handoff.md
+Output: 8 FEAT-03-14 bis FEAT-03-21 + architect-handoff.md
 ```
 
 ---
 
 ## re-to-architecture 2026-04-26: Memory v2 + UCM Foundation
 
-**Initiative:** Memory v2 Full Rewrite (Pfad alpha) -- 8 FEATUREs FEATURE-0314 bis FEATURE-0321 unter EPIC-003 angelegt.
+**Initiative:** Memory v2 Full Rewrite (Pfad alpha) -- 8 FEATUREs FEAT-03-14 bis FEAT-03-21 unter EPIC-03 angelegt.
 
 **Output (Requirements Engineering):**
 
-- **8 Feature-Specs:** FEATURE-0314 (Knowledge-DB-Haertung), FEATURE-0315 (Engine-Foundation), FEATURE-0316 (Migration + Vault-RRF), FEATURE-0317 (Dynamic Context Composition), FEATURE-0318 (Single-Call Update Pipeline), FEATURE-0319 (Living Document UX), FEATURE-0320 (History Search), FEATURE-0321 (Engine-Extract)
+- **8 Feature-Specs:** FEAT-03-14 (Knowledge-DB-Haertung), FEAT-03-15 (Engine-Foundation), FEAT-03-16 (Migration + Vault-RRF), FEAT-03-17 (Dynamic Context Composition), FEAT-03-18 (Single-Call Update Pipeline), FEAT-03-19 (Living Document UX), FEAT-03-20 (History Search), FEAT-03-21 (Engine-Extract)
 - **Architect-Handoff:** `_devprocess/requirements/handoff/architect-handoff-memory-v2.md` mit 16 ASRs (10 Critical, 6 Moderate), 19 NFR-Targets, 15 Constraints, 15 Open Questions
-- **EPIC-003 aktualisiert** (Memory v2 Initiative-Sektion ergaenzt, Status: Active)
-- **FEATURE-0304-memory-personalization** Status auf "Subsumed by Memory v2"
-- **FEATURE-1411-memory-transparency** Cross-Reference auf FEATURE-0319
+- **EPIC-03 aktualisiert** (Memory v2 Initiative-Sektion ergaenzt, Status: Active)
+- **FEAT-03-04-memory-personalization** Status auf "Subsumed by Memory v2"
+- **FEAT-14-11-memory-transparency** Cross-Reference auf FEAT-03-19
 
 **ASR-Hoehepunkte (Critical):**
 
-- ASR-001: Multi-File-Atomic-Commit fuer 2 DBs (FEATURE-0314, ADR-079)
-- ASR-002: URI-Konvention vor Memory v2 (FEATURE-0314, ADR-078)
-- ASR-003: Constructor-Injection in Stores (FEATURE-0315)
-- ASR-004: ADR-062 KV-Cache-Layout vor Phase 3 (FEATURE-0315)
-- ASR-006: ATTACH DATABASE Pattern in einzelner sql.js-Instanz (FEATURE-0317)
-- ASR-007: Topic-Inference ohne LLM-Call beim Conversation-Start (FEATURE-0317)
-- ASR-009: Single-Call-Extraction via Tool-Calling-Schema (FEATURE-0318)
-- ASR-014: Engine-Public-API-Surface klein und stabil (FEATURE-0321)
-- ASR-015: Adapter-Interface fuer Knowledge-DB ohne Vault-Spezifika (FEATURE-0321)
+- ASR-001: Multi-File-Atomic-Commit fuer 2 DBs (FEAT-03-14, ADR-79)
+- ASR-002: URI-Konvention vor Memory v2 (FEAT-03-14, ADR-78)
+- ASR-003: Constructor-Injection in Stores (FEAT-03-15)
+- ASR-004: ADR-62 KV-Cache-Layout vor Phase 3 (FEAT-03-15)
+- ASR-006: ATTACH DATABASE Pattern in einzelner sql.js-Instanz (FEAT-03-17)
+- ASR-007: Topic-Inference ohne LLM-Call beim Conversation-Start (FEAT-03-17)
+- ASR-009: Single-Call-Extraction via Tool-Calling-Schema (FEAT-03-18)
+- ASR-014: Engine-Public-API-Surface klein und stabil (FEAT-03-21)
+- ASR-015: Adapter-Interface fuer Knowledge-DB ohne Vault-Spezifika (FEAT-03-21)
 - ASR-016: 3 Phase-0-Spikes als Pflicht-Vorbedingung (cross-cutting)
 
 **NFR-Hoehepunkte:**
@@ -249,8 +249,8 @@ Output: 8 FEATURE-0314 bis FEATURE-0321 + architect-handoff.md
 ```
 /architecture
 Input: _devprocess/requirements/handoff/architect-handoff-memory-v2.md
-       + 4 Proposed ADRs (ADR-076, 077, 078, 079)
-       + PLAN-001-memory-v2-master.md
+       + 4 Proposed ADRs (ADR-76, 077, 078, 079)
+       + PLAN-01-memory-v2-master.md
        + BA-UNIFIED-CHAT-MEMORY-V2.md
 Output: ADRs Accepted, plan-context.md, arc42-Memory-Sektion-Update,
         plus 3 Phase-0-Spike-Definitionen als Pflicht-Vorbedingung
@@ -267,15 +267,15 @@ Output: ADRs Accepted, plan-context.md, arc42-Memory-Sektion-Update,
 **Output (Architecture):**
 
 - **8 neue ADRs** (Proposed, alle bedingt akzeptiert nach Phase-0-Spike-Ergebnissen):
-  - ADR-080 Persistenz-Service-Pattern (3 Setup-Klassen A/B/C)
-  - ADR-081 MCP-Tool-Routing + Plugin-Standalone-RPC (Bearer-Token + HTTPS)
-  - ADR-082 Topic-Inference-Strategie (lokale Centroids, Soft-Topic-Lock)
-  - ADR-083 Single-Call Tool-Calling Output-Schema
-  - ADR-084 Engine-Public-API-Versionierung (semver + Schema-Version)
-  - ADR-085 Soft-Delete-Cascade auf vier Granularitaets-Ebenen
-  - ADR-086 Inference-Pass-Architektur fuer Derives
-  - ADR-087 Vault-Note-Memory-Source-Pipeline
-- **4 bestehende ADRs** weiterhin Proposed (ADR-076 Episode-Fact-Boundary, ADR-077 Storage-Schema, ADR-078 URI-Versioning, ADR-079 Knowledge-DB-Haertung)
+  - ADR-80 Persistenz-Service-Pattern (3 Setup-Klassen A/B/C)
+  - ADR-81 MCP-Tool-Routing + Plugin-Standalone-RPC (Bearer-Token + HTTPS)
+  - ADR-82 Topic-Inference-Strategie (lokale Centroids, Soft-Topic-Lock)
+  - ADR-83 Single-Call Tool-Calling Output-Schema
+  - ADR-84 Engine-Public-API-Versionierung (semver + Schema-Version)
+  - ADR-85 Soft-Delete-Cascade auf vier Granularitaets-Ebenen
+  - ADR-86 Inference-Pass-Architektur fuer Derives
+  - ADR-87 Vault-Note-Memory-Source-Pipeline
+- **4 bestehende ADRs** weiterhin Proposed (ADR-76 Episode-Fact-Boundary, ADR-77 Storage-Schema, ADR-78 URI-Versioning, ADR-79 Knowledge-DB-Haertung)
 - **arc42-Update** Section 5.9.1 "Memory v2 Architecture" ergaenzt
 - **plan-context-memory-v2.md** in `_devprocess/requirements/handoff/` mit Tech-Stack, Quality-Goals, ADR-Summary, Data-Model, Performance/Security-Targets, Implementation-Reihenfolge, /coding-Aufgaben
 
@@ -286,7 +286,7 @@ Output: ADRs Accepted, plan-context.md, arc42-Memory-Sektion-Update,
 - Custom-WASM-Build mit FTS5+JSON1 wenn Phase-0-Spike Bundle-Size traegt, sonst JS-Trigram-Fallback
 - Embeddings: konfigurierbar (Sebastians Setup nutzt qwen3-embedding-8b multilingual)
 - LLM: konfigurierbar (Sebastian nutzt Claude Haiku 4.5), Tool-Calling-Pflicht
-- Cloudflare-Relay (existierend, FEATURE-1404) bleibt fuer externe MCP-Clients
+- Cloudflare-Relay (existierend, FEAT-14-04) bleibt fuer externe MCP-Clients
 - Bearer-Token + HTTPS fuer Plugin-Standalone-RPC (Klasse C)
 
 **Rejected Alternatives (sollen nicht ohne neue Begruendung von /coding wieder geoeffnet werden):**
@@ -323,7 +323,7 @@ Output: ADRs Accepted, plan-context.md, arc42-Memory-Sektion-Update,
 
 - plan-context-memory-v2.md Tech-Stack matcht alle 12 ADRs (076-087): bestaetigt
 - arc42 Section 5.9.1 referenziert alle relevanten ADRs: bestaetigt
-- 12 FEATUREs (FEATURE-0314 bis FEATURE-0325) sind im plan-context Implementation-Reihenfolge-Tabelle vollstaendig: bestaetigt
+- 12 FEATUREs (FEAT-03-14 bis FEAT-03-25) sind im plan-context Implementation-Reihenfolge-Tabelle vollstaendig: bestaetigt
 - Quality-Goals (Hosting-Neutralitaet, Token-Effizienz, Privacy, Performance, Korrektheit) decken die 22 Critical ASRs: bestaetigt
 
 **Naechster Schritt:**
@@ -331,10 +331,10 @@ Output: ADRs Accepted, plan-context.md, arc42-Memory-Sektion-Update,
 ```
 /coding
 Input: _devprocess/requirements/handoff/plan-context-memory-v2.md
-       + 12 ADRs (ADR-076 bis ADR-087, alle Proposed)
-       + 12 FEATUREs (FEATURE-0314 bis FEATURE-0325)
+       + 12 ADRs (ADR-76 bis ADR-87, alle Proposed)
+       + 12 FEATUREs (FEAT-03-14 bis FEAT-03-25)
        + arc42 Section 5.9.1
-       + PLAN-001 Master-Plan
+       + PLAN-01 Master-Plan
        + BA-UNIFIED-CHAT-MEMORY-V2 (UCM-Konsumenten-Vertrag)
 
 Output erwartet:
@@ -353,12 +353,12 @@ Output erwartet:
 
 **Critical-Review-Findings (Drift gegen ADRs):**
 
-1. **ADR-079 Knowledge-DB-Haertung:** Single-File-Atomic-Write existiert bereits (KnowledgeDB.ts:485-518, FIX-12 Marker). ADR auf reduzierten Scope angepasst: Multi-File-Coordination + Vault-Mode-Haertung + Migration-Journal + Daily-Snapshot bleiben offen, Single-File ist gefixt.
-2. **ADR-080 Persistenz-Service-Pattern:** Bestehende `storageLocation`-Werte in KnowledgeDB.ts:151 (global/local/obsidian-sync) gemappt zu neuen Setup-Klassen K-A/K-B (K-C ist neu). Settings-Migration in FEATURE-0323 muss diese Werte transformieren.
-3. **FEATURE-0314 Effort:** 1.5 Wo -> 1 Wo reduziert (bestehende Atomic-Write-Logic wird erweitert, nicht neu gebaut).
-4. **FEATURE-0315 Implementation-Strategie:** MemoryDB ist heute Wrapper um KnowledgeDB. Schema-Erweiterung additiv, KnowledgeDB-Klasse selbst nicht refactoren. history.db nutzt denselben Wrapper-Pattern.
+1. **ADR-79 Knowledge-DB-Haertung:** Single-File-Atomic-Write existiert bereits (KnowledgeDB.ts:485-518, FIX-12 Marker). ADR auf reduzierten Scope angepasst: Multi-File-Coordination + Vault-Mode-Haertung + Migration-Journal + Daily-Snapshot bleiben offen, Single-File ist gefixt.
+2. **ADR-80 Persistenz-Service-Pattern:** Bestehende `storageLocation`-Werte in KnowledgeDB.ts:151 (global/local/obsidian-sync) gemappt zu neuen Setup-Klassen K-A/K-B (K-C ist neu). Settings-Migration in FEAT-03-23 muss diese Werte transformieren.
+3. **FEAT-03-14 Effort:** 1.5 Wo -> 1 Wo reduziert (bestehende Atomic-Write-Logic wird erweitert, nicht neu gebaut).
+4. **FEAT-03-15 Implementation-Strategie:** MemoryDB ist heute Wrapper um KnowledgeDB. Schema-Erweiterung additiv, KnowledgeDB-Klasse selbst nicht refactoren. history.db nutzt denselben Wrapper-Pattern.
 
-**Writebacks ausgefuehrt:** ADR-079, ADR-080, FEATURE-0314, FEATURE-0315 mit Code-Review-Findings-Sections versehen.
+**Writebacks ausgefuehrt:** ADR-79, ADR-80, FEAT-03-14, FEAT-03-15 mit Code-Review-Findings-Sections versehen.
 
 **40_metrics.md Drift-Row:** 12 ADRs reviewed, 4 Drift flagged, 4 resolved, 0 open.
 
@@ -368,7 +368,7 @@ Output erwartet:
 
 - Spikes nicht ausgefuehrt (User-Entscheidung erforderlich)
 - ADRs nicht zu Accepted promoted (haengen an Spike-Ergebnissen ab)
-- Phase-0.5-Implementation noch nicht gestartet (FEATURE-0314)
+- Phase-0.5-Implementation noch nicht gestartet (FEAT-03-14)
 - Plan Coverage Gate auf PLAN-002 noch nicht final gerunnt (kein Feature-Spec referenziert, ADR-Coverage in Tabelle)
 
 **Naechste Schritte (User waehlt):**
@@ -393,22 +393,22 @@ Output erwartet:
 **Spike-Ergebnisse:**
 
 - **SPIKE-001 ATTACH+CTE-Performance:** GREEN durch JS-Layer-BFS-Fallback. Cross-DB-JOIN p95 = 1.2ms (167x unter 200ms-Target), 2-Hop-Walk p95 = 0.3ms (1666x unter 500ms-Target). ATTACH-Pfad verworfen (sql.js FS nicht im Public-API), JS-BFS reicht. Test mit Sebastians realer 207MB knowledge.db.
-- **SPIKE-002 FTS5+JSON1-Bundle-Size:** Provisional Green via Approximation (~250KB Aufschlag, ~0.7% auf Plugin-Bundle). Echter Custom-WASM-Build deferred zu Phase 0.5 (FEATURE-0314 Sub-Task).
-- **SPIKE-003 Single-Call-Token-Profil:** Provisional Green via Approximation aus Mem0-Benchmark + Claude-Haiku-Pricing (~2500 Tokens Median, ~$0.50-3/Monat fuer Sebastian). Echter Test deferred zu Phase 4 (FEATURE-0318).
+- **SPIKE-002 FTS5+JSON1-Bundle-Size:** Provisional Green via Approximation (~250KB Aufschlag, ~0.7% auf Plugin-Bundle). Echter Custom-WASM-Build deferred zu Phase 0.5 (FEAT-03-14 Sub-Task).
+- **SPIKE-003 Single-Call-Token-Profil:** Provisional Green via Approximation aus Mem0-Benchmark + Claude-Haiku-Pricing (~2500 Tokens Median, ~$0.50-3/Monat fuer Sebastian). Echter Test deferred zu Phase 4 (FEAT-03-18).
 
-**ADR-Promotion:** ADR-076 bis ADR-087 alle auf `Accepted`, ADR-080 als `Accepted (modified by Spike-1 + Code-Review)`.
+**ADR-Promotion:** ADR-76 bis ADR-87 alle auf `Accepted`, ADR-80 als `Accepted (modified by Spike-1 + Code-Review)`.
 
 **Implementation-Aufwand reduziert:**
 
-- ADR-080 Spike-1-Outcome: ~500-1000 LOC ATTACH-DATABASE-Code entfaellt
-- ADR-079 Code-Review: Single-File-Atomic-Write existiert bereits (FIX-12 in KnowledgeDB.ts), FEATURE-0314 reduziert von 1.5 auf 1 Wo
+- ADR-80 Spike-1-Outcome: ~500-1000 LOC ATTACH-DATABASE-Code entfaellt
+- ADR-79 Code-Review: Single-File-Atomic-Write existiert bereits (FIX-12 in KnowledgeDB.ts), FEAT-03-14 reduziert von 1.5 auf 1 Wo
 
 **Zwischen-Stand-Effort-Schaetzung:**
 
 - Phase 0: 1.5 Wo nominell (heute komplett, brutto ~4 Stunden Real-Aufwand wegen Approximations-Strategie + Spike-1-Echt-Test)
-- Phase 0.5 (FEATURE-0314): 1 Wo (war 1.5)
+- Phase 0.5 (FEAT-03-14): 1 Wo (war 1.5)
 - Phase 1-7: 11 Wo nominell
-- Querschnitt FEATURE-0322/0323/0324/0325: 4.5 Wo
+- Querschnitt FEAT-03-22/0323/0324/0325: 4.5 Wo
 - Total reduziert: ~16 Wo brutto (war 17)
 
 **Spike-Artefakte:**
@@ -425,8 +425,8 @@ Output erwartet:
 **Naechster Schritt:**
 
 ```
-Phase 0.5 -- FEATURE-0314 Knowledge-DB-Haertung
-PLAN-003 anlegen (FEATURE-0314 implementation plan):
+Phase 0.5 -- FEAT-03-14 Knowledge-DB-Haertung
+PLAN-003 anlegen (FEAT-03-14 implementation plan):
 - Multi-File-Atomic-Commit-Helper bauen (3 DB-Files koordiniert)
 - Vault-Mode-Haertung (writeDBVaultWithBackup -> atomic-equivalent)
 - Single-Writer-Lock per PID (Klasse B)
@@ -443,7 +443,7 @@ Effort: 1 Wo. Code-Aenderungen primaer in src/core/knowledge/.
 
 ---
 
-## requirements-phase 2026-04-28: EPIC-021 ChatGPT OAuth Provider
+## requirements-phase 2026-04-28: EPIC-21 ChatGPT OAuth Provider
 
 **Phase:** /requirements-engineering komplett. Naechster Schritt /architecture.
 
@@ -483,10 +483,10 @@ Effort: 1 Wo. Code-Aenderungen primaer in src/core/knowledge/.
 
 **Artefakte:**
 
-- `_devprocess/requirements/epics/EPIC-021-chatgpt-oauth-provider.md`
-- `_devprocess/requirements/features/FEATURE-2101-chatgpt-oauth-lifecycle.md`
-- `_devprocess/requirements/features/FEATURE-2102-chatgpt-codex-api-handler.md`
-- `_devprocess/requirements/features/FEATURE-2103-chatgpt-oauth-settings-ui.md`
+- `_devprocess/requirements/epics/EPIC-21-chatgpt-oauth-provider.md`
+- `_devprocess/requirements/features/FEAT-21-01-chatgpt-oauth-lifecycle.md`
+- `_devprocess/requirements/features/FEAT-21-02-chatgpt-codex-api-handler.md`
+- `_devprocess/requirements/features/FEAT-21-03-chatgpt-oauth-settings-ui.md`
 - `_devprocess/requirements/handoff/architect-handoff-021-chatgpt-oauth.md`
 - `_devprocess/context/10_backlog.md` (Eintrag unter "Aktueller Feature-Status" + "Naechste Prioritaeten")
 
@@ -496,15 +496,15 @@ Effort: 1 Wo. Code-Aenderungen primaer in src/core/knowledge/.
 
 ---
 
-## architecture-phase 2026-04-28: EPIC-021 ChatGPT OAuth Provider
+## architecture-phase 2026-04-28: EPIC-21 ChatGPT OAuth Provider
 
 **Phase:** /architecture komplett. Naechster Schritt /coding.
 
 **Tech-Stack-Begruendung:**
 
-- **Eigener Provider plus Singleton-Service:** Auth-Lifecycle und API-Call sind getrennte Verantwortungen, gleiches Pattern wie Copilot (ADR-037). Provider in `src/api/providers/chatgpt-oauth.ts`, Service in `src/core/auth/ChatGptOAuthService.ts`, Mapper in `src/api/providers/chatgpt-codex-mapper.ts`.
+- **Eigener Provider plus Singleton-Service:** Auth-Lifecycle und API-Call sind getrennte Verantwortungen, gleiches Pattern wie Copilot (ADR-37). Provider in `src/api/providers/chatgpt-oauth.ts`, Service in `src/core/auth/ChatGptOAuthService.ts`, Mapper in `src/api/providers/chatgpt-codex-mapper.ts`.
 - **Node-https-Streaming:** Bewaehrtes Pattern aus `src/api/providers/openai.ts:75`. `requestUrl` faellt aus, weil kein `ReadableStream`. Echtes SSE-Streaming statt Buffer-Polling, TTFT unter zwei Sekunden erreichbar.
-- **Renderer-Loopback-Server (Option 1 in ADR-089):** Optionen Main-Prozess-IPC (kein Plugin-API-Hook), Custom-URL-Scheme (Codex-Client-ID akzeptiert nur HTTP-Redirects) und Device-Code-Flow (von Codex-Client-ID nicht unterstuetzt) fielen aus. Renderer mit `require('http')` plus eslint-disable-Begruendung war nicht Wunschloesung, sondern die einzig umsetzbare.
+- **Renderer-Loopback-Server (Option 1 in ADR-89):** Optionen Main-Prozess-IPC (kein Plugin-API-Hook), Custom-URL-Scheme (Codex-Client-ID akzeptiert nur HTTP-Redirects) und Device-Code-Flow (von Codex-Client-ID nicht unterstuetzt) fielen aus. Renderer mit `require('http')` plus eslint-disable-Begruendung war nicht Wunschloesung, sondern die einzig umsetzbare.
 - **Type-Guards statt zod:** Zod ist heute nicht im Bundle, plus 50 KB Aufschlag fuer drei bis vier Schema-Strukturen nicht gerechtfertigt.
 - **JWT-Mini-Decoder statt jose:** Kein Signatur-Check noetig (Token kommt direkt vom Token-Endpoint ueber TLS), reines Claim-Lesen rechtfertigt keine Lib.
 - **Hardcode-Modell-Liste:** Codex-Backend hat keinen oeffentlichen `/models`-Endpoint (Stand 2026-04-28). Hardcode mit dokumentiertem Update-Pfad. Probe-Request optional als Folge-Feature.
@@ -512,7 +512,7 @@ Effort: 1 Wo. Code-Aenderungen primaer in src/core/knowledge/.
 
 **Verworfene Alternativen:**
 
-- `OpenAiProvider` erweitern: vermischt zwei API-Schemata, Endpoint-Drift im Codex-Backend wuerde BYOK-Pfad beruehren. Verworfen zugunsten ADR-088 Option 2.
+- `OpenAiProvider` erweitern: vermischt zwei API-Schemata, Endpoint-Drift im Codex-Backend wuerde BYOK-Pfad beruehren. Verworfen zugunsten ADR-88 Option 2.
 - Main-Prozess-IPC fuer Loopback: kein offizieller Obsidian-Plugin-API-Hook, `process.electron.remote` deprecated. Faktisch nicht umsetzbar.
 - Custom-URL-Scheme `obsidian://`: `auth.openai.com` akzeptiert in der Codex-Client-ID nur HTTP/HTTPS-Redirect-URIs.
 - Device-Code-Flow analog Copilot: fuer die Codex-Client-ID nicht freigeschaltet.
@@ -535,12 +535,12 @@ Effort: 1 Wo. Code-Aenderungen primaer in src/core/knowledge/.
 - **Probe-Request-Endpoint fuer Modelle**: existiert evtl. `/backend-api/codex/models`. Erst nach Hardcode-Liste klaeren.
 - **Mehrere Redirect-URIs in Codex-Client-ID-Konfig**: ob `auth.openai.com` Port-Range akzeptiert, ist nicht oeffentlich dokumentiert. Bei `/coding` testen.
 
-**Consistency Check:** plan-context-021.md ist mit ADR-088 und ADR-089 konsistent. Tabelle in plan-context-021.md "Consistency Check" zeigt 9 Decision-Punkte alle mit Status OK.
+**Consistency Check:** plan-context-021.md ist mit ADR-88 und ADR-89 konsistent. Tabelle in plan-context-021.md "Consistency Check" zeigt 9 Decision-Punkte alle mit Status OK.
 
 **Artefakte:**
 
-- `_devprocess/architecture/ADR-088-chatgpt-oauth-provider-architecture.md` (Status: Proposed)
-- `_devprocess/architecture/ADR-089-chatgpt-pkce-loopback-flow.md` (Status: Proposed)
+- `_devprocess/architecture/ADR-88-chatgpt-oauth-provider-architecture.md` (Status: Proposed)
+- `_devprocess/architecture/ADR-89-chatgpt-pkce-loopback-flow.md` (Status: Proposed)
 - `_devprocess/requirements/handoff/plan-context-021.md`
 - `_devprocess/architecture/arc42.md` (Section 9 ADR-Tabelle erweitert, Section 11 Risiken erweitert)
 - `_devprocess/context/30_handoffs.md` (dieser Eintrag)
@@ -549,7 +549,7 @@ Effort: 1 Wo. Code-Aenderungen primaer in src/core/knowledge/.
 
 `/coding` mit folgendem Fokus:
 
-1. Critical Review von ADR-088 und ADR-089 gegen den realen Codebase-Stand:
+1. Critical Review von ADR-88 und ADR-89 gegen den realen Codebase-Stand:
    - Ist `src/api/providers/openai.ts:75` Node-`https`-Pattern noch aktuell?
    - Ist die `LLMProvider`-Union an allen exhaustive Switch-Statements gepflegt?
    - Existiert `SafeStorageService.SafeStorageEnvelope` exakt im erwarteten Schema?
@@ -560,7 +560,7 @@ Effort: 1 Wo. Code-Aenderungen primaer in src/core/knowledge/.
 
 ---
 
-## coding-phase 2026-04-28: EPIC-021 ChatGPT OAuth Provider implementiert (awaiting login test)
+## coding-phase 2026-04-28: EPIC-21 ChatGPT OAuth Provider implementiert (awaiting login test)
 
 **Phase:** /coding komplett (Code + Build + Deploy). Manueller Login-Test offen.
 
@@ -578,8 +578,8 @@ Effort: 1 Wo. Code-Aenderungen primaer in src/core/knowledge/.
 
 **Mid-course-Korrekturen, die ADRs angepasst haben (alle vor dem ersten Commit):**
 
-1. **SafeStorage-Schema:** ADR-088 hatte `SafeStorageEnvelope`. Real ist String-Prefix `enc:v1:<base64>`. ADR + plan-context aktualisiert, Status `Accepted (modified by review)`.
-2. **Settings-Schema flach:** ADR-088 hatte `chatgptOAuth: { ... }`. Codebase-Konvention (Copilot, Kilo) ist flach. ADR + plan-context aktualisiert.
+1. **SafeStorage-Schema:** ADR-88 hatte `SafeStorageEnvelope`. Real ist String-Prefix `enc:v1:<base64>`. ADR + plan-context aktualisiert, Status `Accepted (modified by review)`.
+2. **Settings-Schema flach:** ADR-88 hatte `chatgptOAuth: { ... }`. Codebase-Konvention (Copilot, Kilo) ist flach. ADR + plan-context aktualisiert.
 3. **Settings-Encryption zentralisiert:** Service speichert plain in Settings; `decryptSettings`/`encryptSettingsForSave` in `main.ts` erledigen die Verschluesselung. Konsistenz zu Kilo/Copilot.
 
 **Verifikation bisher:**
@@ -615,7 +615,7 @@ Effort: 1 Wo. Code-Aenderungen primaer in src/core/knowledge/.
 
 ---
 
-## coding-phase verified 2026-04-29: EPIC-021 ChatGPT OAuth Provider laeuft
+## coding-phase verified 2026-04-29: EPIC-21 ChatGPT OAuth Provider laeuft
 
 **Status:** User-Bestaetigung "es geht jetzt" 2026-04-29. Login plus Smoke-Test plus Streaming-Antwort funktionieren.
 
@@ -637,7 +637,7 @@ Effort: 1 Wo. Code-Aenderungen primaer in src/core/knowledge/.
 - `src/ui/settings/ModelConfigModal.ts` (`shell.openExternal` statt `window.open`)
 - `src/ui/settings/constants.ts` (Modell-Liste auf `gpt-5.5`/`gpt-5`/Codex-Varianten)
 - `src/types/settings.ts` (Default `chatgptOAuthModel: 'gpt-5.5'`)
-- `_devprocess/implementation/plans/PLAN-009-feature-021-chatgpt-oauth.md` (Status Implemented, Change Log mit fuenf Bug-Eintraegen)
+- `_devprocess/implementation/plans/PLAN-09-feature-021-chatgpt-oauth.md` (Status Implemented, Change Log mit fuenf Bug-Eintraegen)
 
 **Open Items (technisch geklaert):**
 
@@ -674,7 +674,7 @@ V-Model-Checklist: nach /coding kommt /testing plus /security-audit. Beides empf
 - M-1: AGENT_INTERNAL_TOOLS-Filter auch im Handler-Dispatch (nicht nur Listung)
 - M-2: Telemetry promptPreview opt-in via Settings-Flag (Default false)
 
-**Architektur-Folgewelle in selbiger Session abgeschlossen (ADR-091):**
+**Architektur-Folgewelle in selbiger Session abgeschlossen (ADR-91):**
 - C-1 ist jetzt PROPER FIXED. `execute_vault_op` routet durch `ToolExecutionPipeline`; die hand-gepflegte `MCP_DENY_TOOLS`-Liste ist weg. Schema-Validation, IgnoreService, Approval-Flow (fail-closed fuer Writes), Checkpoints, Cache und Operation-Log greifen uniform. Neue Write-Tools erben den Schutz automatisch, kein Maintenance-Aufwand mehr.
 - IgnoreService-Build-Semantik ist aufgeloest. SemanticIndex bekommt `isIgnored`-Predicate in den Optionen; ignorierte Files landen nicht mehr im Embedding-Store. Read-time-Filter bleibt als Defense-in-Depth.
 
