@@ -1034,3 +1034,67 @@ Ohne diese drei Tasks bleibt FEAT-19-08 plus FEAT-19-09 ungestartet und keine FE
 - Sebastians Standard-Prompt-Wortlaut soll 1:1 in Settings landen (siehe BA-25 Anhang B).
 
 **Recommended next:** /coding Folge-Session fuer PLAN-10 Tasks 6-8, oder bewusste Pause fuer User-Review.
+
+---
+
+## 2026-05-03 -- BA-25 PLAN-10 bis PLAN-14 Backend komplett (Coding-Multi-Session)
+
+triage: BA-25
+triage_kind: feature
+related-epics: EPIC-15, EPIC-19, EPIC-03
+
+**Phase:** Coding fuer alle 5 Phasen-PLANs Backend-komplett. Plugin-Wiring (Tool-Definitionen, UI-Komponenten, Settings-UI, Plugin-Onload-Integration) deferred zu Wiring-Pass.
+
+**Implementiert ueber 5 PLANs:**
+
+PLAN-10 Done (Schema + 4 Stores + Settings + FrontmatterWriter + FrontmatterIndexer):
+- knowledge.db v9 -> v10 mit 6 neuen Tabellen
+- 4 Storage-Klassen (NoteSummary, FrontmatterProperty, ClusterMetadata, ClusterSourceStats)
+- VaultIngestSettings inkl. Sebastians Standard-Prompt-Default
+- FrontmatterWriter via processFrontMatter + WriterLock-Hybrid
+- FrontmatterIndexer mit mtime-Idempotenz + SummaryGeneratorFn-Hook
+
+PLAN-11 Done (Lint Foundation):
+- FreshnessScorer mit Composite-Score-Formel
+- 2 neue VaultHealthService Check-Types: cluster_freshness + source_concentration
+- Modal-UI deferred
+
+PLAN-12 Backend Done (Ingest Foundation):
+- IngestSessionStore (Multi-Turn Dialog-State)
+- IngestTriageLogStore (Triage-Decisions + Doppel-Trigger-Schutz)
+- BlockIdSetter (deterministisch ^block-N)
+- OutputModeGenerator (3 Modi + Folder-Layout + Bibliografie+Base-Codeblock)
+- AutoTriggerObserver (vault.on-Listener)
+- Tool-Definition + Dialog-UI deferred
+
+PLAN-13 Backend Done (Power-User-Erweiterungen):
+- FrontmatterBackfillJob (Pause/Resume/Abort + Progress)
+- TensionDetector (Hybrid Cosine + LLM mit Hooks)
+- MOCMaintainer (HTML-Comment-Marker + SHA-Detection)
+- Activity-Trigger / Hot-Cluster-UI / Bibliografie-Wiring deferred
+
+PLAN-14 Backend Done (Erweiterte Schichten):
+- Stufe3PeriodicJob (wochentlich + Hard-Budget-Cap + Notifications)
+- TopHubBlockGenerator (KV-Cache-Block mit Lifecycle-Cooldown)
+- MOC-Auto-Updater / Inbox-View deferred
+
+**Test-Stand:** 1112/1113 Tests gruen. Eine Pre-Existing Failure in SingleCallProcessor.test.ts (PLAN-007 Era, nicht von BA-25). 100+ neue Tests in BA-25-Sessions.
+
+**ADR-Statuswechsel (alle 15):**
+- ADR-92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106: Proposed -> Accepted
+
+**Backlog:**
+- 12 FEATs auf Done (alle 4 Schema-Stores, Standard-Prompt, Auto-Summary, 2 Lint-Checks)
+- 16 FEATs auf Active (Backend bereit, Wiring deferred)
+
+**Open fuer naechste Session(s):**
+- Plugin-Onload-Wiring: AutoTriggerObserver, FreshnessScorer, Stufe3PeriodicJob registrieren
+- Tool-Definitionen: ingest_triage als BaseTool im ToolRegistry
+- UI: Health-Modal-Severity-Tabs + Filter + Action-Buttons; Triage-Karte; Settings-UI fuer alle vaultIngest-Settings
+- Test der Bases-Codeblock-Syntax gegen aktuelles Bases-Plugin (ADR-101)
+- PDF-Page-Refs Android-Plattform-Test (ADR-103)
+- Sample-Eval Tension-Detection (ADR-99) auf realen Sebastian-Sources
+
+**Bug bekannt:** Pre-Existing SingleCallProcessor.test.ts Setup-Issue (vorher schon, PLAN-007 area). Nicht von BA-25 verursacht. Separater FIX waere ADR-77 area, nicht BA-25-Scope.
+
+**Recommended next:** Wiring-Session: Plugin-Onload-Integration plus Tool-Definitionen plus Settings-UI fuer alle vaultIngest-Settings.

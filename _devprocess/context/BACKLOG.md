@@ -127,7 +127,7 @@ Phase: Released | Status: Done
 | FEAT-03-23 | Feature | Memory-UX, Onboarding und Settings-Migration | Done | Released | EPIC-03 | BA |  |  | 2026-04-30 |  |
 | FEAT-03-24 | Feature | Inference-Pass fuer Derives | Planned | Building | EPIC-03 | BA |  |  | 2026-04-30 |  |
 | FEAT-03-25 | Feature | Vault-Note-zu-Fact-Extraction | Done | Released | EPIC-03 | BA |  |  | 2026-04-30 |  |
-| FEAT-03-26 | Feature | Selektiver Top-Hub-Block im KV-Cache | Planned | Building | EPIC-03, BA-25, ADR-97 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P2 |
+| FEAT-03-26 | Feature | Selektiver Top-Hub-Block im KV-Cache | Active | Building | EPIC-03, BA-25, ADR-97 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P2 |
 | FIX-03-06-01 | Fix | Session-Summary .md-Dateien werden nicht geschrieben | Done | Released | FEAT-03-06, EPIC-03 | BUG |  |  | 2026-04-30 | P1 |
 | FIX-03-06-02 | Fix | Memory-Extractor und Context-Prefix-Generator retry-spammen bei permanenten Prov | Done | Released | FEAT-03-06, EPIC-03 | BUG |  |  | 2026-04-30 | P2 |
 | FIX-03-14-01 | Fix | - WriterLock nicht verdrahtet | Done | Released | FEAT-03-14, EPIC-03 | BUG |  |  | 2026-04-30 | P2 |
@@ -390,12 +390,12 @@ Phase: Building | Status: Active
 | FEAT-19-12 | Feature | Pre-Triage-Tool mit 10s-Triage-Karte | Active | Building | EPIC-19, BA-25, ADR-98 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
 | FEAT-19-13 | Feature | Tension-Detection beim Deep-Ingest | Active | Building | EPIC-19, BA-25, ADR-99 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P1 |
 | FEAT-19-14 | Feature | Concentration-Warning UI plus Anti-Echo-Vorschlag | Active | Building | EPIC-19, BA-25, ADR-93, ADR-104 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P1 |
-| FEAT-19-15 | Feature | Inbox-Workflow fuer Batch-Triage | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P2 |
+| FEAT-19-15 | Feature | Inbox-Workflow fuer Batch-Triage | Active | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P2 |
 | FEAT-19-16 | Feature | Stufe-1 Composite-Freshness-Score als VaultHealth-Check | Done | Released | EPIC-19, BA-25, ADR-94 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
 | FEAT-19-17 | Feature | Source-Diversity-Check als Bias-Lint-Kategorie | Done | Released | EPIC-19, BA-25, ADR-93 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
 | FEAT-19-18 | Feature | Health-Modal-Erweiterung mit kontext-spezifischen Action-Buttons | Active | Building | EPIC-19, BA-25, ADR-106 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
 | FEAT-19-19 | Feature | Stufe-2 Activity-Trigger plus Web-Search-Update-Pass | Active | Building | EPIC-19, BA-25, ADR-104, ADR-106 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P1 |
-| FEAT-19-20 | Feature | Stufe-3 Periodischer Job plus Token-Budget-Cap plus Notifications | Planned | Building | EPIC-19, BA-25, ADR-104, ADR-105 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P2 |
+| FEAT-19-20 | Feature | Stufe-3 Periodischer Job plus Token-Budget-Cap plus Notifications | Active | Building | EPIC-19, BA-25, ADR-104, ADR-105 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P2 |
 | FEAT-19-21 | Feature | Hot-Cluster-Konfiguration in Settings | Active | Building | EPIC-19, BA-25, ADR-105 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P1 |
 | FEAT-19-22 | Feature | Aktiver Dialog-Ingest-Modus (Modus A) | Active | Building | EPIC-19, BA-25, ADR-100 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
 | FEAT-19-23 | Feature | Auto-Ingest-Modus (Modus B) | Active | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P1 |
@@ -552,7 +552,7 @@ ADRs and PLANs that span multiple epics.
 | ADR-94 | ADR | Cluster-Halbwertszeit-Modell (statische Defaults) | Accepted | Building | BA-25, FEAT-15-12, FEAT-19-16 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
 | ADR-95 | ADR | Frontmatter-Write Conflict-Detection | Accepted | Building | BA-25, FEAT-19-09, FEAT-19-10 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
 | ADR-96 | ADR | MOC-Marker-Konvention (HTML-Comment-Marker) | Accepted | Building | BA-25, FEAT-19-11, FEAT-19-26 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
-| ADR-97 | ADR | KV-Cache-Block-Lifecycle (Top-Hub) | Proposed | Building | BA-25, FEAT-03-26 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
+| ADR-97 | ADR | KV-Cache-Block-Lifecycle (Top-Hub) | Accepted | Building | BA-25, FEAT-03-26 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
 | ADR-98 | ADR | Pre-Triage-Tool-Architektur (eigenes ingest_triage) | Accepted | Building | BA-25, FEAT-19-12 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
 | ADR-99 | ADR | Tension-Detection-Algorithmus (Hybrid Cosine+LLM) | Accepted | Building | BA-25, FEAT-19-13 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
 | ADR-100 | ADR | Dialog-Ingest-State-Storage (ingest_session-Tabelle) | Accepted | Building | BA-25, FEAT-19-22 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
@@ -560,7 +560,7 @@ ADRs and PLANs that span multiple epics.
 | ADR-102 | ADR | Auto-Trigger-Detection-Mechanik (vault.on-Listener) | Accepted | Building | BA-25, FEAT-19-27 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
 | ADR-103 | ADR | Source-Position-Marker und PDF-Strategie | Accepted | Building | BA-25, FEAT-19-28, FEAT-19-29 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
 | ADR-104 | ADR | Web-Search-Provider-Strategie (BYOK obligatorisch) | Accepted | Building | BA-25, FEAT-19-14, FEAT-19-19, FEAT-19-20 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
-| ADR-105 | ADR | Stufe-3 Job-Runner und Token-Budget-Enforcement | Proposed | Building | BA-25, FEAT-19-20 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
+| ADR-105 | ADR | Stufe-3 Job-Runner und Token-Budget-Enforcement | Accepted | Building | BA-25, FEAT-19-20 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
 | ADR-106 | ADR | Health-Modal-Severity und Activity-Trigger-Cooldown | Accepted | Building | BA-25, FEAT-19-18, FEAT-19-19 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
 | PLAN-01 | Plan | - Memory v2 Master Plan (Pfad alpha) | Active | Building | ADR-76, ADR-77, ADR-78, ADR-79 | ARCH |  |  | 2026-04-30 |  |
 | PLAN-04 | Plan | - Memory v2 Phase 1 Engine Foundation | Active | Building | FEAT-03-15, ADR-76, ADR-77, ADR-80 | ARCH |  |  | 2026-04-30 |  |
