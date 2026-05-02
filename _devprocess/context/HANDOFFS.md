@@ -704,3 +704,75 @@ V-Model-Checklist: nach /coding kommt /testing plus /security-audit. Beides empf
 **Phase 7 (Consistency Check Mode A):** 0 Findings. `_devprocess/context/.git/consistency-check.last-run.json` schreibt leeres `findings`-Array.
 
 **Konsequenz:** Keine Aenderungen am Repo. Branch `dia-migration` enthaelt nur diesen Handoff-Eintrag und kann gemerged oder verworfen werden. Kuenftige `/dia-migration`-Laeufe bleiben dank Idempotenz still, solange das Repo v2-konform bleibt.
+
+---
+
+## 2026-05-02 -- BA-25 Vault-Summary-Pflege: Business Analysis -> Requirements Engineering
+
+triage: BA-25
+triage_kind: feature
+related-epics: EPIC-15, EPIC-19, EPIC-03
+
+**Phase:** Business Analysis (MVP-Scope) abgeschlossen. Ready for RE.
+
+**Artefakte erzeugt:**
+
+- BA: [BA-25-vault-summary-pflege.md](../analysis/BA-25-vault-summary-pflege.md) (Status: Draft)
+- Parent-BA-Referenz: [BA-19-knowledge-maintenance.md](../analysis/BA-19-knowledge-maintenance.md) (Karpathy-Pattern als Leitstern)
+
+**Scope:** MVP, vier Sub-Initiativen die zusammen das Karpathy-Wiki-Pattern auf Obsilo's existierende Knowledge-Layer-Foundation aufsetzen. Kein neuer Epic, Mapping auf existierende EPIC-15, EPIC-19, EPIC-03.
+
+**HMW:**
+> Wie koennen wir die Pflege von Note-Summaries und Frontmatter-Metadaten so automatisieren, dass User keine aktive Zeit mehr darauf verwenden muessen, der Agent aber jederzeit aktuelle Vault-Awareness hat, ohne User-Edits zu zerstoeren oder das Token-Budget zu sprengen?
+
+**Value Proposition:**
+Karpathys "LLMs don't tire of bookkeeping" wird auf Obsilo-Niveau eingeloest, ohne den User-Workflow zu stoeren. Default konservativ (DB-only), Power-User-Mehrwert opt-in (Vault-Frontmatter-Write, KV-Cache-Block).
+
+**Critical Hypotheses (Open, fuer RE und Architektur):**
+
+- H-01: Note-Summary in `note_summaries` verbessert search_vault-Recall um messbare 5-10%.
+- H-02: SQL-Lookup fuer Themen/Konzepte reduziert LLM-Tokens pro neue Note um > 50%.
+- H-03: Setting-gated Frontmatter-Write wird von > 30% der Power-User aktiviert.
+- H-04: Top-Hub-Block reduziert search_vault-Aufrufe pro Conversation um > 20% bei netto positivem Token-Saldo.
+- H-05: MOC-Header-Block-Pflege stoert User-edited Content nicht.
+- H-06: Backfill bewahrt 100% existierender Frontmatter-Properties unveraendert.
+
+**Feature-Kandidaten (P0/P1/P2 fuer RE):**
+
+P0:
+- FEAT-15-09 Note-Summary Storage (note_summaries-Tabelle plus Indexing-Hook)
+- FEAT-15-10 Frontmatter-Property Mirror (frontmatter_properties + SQL-Taxonomie-Lookup)
+- FEAT-19-08 Konfigurierbarer Standard-Prompt (Settings-Feld mit Sebastians Wortlaut als Default)
+- FEAT-19-09 Auto-Summary-Generierung beim Indexing (Setting-gated, Default off)
+
+P1:
+- FEAT-19-10 Frontmatter-Write plus Backfill-Job mit Progress-UI
+
+P2:
+- FEAT-19-11 Aktive MOC-File-Pflege mit Marker-Konvention
+- FEAT-03-26 Selektiver Top-Hub-Block im KV-Cache
+
+**ADR-Bedarf (Indikatoren fuer Architektur-Phase):**
+- note_summaries-Schema-Design (separate Tabelle vs Spalte in vectors)
+- frontmatter_properties-Schema (Erweiterung tags vs eigenstaendige Tabelle)
+- Conflict-Detection bei parallelem User-Edit
+- MOC-Marker-Konvention (HTML-Comment vs Dataview-Block)
+- KV-Cache-Block-Lifecycle (Trigger fuer Regenerierung)
+
+**Bindende User-Entscheidungen (aus Initiative-Prompt, RE muss diese respektieren):**
+- Variante B: setting-gated Frontmatter-Write, Default OFF, Backfill bei Aktivierung, kein Ueberschreiben.
+- Taxonomie SQL-beschleunigt, nicht LLM-only.
+- Sebastians Standard-Prompt-Wortlaut bleibt erhalten als Settings-Default.
+
+**Open Questions fuer RE:**
+- Verteilung der Features auf Backlog-Reihenfolge: alle vier parallel oder strikt sequenziell?
+- Sollen FEAT-15-09 und FEAT-15-10 in einem PLAN gebuendelt werden (gemeinsames Schema-Migration v9 -> v10)?
+- Approval-Modell beim Backfill: pro Note, pro Batch, oder Settings-Level (einmal Ja)?
+- MOC-Pflege-Default: read-only Header-Block oder darf System auch Body anpassen wenn klar markiert?
+
+**Assumptions (fuer RE und Architektur zu pruefen):**
+- 1.500-Notes-Backfill mit Haiku token-oekonomisch tragbar (< 5 USD).
+- Indexing-Latenz darf langsamer werden, solange asynchron.
+- Frontmatter-Edits ueber Obsidian-API kollidieren nicht mit aktiven User-Edits (Conflict-Detection bauen).
+
+**Recommended next:** /requirements-engineering
