@@ -683,3 +683,24 @@ V-Model-Checklist: nach /coding kommt /testing plus /security-audit. Beides empf
 - L-4: 4 moderate npm-Advisories in uuid via exceljs/mermaid -- unsere Code-Pfade nicht betroffen, deferred zur naechsten Dependency-Bump-Welle
 
 **Tests:** 1023 / 1023 gruen nach Fixes, keine Regressions.
+
+---
+
+## 2026-05-02 -- /dia-migration: Repo bereits DIA v2-konform, kein Migrationsbedarf
+
+**Skill:** /dia-migration auf Branch `dia-migration`
+**Werkzeuge:** `tools/migration/detect_state.py` plus `tools/consistency-check.py` aus dem digital-innovation-agents Repo.
+
+**Phase 0 (Detection):**
+- Recommendation: `v2-clean-no-migration-needed`
+- v1-Signale: 0 (kein `context/fixes/`, kein `20_bugs.md`, kein `archive/`, kein `security/`-Subdir, keine 4-stelligen FEATURE-IDs, keine 3-stelligen ADRs)
+- v2-Signale: alle gesetzt (`_devprocess/rules/`, `_devprocess/requirements/fixes/`, `src/ARCHITECTURE.map`, `_devprocess/context/BACKLOG.md`)
+- Counts: 22 Epics (2-digit), 168 Features (FEAT-EE-FF), 91 ADRs (2-digit), 7 Plans (2-digit), 24 Fixes (v2)
+- Status-Drift im Frontmatter: 0
+- Status-Drift im Body: 0
+
+**Phasen 1-6:** uebersprungen, weil Foundation, Status-Cleanup, Naming, analysis-Flatten, Backlog und Skill-Renames bereits im aktuellen Stand sind.
+
+**Phase 7 (Consistency Check Mode A):** 0 Findings. `_devprocess/context/.git/consistency-check.last-run.json` schreibt leeres `findings`-Array.
+
+**Konsequenz:** Keine Aenderungen am Repo. Branch `dia-migration` enthaelt nur diesen Handoff-Eintrag und kann gemerged oder verworfen werden. Kuenftige `/dia-migration`-Laeufe bleiben dank Idempotenz still, solange das Repo v2-konform bleibt.
