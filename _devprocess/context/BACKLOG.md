@@ -6,7 +6,7 @@
 > /architecture, /coding, /testing, /security-audit, /release,
 > /consistency-check.
 
-Last update: 2026-05-03 by /architecture (BA-25 -> 15 neue ADRs + 5 PLAN-Rows fuer 5-Phasen-Implementierung)
+Last update: 2026-05-03 by /coding (PLAN-10 BA-25 Phase 1 Foundation: Schema v10 + 4 Stores + 32 Tests)
 
 ---
 
@@ -317,10 +317,10 @@ Phase: Released | Status: Done
 | FEAT-15-05 | Feature | Knowledge Data Consolidation | Done | Released | EPIC-15 | BA |  |  | 2026-04-30 |  |
 | FEAT-15-06 | Feature | Implicit Connection UI | Done | Released | EPIC-15 | BA |  |  | 2026-04-30 |  |
 | FEAT-15-08 | Feature | Storage Consolidation | Done | Released | EPIC-15 | BA |  |  | 2026-04-30 |  |
-| FEAT-15-09 | Feature | Note-Summary Storage (note_summaries-Tabelle + Indexing-Hook) | Planned | Building | EPIC-15, BA-25, ADR-92 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
-| FEAT-15-10 | Feature | Frontmatter-Property Mirror (frontmatter_properties + SQL-Taxonomie-Lookup) | Planned | Building | EPIC-15, BA-25, ADR-92 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
-| FEAT-15-11 | Feature | Cluster-Source-Stats fuer Source-Diversity-Tracking | Planned | Building | EPIC-15, BA-25, ADR-92, ADR-93 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
-| FEAT-15-12 | Feature | Cluster-Metadata mit Halbwertszeit-Konfiguration | Planned | Building | EPIC-15, BA-25, ADR-92, ADR-94 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-15-09 | Feature | Note-Summary Storage (note_summaries-Tabelle + Indexing-Hook) | Active | Building | EPIC-15, BA-25, ADR-92 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-15-10 | Feature | Frontmatter-Property Mirror (frontmatter_properties + SQL-Taxonomie-Lookup) | Active | Building | EPIC-15, BA-25, ADR-92 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-15-11 | Feature | Cluster-Source-Stats fuer Source-Diversity-Tracking | Active | Building | EPIC-15, BA-25, ADR-92, ADR-93 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-15-12 | Feature | Cluster-Metadata mit Halbwertszeit-Konfiguration | Active | Building | EPIC-15, BA-25, ADR-92, ADR-94 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
 | FIX-15-00-01 | Fix | KnowledgeDB Korruption durch nicht-atomare Writes + Cloud Sync | Open | Building | FEAT-15-00, EPIC-15 | BUG |  |  | 2026-04-30 | P1 |
 | FIX-15-03-01 | Fix | ImplicitConnections "Statement closed" Race Condition | Done | Released | FEAT-15-03, EPIC-15 | BUG |  |  | 2026-04-30 | P2 |
 | FIX-15-04-01 | Fix | Reranker ONNX-Runtime Fehler in Electron | Done | Released | FEAT-15-04, EPIC-15 | BUG |  |  | 2026-04-30 | P2 |
@@ -547,9 +547,9 @@ ADRs and PLANs that span multiple epics.
 | ADR-89 | ADR | ChatGPT PKCE Loopback OAuth Flow | Accepted | Building |  | ARCH |  |  | 2026-04-30 |  |
 | ADR-90 | ADR | Cost-Aware Agent Heuristics | Accepted | Building |  | ARCH |  |  | 2026-04-30 |  |
 | ADR-91 | ADR | MCP Pipeline Routing and IgnoreService at Index Build | Accepted | Building |  | ARCH |  |  | 2026-04-30 |  |
-| ADR-92 | ADR | Schema-Migration knowledge.db v9 -> v10 (4-Tabellen-Bundle) | Proposed | Building | BA-25, FEAT-15-09, FEAT-15-10, FEAT-15-11, FEAT-15-12 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
-| ADR-93 | ADR | Source-Identitaet-Modell (Domain-only MVP) | Proposed | Building | BA-25, FEAT-15-11, FEAT-19-14, FEAT-19-17 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
-| ADR-94 | ADR | Cluster-Halbwertszeit-Modell (statische Defaults) | Proposed | Building | BA-25, FEAT-15-12, FEAT-19-16 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
+| ADR-92 | ADR | Schema-Migration knowledge.db v9 -> v10 (4-Tabellen-Bundle) | Accepted | Building | BA-25, FEAT-15-09, FEAT-15-10, FEAT-15-11, FEAT-15-12 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
+| ADR-93 | ADR | Source-Identitaet-Modell (Domain-only MVP) | Accepted | Building | BA-25, FEAT-15-11, FEAT-19-14, FEAT-19-17 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
+| ADR-94 | ADR | Cluster-Halbwertszeit-Modell (statische Defaults) | Accepted | Building | BA-25, FEAT-15-12, FEAT-19-16 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
 | ADR-95 | ADR | Frontmatter-Write Conflict-Detection | Proposed | Building | BA-25, FEAT-19-09, FEAT-19-10 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
 | ADR-96 | ADR | MOC-Marker-Konvention (HTML-Comment-Marker) | Proposed | Building | BA-25, FEAT-19-11, FEAT-19-26 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
 | ADR-97 | ADR | KV-Cache-Block-Lifecycle (Top-Hub) | Proposed | Building | BA-25, FEAT-03-26 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |

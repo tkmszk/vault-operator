@@ -984,3 +984,53 @@ related-epics: EPIC-15, EPIC-19, EPIC-03
 4. **Verify commands**: Default `npm run build` plus `npm test` plus PLAN-spezifische Smoke-Tests dokumentiert.
 
 **Recommended next:** /coding (mit PLAN-10 als ersten konkreten PLAN-Wurf, weil Foundation alles weitere blockiert)
+
+---
+
+## 2026-05-03 -- BA-25 PLAN-10 Phase 1 Foundation: Coding-Session 1 (partial)
+
+triage: BA-25
+triage_kind: feature
+related-epics: EPIC-15, EPIC-19
+
+**Phase:** Coding (PLAN-10 Tasks 1-5 implementiert, Tasks 6-8 deferred). PLAN-10 bleibt Status=Active.
+
+**Implementiert:**
+
+- Schema-Migration knowledge.db v9 -> v10 (additiv, 6 neue Tabellen plus 4 neue Indexes).
+- 4 Store-Klassen mit kompletter Read/Write-API:
+  - NoteSummaryStore (FEAT-15-09)
+  - FrontmatterPropertyStore (FEAT-15-10)
+  - ClusterMetadataStore (FEAT-15-12, plus HALF_LIFE_DEFAULTS plus detectCategory aus ADR-94)
+  - ClusterSourceStatsStore (FEAT-15-11, plus normalizeDomain plus Concentration/Diversity-Scores aus ADR-93)
+- 32 neue Unit-Tests (6 Migration plus 26 Store), alle gruen.
+- Build erfolgreich, Plugin nach iCloud deployed.
+
+**ADR-Statuswechsel:**
+- ADR-92: Proposed -> Accepted
+- ADR-93: Proposed -> Accepted
+- ADR-94: Proposed -> Accepted
+- ADR-95: Proposed (Implementation in Folge-Session)
+
+**Backlog-Statuswechsel:**
+- FEAT-15-09: Planned -> Active (Storage-API komplett, Indexing-Hook fehlt fuer Done-Promotion)
+- FEAT-15-10: Planned -> Active (analog)
+- FEAT-15-11: Planned -> Active (Storage-API komplett, Hook in PLAN-12 Triage-Tool)
+- FEAT-15-12: Planned -> Active (Storage-API komplett, Lint-Konsumenten in PLAN-11)
+
+**Deferred zu Folge-Session (PLAN-10 Tasks 6-8):**
+- Task 6: Settings-Schema-Erweiterung (FEAT-19-08 Standard-Prompt + Auto-Summary-Toggle + pdfStrategy + AutoTrigger-Property additiv).
+- Task 7: FrontmatterWriter via Vault.process plus WriterLock-Hybrid (ADR-95).
+- Task 8: SemanticIndexService Indexing-Hook (Frontmatter-Read plus optional LLM-Generate plus Mirror-Write).
+
+Ohne diese drei Tasks bleibt FEAT-19-08 plus FEAT-19-09 ungestartet und keine FEAT-15-* erreicht "Done" (weil Indexing-Hook die Schreibseite ist).
+
+**Deviations from plan:** keine. PLAN-10 wie gespect ausgefuehrt mit transparenter Deferral-Markierung.
+
+**Bugs found:** keine.
+
+**Open concerns fuer naechste Session:**
+- ADR-95 Vault.process plus WriterLock-Pattern muss gegen Obsidian-API-Version verifiziert werden (aktueller Plugin nutzt vault.adapter direkt, vault.process ist neuere API).
+- Sebastians Standard-Prompt-Wortlaut soll 1:1 in Settings landen (siehe BA-25 Anhang B).
+
+**Recommended next:** /coding Folge-Session fuer PLAN-10 Tasks 6-8, oder bewusste Pause fuer User-Review.
