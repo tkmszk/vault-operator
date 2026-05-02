@@ -1098,3 +1098,67 @@ PLAN-14 Backend Done (Erweiterte Schichten):
 **Bug bekannt:** Pre-Existing SingleCallProcessor.test.ts Setup-Issue (vorher schon, PLAN-007 area). Nicht von BA-25 verursacht. Separater FIX waere ADR-77 area, nicht BA-25-Scope.
 
 **Recommended next:** Wiring-Session: Plugin-Onload-Integration plus Tool-Definitionen plus Settings-UI fuer alle vaultIngest-Settings.
+
+---
+
+## 2026-05-03 -- BA-25 Wiring-Session (Plugin-Onload + Tool-Registrierung + Settings-UI)
+
+triage: BA-25
+triage_kind: feature
+related-epics: EPIC-15, EPIC-19, EPIC-03
+
+**Phase:** Wiring-Session abgeschlossen. Backend-Bausteine sind jetzt aktiv im Plugin verdrahtet und ueber UI bedienbar.
+
+**Implementiert in dieser Session:**
+
+1. **main.ts onload-Wiring:**
+   - 6 neue Plugin-Properties: NoteSummaryStore, FrontmatterPropertyStore, ClusterMetadataStore, ClusterSourceStatsStore, IngestSessionStore, IngestTriageLogStore
+   - FrontmatterIndexer mit Settings-gated autoSummary
+   - AutoTriggerObserver registriert vault.on('create')+'modify') wenn vaultIngest.autoTrigger.enabled
+   - TopHubBlockGenerator als Read-Only-Helper bereit
+   - onunload-cleanup fuer autoTriggerObserver.stop()
+
+2. **IngestTriageTool als BaseTool:**
+   - src/core/tools/vault/IngestTriageTool.ts
+   - ToolName um 'ingest_triage' erweitert
+   - In ToolRegistry.registerInternalTools() eingehaengt
+   - TOOL_GROUPS-Eintrag 'note-edit' in ToolExecutionPipeline
+   - Pipeline: Cluster-Match aus Ontologie, Source-Diversity-Check, Triage-Decision-Persistierung im IngestTriageLogStore
+   - Markdown-Triage-Karte mit Concentration-Warnung wenn dominante Domain
+
+3. **Settings-UI (VaultTab):**
+   - Neue Section "VAULT-INGEST (BA-25)"
+   - Toggle: Auto-Summary beim Indexing
+   - Toggle: Auto-Summary in Frontmatter schreiben
+   - Standard-Prompt-Editor (PromptModal) mit "Zuruecksetzen"-Button
+   - Sub-Section Auto-Trigger: Enabled-Toggle + Property-Name + Property-Value (Komma-Liste) + Notification-Toggle
+   - PDF-Strategie-Dropdown (page-refs vs markdown-mirror)
+   - Reload-Notice bei Auto-Trigger-Aktivierung
+
+4. **vault_health_check Tool-Output:**
+   - formatFindings() um cluster_freshness, source_concentration, god_nodes erweitert
+   - Cluster-spezifische Description-Snippets fuer BA-25-Findings
+   - Hinweis auf web_search-Tool fuer Stufe-2-Update-Recherche / Anti-Echo-Suche
+
+**Status-Wechsel:**
+- 10 weitere FEATs auf Done (FEAT-15-11, 15-12, 19-12, 19-18, 19-19, 19-22, 19-24, 19-25, 19-27, 19-28)
+
+**Test-Stand:** alle BA-25-Tests gruen (96/96 in dieser Session). Build erfolgreich, Plugin deployed.
+
+**Was nach Wiring noch offen ist (deferred zu spaetere Iteration):**
+- Tatsaechliche Triage-Aktion beim Auto-Trigger: aktuell nur Notice + Log. Soll spaeter ingest_triage Tool-Call ausloesen (braucht Agent-Trigger-Mechanik).
+- Backfill-Job UI mit Progress-Bar (FrontmatterBackfillJob existiert, kein Settings-Button gewired).
+- Stufe-3-Job-Wiring: Stufe3PeriodicJob existiert, setInterval-Wrapper plus PreFilter/WebSearch-Hooks fehlen (LLM-Coupling-Entscheidung offen).
+- Top-Hub-Block-Integration in ContextComposer (FEAT-03-26): Generator vorhanden, ContextComposer-Hook fehlt.
+- Health-Modal-UI Severity-Tabs/Action-Buttons-Erweiterung (Tool-Output bereit, Modal-UI nutzt aktuell formatFindings textuell).
+- Bibliografie-Note-Pipeline (FEAT-19-30) bei Multi-Zettel-Output: OutputModeGenerator fertig, aber ohne Aufruf-Pfad.
+
+**BA-25-Initiative Gesamt-Stand nach Wiring:**
+- BA: Validated
+- 28 FEATs: 22 Done, 6 Active (Wiring-Tail-Items oben)
+- 15 ADRs: alle Accepted
+- 5 PLANs (PLAN-10..14): PLAN-10/11 Done, PLAN-12/13/14 Active mit Backend done plus Wiring-Teil-done
+- ~17.000 Zeilen Source + Tests in 14 neuen Service-Klassen plus 10 wiring-Aenderungen
+- 1112 Tests gruen (1 pre-existing Failure FIX-03-18-01 erfasst)
+
+**Recommended next:** Manuelles Testen im Vault: Auto-Trigger mit "Kategorie: Quelle"-Property ausprobieren, Settings-UI durchklicken, vault_health_check ausfuehren und neue cluster_freshness/source_concentration-Output pruefen.
