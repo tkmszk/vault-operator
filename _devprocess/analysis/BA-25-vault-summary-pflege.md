@@ -436,6 +436,10 @@ Der Vault wird zum kompoundierenden Wissens-Artefakt, ohne dass der User dafuer 
 | Inbox-Workflow fuer batch-Triage (mehrere Artikel) | EPIC-19 | P2 |
 | Source-Folder vs Wissens-Folder Konfiguration | EPIC-19 | P0 |
 | Dialog-getriebener MOC-Page-Update beim Ingest | EPIC-19 | P1 |
+| Konfigurierbarer Auto-Trigger via Frontmatter-Property | EPIC-19 | P0 |
+| Source-Position-Marker (Block-Refs MD, Page-Refs PDF, Anchor URL) | EPIC-19 | P0 |
+| PDF-Strategie (Page-Refs Default vs Markdown-Mirror opt-in) | EPIC-19 | P1 |
+| Bibliographische Summary-Note mit Base-Block fuer Multi-Zettel-Modus | EPIC-19 | P1 |
 
 **Lint-Dimension (integriert in VaultHealthService):**
 
@@ -481,6 +485,10 @@ Der Vault wird zum kompoundierenden Wissens-Artefakt, ohne dass der User dafuer 
 - **H-17:** Output-Modus 2 (Source plus Summary-Note) ist Default-Wahl fuer > 70% der User, Modus 3 (Multi-Zettel) wird primaer von Zettelkasten-Praktikern aktiviert. *(Test: Settings-Telemetrie + Zielgruppen-Befragung.)*
 - **H-18:** Aktiver Dialog-Ingest fuehrt zu hoeherer Note-Qualitaet (User-Bewertung der Sense-Making-Notes ueber Modus B), weil User-Betonung einfliesst. *(Test: Side-by-Side-Vergleich derselben Source in beiden Modi, User-Bewertung blind.)*
 - **H-19:** Multi-Zettel-Modus produziert im Schnitt 3-7 Zettel pro Source, mit > 50% Cross-Links zwischen den Zetteln, ohne LLM-Halluzinations-Verbindungen. *(Test: Manueller Audit der ersten 10 Multi-Zettel-Ingests.)*
+- **H-20:** Auto-Trigger via Frontmatter-Property feuert in > 95% der Faelle korrekt (Note traegt konfigurierte Property -> Triage startet, fehlt sie -> kein Trigger). *(Test: Property-basiertes Test-Set mit 50 Notes.)*
+- **H-21:** Source-Position-Marker als Block-Refs / Page-Refs sind klickbar nutzbar in Obsidian Desktop und Mobile, ohne Navigation-Brueche. *(Test: Klick-Walk durch 10 Sense-Making-Notes auf beiden Plattformen.)*
+- **H-22:** PDF-Strategie Page-Refs als Default reicht fuer > 70% der Sebastians-Quellen aus, Markdown-Mirror nur bei text-lastigen Forschungs-PDFs aktiviert. *(Test: User-Befragung nach 4 Wochen, Anteil aktivierter Mirrors.)*
+- **H-23:** Bibliographische Summary-Note mit Base-Block bleibt durch Vault-Aenderungen automatisch aktuell, User muss sie nie manuell pflegen. *(Test: 10 Source-Notes mit Multi-Zettel-Ingest, Wartung nach 4 Wochen ohne Eingriff.)*
 
 **Lint-Hypothesen:**
 
@@ -608,6 +616,10 @@ Aufgeteilt nach Dimensionen, IDs sind Vorschlaege fuer RE.
 - ADR fuer Output-Modus-Architektur (Note-Generierung pro Modus, Folder-Konfiguration, Frontmatter-Konventionen).
 - ADR fuer Multi-Zettel-Cross-Link-Generierung (LLM-Vorschlag vs Embedding-Aehnlichkeit vs User-only).
 - ADR fuer Source-Folder vs Wissens-Folder Default-Layout.
+- ADR fuer Auto-Trigger-Detection-Mechanik (vault.on-Listener vs Polling vs Hybrid).
+- ADR fuer Block-Reference-Konvention beim Source-Note-Schreiben (System-generated `^block-N` vs LLM-Sprechende-IDs).
+- ADR fuer PDF-Strategie (Default Page-Refs vs Markdown-Mirror, Sync-Modell bei Mirror).
+- ADR fuer Bibliographische-Summary-Note-Schema (Frontmatter-Felder, Base-Codeblock-Standard).
 
 **Lint:**
 - ADR fuer Cluster-Halbwertszeit-Modell (statische Defaults vs adaptive Heuristik).
@@ -624,7 +636,27 @@ Aufgeteilt nach Dimensionen, IDs sind Vorschlaege fuer RE.
 
 ### 11.1 Pre-Triage-Pass (10 Sekunden)
 
-**Trigger:** User droppt Source (URL, PDF, MD, Excerpt) oder triggert "Triage" auf bestehender Inbox-Note.
+**Trigger-Modi (zwei alternativ aktive Wege):**
+
+**A) Manueller Trigger:** User markiert Source und ruft "Triage" auf. Funktioniert immer, fuer jede Note.
+
+**B) Auto-Trigger via konfigurierbarer Frontmatter-Property:** User definiert in Settings einen Property-Namen plus Wert, der den Auto-Trigger ausloest. Bei Sebastian: `Kategorie: Quelle`. Andere User waehlen frei (`type: source`, `tag: inbox`, `status: untriaged`, etc.).
+
+Mechanik:
+- VaultObserver registriert auf `vault.on('create')` und `vault.on('modify')` (Frontmatter-Aenderung).
+- Wenn Note die konfigurierte Property mit dem konfigurierten Wert traegt UND noch nicht triaged wurde (Tracking via `triaged_at`-Property oder DB-Tabelle):
+  - Auto-Triage startet still im Hintergrund (Token-Kosten < 0.05 USD).
+  - Triage-Karte landet im Vault-Health-Modal-Tab "Pending Triage".
+  - Notification optional (Settings-gated).
+- Ohne konfigurierte Property: kein Auto-Trigger, User startet Triage immer manuell.
+
+**Settings-Konfiguration:**
+- `vaultIngest.autoTrigger.enabled`: boolean, Default off.
+- `vaultIngest.autoTrigger.propertyName`: string (zB "Kategorie").
+- `vaultIngest.autoTrigger.propertyValue`: string (zB "Quelle"). Optional als Liste fuer mehrere Werte.
+- `vaultIngest.autoTrigger.notification`: boolean, Default off (UI-Badge im Modal reicht).
+
+**Anti-Pattern:** kein hardcoded "Kategorie=Quelle" als System-Default. Jeder User hat sein eigenes Schema, Konfiguration ist Pflicht fuer Auto-Trigger.
 
 **Pipeline:**
 
@@ -657,9 +689,14 @@ User bleibt aktiv beteiligt. System schlaegt vor, User leitet.
 
 **Pipeline:**
 
-1. **Vollstaendiges Lesen** (chunked, mehrere LLM-Passes bei grossen Sources).
-2. **Key-Takeaways-Extraktion:** LLM erzeugt strukturierte Liste atomarer Take-Aways mit Source-Position-Marker (Seite/Absatz).
-3. **Dialog-Phase:** LLM zeigt Take-Aways im Chat-Sidebar an, fragt:
+1. **Vollstaendiges Lesen** (chunked, mehrere LLM-Passes bei grossen Sources). Format-Strategie siehe 11.2.4.
+2. **Key-Takeaways-Extraktion mit Block-Refs:** LLM erzeugt strukturierte Liste atomarer Take-Aways. Jeder Take-Away traegt einen **Source-Position-Marker** im Perplexity-Stil:
+   - Bei Markdown-Sources: Block-Reference im Obsidian-Native-Format `[[source-note#^block-id]]`. LLM setzt Block-IDs (`^takeaway-1`, `^p-3-2`, etc.) beim Source-Note-Schreiben, alle Sense-Making-Notes referenzieren diese Block-IDs.
+   - Bei PDF-Sources: zwei Optionen, abhaengig von 11.2.4-Strategie:
+     - Wenn PDF zu Markdown konvertiert wurde: Block-Refs wie oben.
+     - Wenn PDF im Original bleibt: Page-Referenz im Format `[[source-note.pdf#page=12]]` (Obsidian-Native fuer PDF-Pages, plus optional Excerpt-Citation als Inline-Quote).
+   - Bei URLs/HTML: Anchor-Links wenn Section-IDs vorhanden, sonst Quote-Block mit Original-Wortlaut als Beleg.
+3. **Dialog-Phase:** LLM zeigt Take-Aways im Chat-Sidebar an, jeder Take-Away mit klickbarem Source-Position-Marker (Perplexity-Style "[1]", "[2]" hovert auf Source-Excerpt). LLM fragt:
    - "Welche der Take-Aways sind fuer dich wichtig?"
    - "Was soll betont werden, was eher beilaeufig?"
    - "Gibt es Aspekte die du persoenlich anders einschaetzt?"
@@ -706,6 +743,26 @@ System macht alles selbst, User reviewt am Ende.
 - Settings: Default-Modus (A oder B).
 - Pro Triage-Aktion: User kann ueberschreiben ("Triage [Dialog]" vs "Triage [Auto]").
 - Empfohlener Default: **Modus A**, weil Sebastians Praeferenz und Karpathys Default. Casual User ohne Pflege-Vorliebe koennen auf B umschalten.
+
+#### 11.2.4 Source-Format-Strategie (PDF, URL, Markdown)
+
+Drei Source-Typen mit unterschiedlicher Behandlung:
+
+**Markdown / Plain-Text:** keine Konvertierung noetig. Original-Source landet im Sources-Folder, Block-IDs werden vom System gesetzt (per Append in der Source-Note), Sense-Making-Notes referenzieren via `[[source#^block-id]]`. Direktester Pfad.
+
+**PDF:** zwei-spurig. Original-PDF bleibt **immer** im Attachments-Folder, weil es Grafiken, Schaubilder, Bilder und Layout-Information enthaelt, die in Markdown verloren gehen. Zusaetzlich:
+
+- **Variante 1 (Default-Empfehlung):** PDF bleibt PDF, kein Markdown-Mirror. Source-Position-Marker via Obsidian-Native-PDF-Page-Refs `[[source.pdf#page=N]]`. Vorteil: kein Konvertierungs-Aufwand, keine Doppelung. Nachteil: Block-Granularitaet nur Page-Level, nicht Absatz-Level. Retrieval ueber PDF-Text-Layer (parsePdf laeuft im Hintergrund fuer Embedding).
+- **Variante 2 (opt-in):** PDF wird zusaetzlich nach Markdown konvertiert (via `parseDocument` Pipeline, EPIC-06 release). Markdown-Mirror landet als Sibling-Note im Sources-Folder, behaelt Wikilink zur PDF. Vorteil: Block-Refs auf Absatz-Ebene, bessere Retrieval-Granularitaet (Markdown chunks praeziser als PDF-Page-Embeddings). Nachteil: Konvertierungs-Aufwand, Markdown ohne Bilder, Pflege-Pflicht beider Versionen.
+
+User-Setting: `vaultIngest.pdfStrategy: 'page-refs' | 'markdown-mirror'`. Default: `page-refs` (konservativ).
+
+**URL / HTML:** wird beim Triage extrahiert (existing `requestUrl` plus Markdown-Konvertierung, EPIC-06). Original-URL als Property (`source: https://...`), Markdown-Inhalt als Note-Body im Sources-Folder. Block-IDs vom System gesetzt. Bei Bildern: download-on-demand in Attachments-Folder (analog Obsidian Web Clipper Pattern, optional Setting).
+
+**Open Question fuer Architektur:**
+- Welches PDF-Page-Reference-Format unterstuetzt Obsidian-Vault-Sync vollstaendig auf allen Plattformen?
+- Falls Markdown-Mirror gewaehlt: Sync-Pflicht zwischen PDF (read-only fuer User) und Markdown-Mirror (vom User editierbar)? Oder Markdown ist auch read-only?
+- Embedding-Quality: ist PDF-Text-Embedding (parsePdf-Output) ausreichend, oder ist Markdown-Embedding messbar besser?
 
 ### 11.3 Source-Diversity-Tracking
 
@@ -755,18 +812,24 @@ Sebastians Frage: "Original-Source-Note plus Summary-Note vs Zettelkasten-Style 
 
 - Original-Source als Note im Sources-Folder.
 - Eine zusaetzliche **Sense-Making-Note** im Wissens-Folder (Cluster-Match).
-- Sense-Making-Note enthaelt: Dialog-Zusammenfassung, Key-Take-Aways mit User-Betonung, Tension-Markers, Wikilink zur Source-Note.
+- Sense-Making-Note enthaelt: Dialog-Zusammenfassung, Key-Take-Aways mit User-Betonung, Tension-Markers, Wikilink zur Source-Note via `source: [[source-note]]`-Property.
 - MOC-Pages werden updated.
 - **Use-Case:** ein konsolidierter Gedanke pro Source, dialog-getrieben.
+- **Source-Note-Verbindung:** Sense-Making-Note traegt im Frontmatter `source: [[source-note]]`. Optionaler bibliographischer Source-Note (analog Modus 3) kann als Settings aktiviert werden, ist aber nicht Default (in Modus 2 reicht eine Sense-Making-Note plus Source-Note ohne Zwischen-Bibliographie).
 
-#### Modus 3: Source plus Multi-Zettel (Sebastians Zettelkasten-Praxis)
+#### Modus 3: Source plus Multi-Zettel plus bibliographische Summary-Note (Sebastians Zettelkasten-Praxis)
 
 - Original-Source als Note im Sources-Folder.
-- Mehrere **Zettel-Notes** im Wissens-Folder, **eine pro atomarem Gedanke**.
-- Jeder Zettel ist self-contained, hat Frontmatter, verlinkt mit anderen Zetteln und der Source.
-- LLM schlaegt Zettel-Struktur im Dialog vor, User editiert/bestaetigt.
-- Cross-Links zwischen Zetteln werden vorgeschlagen.
-- **Use-Case:** Zettelkasten-Methode, atomares Sense-Making, langfristige Vernetzung.
+- **Bibliographische Summary-Note** im Sources-Folder oder als Sibling der Zettel-Notes:
+  - Frontmatter: Autor, Jahr, Titel, URL, Source-Typ, Keywords, Themen, Konzepte (Standard-Pipeline).
+  - Body: 1-Absatz-Abstract (auto), plus auto-generierter Cross-Reference-Block mit allen abgeleiteten Zettel-Notes.
+  - Cross-Reference-Block-Implementation: **Obsidian Base** (`base`-Codeblock) der dynamisch alle Notes zeigt, die `source: [[bibliographische-summary-note]]` als Property haben. So bleibt die Liste aktuell, auch wenn spaeter Zettel hinzukommen.
+- Mehrere **Zettel-Notes** im Wissens-Folder, eine pro atomarem Gedanke.
+  - Jeder Zettel hat Frontmatter mit Property `source: [[bibliographische-summary-note]]` (Wikilink zur Summary-Note).
+  - Jeder Zettel referenziert via Block-Ref die genaue Source-Position `[[source-original#^block-id]]` oder `[[source.pdf#page=N]]`.
+  - Cross-Links zwischen Zetteln werden vom LLM vorgeschlagen, User bestaetigt.
+- **Daraus folgt:** wenn Sebastian sich alle Notes zur Quelle ansehen will, oeffnet er die bibliographische Summary-Note, sieht im Base-Block alle abgeleiteten Zettel. Backlinks-Panel zeigt dasselbe redundant. Zwei Wege fuehren zur Gesamtsicht.
+- **Use-Case:** Zettelkasten-Methode mit Bibliografie-Anker, atomares Sense-Making, langfristige Vernetzung mit klarer Source-Provenienz.
 
 #### Mode-Konfiguration
 
@@ -781,6 +844,10 @@ Sebastians Frage: "Original-Source-Note plus Summary-Note vs Zettelkasten-Style 
 - Wie verhalten sich Zettel-Notes zur Memory-v2-Fact-Extraktion (FEAT-03-25)? Brauchen Zettel-Notes ein eigenes Frontmatter-Flag das sagt "diese Note ist als Memory-Source markiert"?
 - Wenn User Modus aendert (zB von 2 nach 3): wird ein bestehender Source rueckwirkend in Multi-Zettel zerlegt? Oder bleibt der alte Modus erhalten?
 - Tension-Marker in Multi-Zettel-Modus: gehoeren sie zum Zettel mit dem Claim, oder als separate Tension-Note?
+- Bibliographische Summary-Note: Standard-Frontmatter-Schema (Autor, Jahr, Titel, etc.) oder konfigurierbares Template pro User?
+- Base-Codeblock-Generierung: System schreibt initial einen Base-Block, User darf ihn editieren? Oder System pflegt ihn aktiv mit Marker-Konvention (analog MOC-Pflege in Sub-Initiative R)?
+- Source-Folder-Pfad: dedizierter Folder pro Source-Typ (Sources/Articles, Sources/PDFs, Sources/Web) oder ein einziger Sources-Folder?
+- Bei Modus 3 ohne aktive MOC-Pflege: wer pflegt die Cross-Refs zwischen Zetteln zu existierenden Vault-Notes?
 
 ---
 

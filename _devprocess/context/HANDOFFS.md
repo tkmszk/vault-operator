@@ -722,12 +722,16 @@ related-epics: EPIC-15, EPIC-19, EPIC-03
 - Parent-BA: [BA-19-knowledge-maintenance.md](../analysis/BA-19-knowledge-maintenance.md)
 - Web-Recherche zu swarmvault, PENgram, OwlerLite, Atlan, qmd in BA Section 2.1 dokumentiert
 
-**Scope:** MVP, drei Dimensionen Ingest + Retrieval + Lint, sieben Sub-Initiativen, 24 Feature-Kandidaten. Kein neuer Epic, Mapping auf existierende EPIC-15, EPIC-19, EPIC-03.
+**Scope:** MVP, drei Dimensionen Ingest + Retrieval + Lint, sieben Sub-Initiativen, 28 Feature-Kandidaten. Kein neuer Epic, Mapping auf existierende EPIC-15, EPIC-19, EPIC-03.
 
-**Wichtige Architektur-Klaerung beim Ingest (User-Round-2):**
+**Wichtige Architektur-Klaerung beim Ingest (User-Round-2 + 3):**
 - Zwei Ingest-Modi: Aktiver Dialog (Karpathys Default, Sebastians Praeferenz) vs Auto (less supervised).
 - Drei Output-Modi: Source-only / Source plus Summary-Note (Karpathy-Standard) / Source plus Multi-Zettel (Zettelkasten).
 - Sebastians Praeferenz: Sense-Making bleibt User-Sache, LLM-Hilfe nur aus Dialog. Multi-Zettel nach Zettelkasten-Praxis als Power-User-Modus.
+- Auto-Trigger via konfigurierbarer Frontmatter-Property (User waehlt Property-Name + Wert in Settings, zB `Kategorie: Quelle`). Default off.
+- Source-Position-Marker im Perplexity-Stil als klickbare Block-Refs (MD), Page-Refs (PDF), Anchor (URL).
+- PDF-Default-Strategie: Original bleibt im Vault (Grafiken/Bilder), Page-Refs `[[source.pdf#page=N]]`. Markdown-Mirror als opt-in fuer text-lastige Forschungs-PDFs.
+- Multi-Zettel-Modus haengt am bibliographischen Summary-Note mit Base-Codeblock, der dynamisch alle abgeleiteten Zettel listet (Zettel haben `source: [[bibliographische-summary-note]]`-Property).
 
 **HMW:**
 > Wie koennen wir den Vault zum kompoundierenden Wissens-Artefakt machen, ohne dass der User Pflege-Zeit aufwendet, ohne in eine Echo-Chamber zu rutschen, ohne dass Wissen stillschweigend veraltet, und ohne das Token-Budget zu sprengen?
@@ -754,7 +758,7 @@ Retrieval (R, 7 Features):
 - FEAT-19-11 Aktive MOC-File-Pflege (P2)
 - FEAT-03-26 Selektiver Top-Hub-Block im KV-Cache (P2)
 
-Ingest (I, 10 Features):
+Ingest (I, 14 Features):
 - FEAT-19-12 Pre-Triage-Tool mit 10s-Triage-Karte (P0)
 - FEAT-15-11 cluster_source_stats-Tabelle plus Source-Diversity-Tracking (P0)
 - FEAT-19-13 Tension-Detection beim Deep-Ingest (P1)
@@ -765,6 +769,10 @@ Ingest (I, 10 Features):
 - FEAT-19-24 Output-Modus-Auswahl (Source-only / Source+Summary / Source+Multi-Zettel) (P0)
 - FEAT-19-25 Source-Folder vs Wissens-Folder Konfiguration (P0)
 - FEAT-19-26 Dialog-getriebener MOC-Page-Update beim Ingest (P1)
+- FEAT-19-27 Konfigurierbarer Auto-Trigger via Frontmatter-Property (P0)
+- FEAT-19-28 Source-Position-Marker (Block-Refs MD, Page-Refs PDF, Anchor URL) (P0)
+- FEAT-19-29 PDF-Strategie (Page-Refs Default vs Markdown-Mirror opt-in) (P1)
+- FEAT-19-30 Bibliographische Summary-Note mit Base-Block fuer Multi-Zettel-Modus (P1)
 
 Lint (L, 7 Features, integriert in VaultHealthService):
 - FEAT-15-12 cluster_metadata-Tabelle plus Halbwertszeit-Konfiguration (P0)
