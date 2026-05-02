@@ -918,3 +918,69 @@ Ingest-Approval:
 **Forbidden-Terms-Check:** alle 28 Feature-Specs auf tech terms in Success Criteria geprueft. Bestanden.
 
 **Recommended next:** /architecture
+
+---
+
+## 2026-05-03 -- BA-25 Karpathy-Wiki-Pattern: Architecture -> Coding
+
+triage: BA-25
+triage_kind: feature
+related-epics: EPIC-15, EPIC-19, EPIC-03
+
+**Phase:** Architecture abgeschlossen. Ready for Coding (Plan-Gate-vorbereitet).
+
+**Artefakte erzeugt:**
+- 15 ADRs in `_devprocess/architecture/ADR-92.md` bis `ADR-106.md` (status Proposed)
+- plan-context: `_devprocess/requirements/handoff/plan-context-ba25.md` (~280 Zeilen)
+- BACKLOG.md erweitert: 15 ADR-Rows + 5 PLAN-Rows (PLAN-10 bis PLAN-14), 25 Feature-Rows mit ADR-Refs angereichert. Total artifacts 339 -> 359.
+
+**Tech-Stack-Justification:**
+- Stack bleibt unveraendert (TypeScript strict, sql.js WASM, Obsidian Plugin API, transformers.js Reranker, parseDocument fuer PDFs).
+- Keine neuen externen Dependencies. Alle 28 Features sind durch existing Stack realisierbar.
+
+**Bundling-Empfehlung 5 PLAN-Dokumente:**
+
+| PLAN | Phase | Features | ADRs |
+|------|-------|----------|------|
+| PLAN-10 | 1 Foundation | FEAT-15-09, 15-10, 15-11, 15-12, 19-08, 19-09 | ADR-92, 93, 94, 95 |
+| PLAN-11 | 2 Lint Foundation | FEAT-19-16, 17, 18 | ADR-94, 106 |
+| PLAN-12 | 3 Ingest Foundation | FEAT-19-12, 22, 24, 25, 27, 28 | ADR-93, 98, 100, 101, 102, 103 |
+| PLAN-13 | 4 Power-User-Erweiterungen | FEAT-19-10, 13, 14, 19, 21, 23, 26, 29, 30 | ADR-95, 96, 99, 104, 106 |
+| PLAN-14 | 5 Erweiterte Schichten | FEAT-19-11, 15, 20, 03-26 | ADR-96, 97, 105 |
+
+**Rejected Alternatives (sollen von /coding nicht reopened werden ohne neuen Grund):**
+
+- Two-Schritt-Migration v9 -> v10 -> v11 (Option B in ADR-92): verworfen wegen Mid-State-Risiko.
+- Pure-LLM-Tension-Detection (Option B in ADR-99): verworfen wegen Token-Explosion.
+- Memory-v2-Facts als Dialog-State-Storage (Option C in ADR-100): verworfen wegen Schema-Semantik-Bruch.
+- Default-Provider via Obsilo-Gateway fuer Web-Search (Option B in ADR-104): verworfen weil Gateway-Infra noch nicht released.
+- Soft cap fuer Stufe-3-Token-Budget (Option B1 in ADR-105): verworfen wegen Cost-Falle-Risiko.
+
+**Known Risks (waehrend Coding monitoren):**
+
+- ADR-101 Bibliografie-Codeblock-Syntax: Test gegen aktuelles Bases-Plugin-Schema. Falls API-Bruch: Helper-Funktion anpassen.
+- ADR-103 PDF-Page-Refs Android-Plattform: Compatibility-Test, ggf Quote-Block-Fallback wenn Page-Refs auf Android nicht klickbar.
+- ADR-94 Cluster-Kategorie-Erkennung Name-Match-Heuristik: Edge-Cases listen, ggf User-Override-UI in Phase 2 verstaerken.
+- ADR-99 Tension-Detection Cosine-Top-3-Window: Sample-Eval bei < 60% Precision auf K=5/K=10 erweitern.
+- ADR-105 setInterval-Drift bei Plugin-Restart: Doppel-Trigger via last_run_at-Cooldown verhindert.
+
+**Open Items (deferred zu /coding, weil Codebase-State-Abhaengigkeit):**
+
+- Bases-Codeblock-Syntax-Verifikation (ADR-101).
+- Cluster-Kategorie-Heuristik-Edge-Cases (ADR-94).
+- Tension-Detection Sample-Eval-Setup (ADR-99).
+- Vault.process-API-Test im obsidian-sync-Mode (ADR-95).
+
+**Consistency-Check:**
+- plan-context-ba25.md ist konsistent mit allen 15 ADRs (Pruefung: jede ADR-Decision findet sich in plan-context-Tabelle).
+- Bundling-Empfehlung ist konsistent mit BA-25 5-Phasen-Plan (Section 9.3) und RE-Handoff.
+- Forbidden-Terms-Check: keine Em-Dashes, AI-Vokabular, Negative Parallelisms in ADRs oder plan-context (manuelle Pruefung).
+
+**Plan-Gate-Status (4 Items vor /coding):**
+
+1. **SC coverage**: Vorbereitung in plan-context (PLAN-10 bis PLAN-14 mappen alle Features). /coding verifiziert je PLAN-Start.
+2. **ADR alignment**: alle 15 ADRs sind in mindestens einem PLAN referenziert (siehe Bundling-Tabelle).
+3. **Codebase anchoring**: jeder PLAN nennt konkrete Datei-Pfade (siehe plan-context Code-Ankerpunkte je Phase).
+4. **Verify commands**: Default `npm run build` plus `npm test` plus PLAN-spezifische Smoke-Tests dokumentiert.
+
+**Recommended next:** /coding (mit PLAN-10 als ersten konkreten PLAN-Wurf, weil Foundation alles weitere blockiert)
