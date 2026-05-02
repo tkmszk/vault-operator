@@ -6,7 +6,7 @@
 > /architecture, /coding, /testing, /security-audit, /release,
 > /consistency-check.
 
-Last update: 2026-04-30 by /coding (V-Model restructure round 3)
+Last update: 2026-05-03 by /requirements-engineering (BA-25 -> 28 neue Feature-Rows ueber EPIC-03/15/19)
 
 ---
 
@@ -14,8 +14,8 @@ Last update: 2026-04-30 by /coding (V-Model restructure round 3)
 
 | Status      | Count | | Phase      | Count | | Type         | Count |
 |-------------|-------|-|------------|-------|-|--------------|-------|
-| Planned     |    15 | Released   |   259 | Epic         |    22 |
-| Active      |     7 | Building   |    48 | Feature      |   167 |
+| Planned     |    43 | Released   |   259 | Epic         |    22 |
+| Active      |     7 | Building   |    76 | Feature      |   195 |
 | Done        |   185 | Planned    |     0 | Fix          |    24 |
 | Wont Fix    |     1 | Candidates |     4 | Improvement  |     0 |
 | Superseded  |     2 |            |        | ADR          |    91 |
@@ -25,7 +25,7 @@ Last update: 2026-04-30 by /coding (V-Model restructure round 3)
 | Draft       |     4 |            |        |              |        |
 | Open        |     7 |            |        |              |        |
 
-Total artifacts: 311
+Total artifacts: 339
 
 ---
 
@@ -129,6 +129,7 @@ Phase: Released | Status: Done
 | FEAT-03-23 | Feature | Memory-UX, Onboarding und Settings-Migration | Done | Released | EPIC-03 | BA |  |  | 2026-04-30 |  |
 | FEAT-03-24 | Feature | Inference-Pass fuer Derives | Planned | Building | EPIC-03 | BA |  |  | 2026-04-30 |  |
 | FEAT-03-25 | Feature | Vault-Note-zu-Fact-Extraction | Done | Released | EPIC-03 | BA |  |  | 2026-04-30 |  |
+| FEAT-03-26 | Feature | Selektiver Top-Hub-Block im KV-Cache | Planned | Building | EPIC-03, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P2 |
 | FIX-03-06-01 | Fix | Session-Summary .md-Dateien werden nicht geschrieben | Done | Released | FEAT-03-06, EPIC-03 | BUG |  |  | 2026-04-30 | P1 |
 | FIX-03-06-02 | Fix | Memory-Extractor und Context-Prefix-Generator retry-spammen bei permanenten Prov | Done | Released | FEAT-03-06, EPIC-03 | BUG |  |  | 2026-04-30 | P2 |
 | FIX-03-14-01 | Fix | - WriterLock nicht verdrahtet | Done | Released | FEAT-03-14, EPIC-03 | BUG |  |  | 2026-04-30 | P2 |
@@ -318,6 +319,10 @@ Phase: Released | Status: Done
 | FEAT-15-05 | Feature | Knowledge Data Consolidation | Done | Released | EPIC-15 | BA |  |  | 2026-04-30 |  |
 | FEAT-15-06 | Feature | Implicit Connection UI | Done | Released | EPIC-15 | BA |  |  | 2026-04-30 |  |
 | FEAT-15-08 | Feature | Storage Consolidation | Done | Released | EPIC-15 | BA |  |  | 2026-04-30 |  |
+| FEAT-15-09 | Feature | Note-Summary Storage (note_summaries-Tabelle + Indexing-Hook) | Planned | Building | EPIC-15, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-15-10 | Feature | Frontmatter-Property Mirror (frontmatter_properties + SQL-Taxonomie-Lookup) | Planned | Building | EPIC-15, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-15-11 | Feature | Cluster-Source-Stats fuer Source-Diversity-Tracking | Planned | Building | EPIC-15, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-15-12 | Feature | Cluster-Metadata mit Halbwertszeit-Konfiguration | Planned | Building | EPIC-15, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
 | FIX-15-00-01 | Fix | KnowledgeDB Korruption durch nicht-atomare Writes + Cloud Sync | Open | Building | FEAT-15-00, EPIC-15 | BUG |  |  | 2026-04-30 | P1 |
 | FIX-15-03-01 | Fix | ImplicitConnections "Statement closed" Race Condition | Done | Released | FEAT-15-03, EPIC-15 | BUG |  |  | 2026-04-30 | P2 |
 | FIX-15-04-01 | Fix | Reranker ONNX-Runtime Fehler in Electron | Done | Released | FEAT-15-04, EPIC-15 | BUG |  |  | 2026-04-30 | P2 |
@@ -380,6 +385,29 @@ Phase: Building | Status: Active
 | FEAT-19-05 | Feature | OCR-Integration | Done | Released | EPIC-19 | BA |  |  | 2026-04-30 |  |
 | FEAT-19-06 | Feature | Attachment-Batch-Umbenennung | Done | Released | EPIC-19 | BA |  |  | 2026-04-30 |  |
 | FEAT-19-07 | Feature | Chat UI Polish | Done | Released | EPIC-19 | BA |  |  | 2026-04-30 |  |
+| FEAT-19-08 | Feature | Konfigurierbarer Standard-Prompt fuer Note-Summary-Generierung | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-19-09 | Feature | Auto-Summary-Generierung beim Indexing | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-19-10 | Feature | Frontmatter-Write Toggle plus Backfill-Job mit Progress-UI | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P1 |
+| FEAT-19-11 | Feature | Aktive MOC-File-Pflege mit Marker-Konvention | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P2 |
+| FEAT-19-12 | Feature | Pre-Triage-Tool mit 10s-Triage-Karte | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-19-13 | Feature | Tension-Detection beim Deep-Ingest | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P1 |
+| FEAT-19-14 | Feature | Concentration-Warning UI plus Anti-Echo-Vorschlag | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P1 |
+| FEAT-19-15 | Feature | Inbox-Workflow fuer Batch-Triage | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P2 |
+| FEAT-19-16 | Feature | Stufe-1 Composite-Freshness-Score als VaultHealth-Check | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-19-17 | Feature | Source-Diversity-Check als Bias-Lint-Kategorie | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-19-18 | Feature | Health-Modal-Erweiterung mit kontext-spezifischen Action-Buttons | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-19-19 | Feature | Stufe-2 Activity-Trigger plus Web-Search-Update-Pass | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P1 |
+| FEAT-19-20 | Feature | Stufe-3 Periodischer Job plus Token-Budget-Cap plus Notifications | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P2 |
+| FEAT-19-21 | Feature | Hot-Cluster-Konfiguration in Settings | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P1 |
+| FEAT-19-22 | Feature | Aktiver Dialog-Ingest-Modus (Modus A) | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-19-23 | Feature | Auto-Ingest-Modus (Modus B) | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P1 |
+| FEAT-19-24 | Feature | Output-Modus-Auswahl (Source-only / Summary / Multi-Zettel) | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-19-25 | Feature | Source-Folder vs Wissens-Folder Konfiguration | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-19-26 | Feature | Dialog-getriebener MOC-Page-Update beim Ingest | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P1 |
+| FEAT-19-27 | Feature | Konfigurierbarer Auto-Trigger via Frontmatter-Property | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-19-28 | Feature | Source-Position-Marker (Block-Refs MD, Page-Refs PDF, Anchor URL) | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-19-29 | Feature | PDF-Strategie (Page-Refs Default vs Markdown-Mirror opt-in) | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P1 |
+| FEAT-19-30 | Feature | Bibliographische Summary-Note mit Base-Block fuer Multi-Zettel-Modus | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P1 |
 | FIX-19-01-01 | Fix | vault_health_check and ingest_document missing from builtin mode tool groups | Done | Released | FEAT-19-01, EPIC-19 | BUG |  |  | 2026-04-30 | P2 |
 | FIX-19-01-02 | Fix | Vault-health badge disappeared + redesign to heart-pulse icon | Done | Released | FEAT-19-01, EPIC-19 | BUG |  |  | 2026-04-30 | P1 |
 

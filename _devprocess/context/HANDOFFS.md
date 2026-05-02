@@ -828,3 +828,93 @@ Lint:
 - Vault-Health-Modal skaliert auch bei vielen Findings (Severity-Sortierung, Filter, Bulk-Dismiss).
 
 **Recommended next:** /requirements-engineering
+
+---
+
+## 2026-05-03 -- BA-25 Karpathy-Wiki-Pattern: Requirements Engineering -> Architecture
+
+triage: BA-25
+triage_kind: feature
+related-epics: EPIC-15, EPIC-19, EPIC-03
+
+**Phase:** Requirements Engineering abgeschlossen. Ready for Architecture.
+
+**Artefakte erzeugt:**
+- 28 FEATURE-Specs in `_devprocess/requirements/features/FEAT-*.md`
+- architect-handoff: `_devprocess/requirements/handoff/architect-handoff-ba25.md`
+- BACKLOG.md erweitert: 28 neue Feature-Rows (Status Planned, Phase Building) ueber EPIC-03 (1), EPIC-15 (4), EPIC-19 (23)
+- Dashboard aktualisiert: Total artifacts 311 -> 339
+
+**NFR Summary (quantifiziert):**
+
+Performance:
+- SQL-Lookups < 1ms single, < 100ms bulk 1500 Notes
+- LLM-Triage < 15s, Summary < 10s
+- Indexing-Pass nicht UI-blockierend
+
+Token-Kosten:
+- Note-Summary Default Haiku, < 0.001 USD pro Note
+- Triage-Pass < 0.05 USD pro Source
+- Stufe-2-Web-Search < 0.50 USD pro Klick
+- Stufe-3-Wochen-Job Default 2 USD, hart kappiert
+
+Storage:
+- Schema-Migration v9 -> v10 additiv, kein Datenverlust
+
+Security:
+- Web-Search BYOK, Frontmatter-Write nur mit User-Approval
+
+**Critical ASRs (14, jeder ADR-Bedarf):**
+
+Schema/Storage: ASR-1 Migration-Additivity, ASR-2 Idempotenz-Re-Indexing
+Frontmatter-Pflege: ASR-3 Struktur-Erhalten, ASR-4 Conflict-Detection
+MOC-Pflege: ASR-5 Marker-Konvention
+Ingest: ASR-6 Pre-Triage-Tool-Architektur, ASR-7 Tension-Detection-Algorithmus, ASR-11 Dialog-State-Persistenz, ASR-12 Block-Reference-Konvention, ASR-13 PDF-Page-Refs Mobile
+Lint: ASR-8 Web-Search-Provider-Strategie, ASR-9 Job-Runner-Mechanik, ASR-10 Token-Budget-Enforcement
+Cache: ASR-14 KV-Cache-Block-Lifecycle
+
+**ADR-Indikatoren: 22** (siehe architect-handoff Section "ADR-Bedarf")
+
+**Bundling-Empfehlung:**
+
+Ein Schema-Migration-Bundle PLAN: FEAT-15-09 + 15-10 + 15-11 + 15-12 (vier Tabellen in einem v9 -> v10 Migrations-Schritt). Verhindert mehrere Migrations zur selben Version.
+
+5-Phasen Implementierungs-Reihenfolge:
+1. Foundation (Schema-Bundle plus FEAT-19-08, FEAT-19-09)
+2. Lint Foundation (FEAT-19-16, 17, 18)
+3. Ingest Foundation (FEAT-19-12, 22, 24, 25, 27, 28)
+4. Power-User-Erweiterungen (FEAT-19-10, 13, 14, 19, 21, 23, 26, 29, 30)
+5. Erweiterte Schichten (FEAT-19-11, 15, 20, FEAT-03-26)
+
+**Open Questions an Architektur:**
+
+Schema-Bundling:
+- Vier Tabellen in einer Migration oder in zwei Schritten (Retrieval-Tabellen + Ingest/Lint-Tabellen)?
+- Migration-Rollback bei Fehlschlag im Bundle?
+
+MOC-Pflege:
+- Default-Tiefe (Header-only oder Body bei Markern)?
+- User loescht Marker: Re-Inject vs Skip vs Notification?
+
+Output-Modus:
+- Modus-Wechsel retroaktive Re-Verarbeitung default off, aber explizite Action separat?
+- Tension-Marker in Multi-Zettel: am Zettel oder separate Note?
+- Memory-v2-Fact-Extraction-Verhaeltnis zu Zettel-Notes (Frontmatter-Flag noetig)?
+
+Web-Search:
+- BYOK obligatorisch oder Default-Provider via Obsilo-Gateway?
+- Bester Provider fuer Source-Filter (Anti-Echo)?
+
+Ingest-Approval:
+- Backfill-Approval-Modell: pro Note vs Batch vs Settings-Level?
+
+**Constraints:**
+- Mobile Read-Pfad muss funktionieren, Write-Pfad kann Desktop-only sein.
+- Sebastians Standard-Prompt-Wortlaut bleibt 1:1 als Settings-Default.
+- Existierende Architektur wird ERWEITERT (SemanticIndexService, VaultHealthService, ContextComposer), nicht ersetzt.
+- knowledge.db v9 -> v10 ist die einzige geplante Migration in dieser Initiative.
+- Alle Features sind setting-gated.
+
+**Forbidden-Terms-Check:** alle 28 Feature-Specs auf tech terms in Success Criteria geprueft. Bestanden.
+
+**Recommended next:** /architecture
