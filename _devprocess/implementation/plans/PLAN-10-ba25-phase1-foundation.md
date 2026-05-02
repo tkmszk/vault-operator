@@ -252,6 +252,7 @@ Jede Task nennt mindestens einen Datei-Pfad. Pruefung: alle Tasks haben Create/M
 
 - **2026-05-03 initial:** PLAN created from BA-25 Architecture-Handoff. Status Draft -> Active.
 - **2026-05-03 partial-completion:** Tasks 1-5 implementiert (Schema-Migration v10 + 4 Stores + 32 Unit-Tests). Tasks 6-8 (Settings-Schema, FrontmatterWriter, Indexing-Hook) bewusst auf Folge-Session deferred. PLAN bleibt Status=Active. Build + alle 140 Knowledge-Tests gruen.
+- **2026-05-03 plan-completion (Folge-Session):** Tasks 6-8 abgeschlossen. Settings-Schema (VaultIngestSettings), FrontmatterWriter (Vault.fileManager.processFrontMatter + WriterLock-Hybrid), FrontmatterIndexer (Frontmatter-Read + Property-Mirror + optional Auto-Generate via SummaryGeneratorFn). Mid-course design discovery: ADR-95 amended (processFrontMatter statt vault.process). 15 neue Tests (5 FrontmatterWriter + 10 FrontmatterIndexer + readFrontmatterSummary). PLAN-10 -> Status=Done. Wiring in main.ts plus SemanticIndexService-Hook bleibt fuer Plugin-Onload-Pass spaeter (deferred zu PLAN-12 wo der Indexer mit dem Auto-Trigger-Pattern zusammen gewired wird).
 
 ## Implementation Notes
 

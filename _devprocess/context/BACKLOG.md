@@ -317,10 +317,10 @@ Phase: Released | Status: Done
 | FEAT-15-05 | Feature | Knowledge Data Consolidation | Done | Released | EPIC-15 | BA |  |  | 2026-04-30 |  |
 | FEAT-15-06 | Feature | Implicit Connection UI | Done | Released | EPIC-15 | BA |  |  | 2026-04-30 |  |
 | FEAT-15-08 | Feature | Storage Consolidation | Done | Released | EPIC-15 | BA |  |  | 2026-04-30 |  |
-| FEAT-15-09 | Feature | Note-Summary Storage (note_summaries-Tabelle + Indexing-Hook) | Active | Building | EPIC-15, BA-25, ADR-92 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
-| FEAT-15-10 | Feature | Frontmatter-Property Mirror (frontmatter_properties + SQL-Taxonomie-Lookup) | Active | Building | EPIC-15, BA-25, ADR-92 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
-| FEAT-15-11 | Feature | Cluster-Source-Stats fuer Source-Diversity-Tracking | Active | Building | EPIC-15, BA-25, ADR-92, ADR-93 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
-| FEAT-15-12 | Feature | Cluster-Metadata mit Halbwertszeit-Konfiguration | Active | Building | EPIC-15, BA-25, ADR-92, ADR-94 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-15-09 | Feature | Note-Summary Storage (note_summaries-Tabelle + Indexing-Hook) | Done | Released | EPIC-15, BA-25, ADR-92 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-15-10 | Feature | Frontmatter-Property Mirror (frontmatter_properties + SQL-Taxonomie-Lookup) | Done | Released | EPIC-15, BA-25, ADR-92 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-15-11 | Feature | Cluster-Source-Stats fuer Source-Diversity-Tracking | Done | Released | EPIC-15, BA-25, ADR-92, ADR-93 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-15-12 | Feature | Cluster-Metadata mit Halbwertszeit-Konfiguration | Done | Released | EPIC-15, BA-25, ADR-92, ADR-94 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
 | FIX-15-00-01 | Fix | KnowledgeDB Korruption durch nicht-atomare Writes + Cloud Sync | Open | Building | FEAT-15-00, EPIC-15 | BUG |  |  | 2026-04-30 | P1 |
 | FIX-15-03-01 | Fix | ImplicitConnections "Statement closed" Race Condition | Done | Released | FEAT-15-03, EPIC-15 | BUG |  |  | 2026-04-30 | P2 |
 | FIX-15-04-01 | Fix | Reranker ONNX-Runtime Fehler in Electron | Done | Released | FEAT-15-04, EPIC-15 | BUG |  |  | 2026-04-30 | P2 |
@@ -383,8 +383,8 @@ Phase: Building | Status: Active
 | FEAT-19-05 | Feature | OCR-Integration | Done | Released | EPIC-19 | BA |  |  | 2026-04-30 |  |
 | FEAT-19-06 | Feature | Attachment-Batch-Umbenennung | Done | Released | EPIC-19 | BA |  |  | 2026-04-30 |  |
 | FEAT-19-07 | Feature | Chat UI Polish | Done | Released | EPIC-19 | BA |  |  | 2026-04-30 |  |
-| FEAT-19-08 | Feature | Konfigurierbarer Standard-Prompt fuer Note-Summary-Generierung | Planned | Building | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
-| FEAT-19-09 | Feature | Auto-Summary-Generierung beim Indexing | Planned | Building | EPIC-19, BA-25, ADR-95 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-19-08 | Feature | Konfigurierbarer Standard-Prompt fuer Note-Summary-Generierung | Done | Released | EPIC-19, BA-25 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
+| FEAT-19-09 | Feature | Auto-Summary-Generierung beim Indexing | Done | Released | EPIC-19, BA-25, ADR-95 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
 | FEAT-19-10 | Feature | Frontmatter-Write Toggle plus Backfill-Job mit Progress-UI | Planned | Building | EPIC-19, BA-25, ADR-95 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P1 |
 | FEAT-19-11 | Feature | Aktive MOC-File-Pflege mit Marker-Konvention | Planned | Building | EPIC-19, BA-25, ADR-96 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P2 |
 | FEAT-19-12 | Feature | Pre-Triage-Tool mit 10s-Triage-Karte | Planned | Building | EPIC-19, BA-25, ADR-98 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P0 |
@@ -550,7 +550,7 @@ ADRs and PLANs that span multiple epics.
 | ADR-92 | ADR | Schema-Migration knowledge.db v9 -> v10 (4-Tabellen-Bundle) | Accepted | Building | BA-25, FEAT-15-09, FEAT-15-10, FEAT-15-11, FEAT-15-12 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
 | ADR-93 | ADR | Source-Identitaet-Modell (Domain-only MVP) | Accepted | Building | BA-25, FEAT-15-11, FEAT-19-14, FEAT-19-17 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
 | ADR-94 | ADR | Cluster-Halbwertszeit-Modell (statische Defaults) | Accepted | Building | BA-25, FEAT-15-12, FEAT-19-16 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
-| ADR-95 | ADR | Frontmatter-Write Conflict-Detection | Proposed | Building | BA-25, FEAT-19-09, FEAT-19-10 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
+| ADR-95 | ADR | Frontmatter-Write Conflict-Detection | Accepted | Building | BA-25, FEAT-19-09, FEAT-19-10 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
 | ADR-96 | ADR | MOC-Marker-Konvention (HTML-Comment-Marker) | Proposed | Building | BA-25, FEAT-19-11, FEAT-19-26 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
 | ADR-97 | ADR | KV-Cache-Block-Lifecycle (Top-Hub) | Proposed | Building | BA-25, FEAT-03-26 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
 | ADR-98 | ADR | Pre-Triage-Tool-Architektur (eigenes ingest_triage) | Proposed | Building | BA-25, FEAT-19-12 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |

@@ -59,10 +59,12 @@ Cons:
 
 ## Decision
 
-**Option C**: Hybrid. Vault.process(file, fn) wird Standard-Write-Pfad. Im obsidian-sync-Mode zusaetzlich WriterLock vor dem Vault.process-Aufruf.
+**Option C (amended 2026-05-03 nach Codebase-Review):** Hybrid. `app.fileManager.processFrontMatter(file, fn)` wird Standard-Write-Pfad. Im obsidian-sync-Mode zusaetzlich WriterLock vor dem processFrontMatter-Aufruf.
+
+**Korrektur**: Die urspruengliche ADR-Formulierung sprach von `Vault.process`. Codebase-Review zeigt, dass Obsilo bereits `app.fileManager.processFrontMatter` an 8 Stellen nutzt (UpdateFrontmatterTool, VaultHealthService, AgentSidebarView, main.ts). Das ist die korrekte API fuer atomic Frontmatter-Updates. `Vault.process` ist fuer Body-Edits, nicht Frontmatter.
 
 Begruendung:
-- Vault.process ist die idiomatische Obsidian-Loesung fuer atomic Frontmatter-Updates.
+- `fileManager.processFrontMatter` ist die idiomatische Obsidian-Loesung fuer atomic Frontmatter-Updates und bereits etabliert im Code.
 - WriterLock-Pattern existiert bereits (ADR-79) und ist battle-tested fuer Cross-Device-Race.
 - Performance-Penalty nur fuer User in Sync-Mode (typischerweise Power-User, akzeptabel).
 - Bei Conflict: Skip plus Log-Eintrag plus optional Notification an User.
@@ -84,7 +86,7 @@ Begruendung:
 ## Implementation Notes
 
 Frontmatter-Helper-Funktion:
-- Input: TFile, transformerFn (current Frontmatter -> new Frontmatter).
-- Im Helper: detectStorageMode() -> wenn obsidian-sync, acquire WriterLock. Dann vault.process(file, oldContent => writeFrontmatter(oldContent, transformerFn)). Release Lock.
-- Bei Conflict (Vault.process throws oder Lock-Acquire failt): skip plus log.warn.
+- Input: TFile, transformerFn (current Frontmatter -> mutated in place).
+- Im Helper: detectStorageMode() -> wenn obsidian-sync, acquire WriterLock. Dann `app.fileManager.processFrontMatter(file, fm => transformerFn(fm))`. Release Lock.
+- Bei Conflict (processFrontMatter throws oder Lock-Acquire failt): skip plus log.warn.
 - Konflikt-Counter pro Backfill-Run, am Ende Notification "X notes skipped due to conflicts".
