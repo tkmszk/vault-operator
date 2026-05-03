@@ -16,7 +16,16 @@ triggers:
 
 ## Status
 
-Proposed.
+Superseded by [ADR-109](ADR-109-vault-zu-memory-bruecke.md) (2026-05-03).
+
+**Begruendung der Ablöesung:** ADR-87 plante einen eigenen
+`VaultMemorySourceService` mit dediziertem `vault.on`-Listener.
+Mit BA-25 (EPIC-19, 2026-05-02) wurde im FrontmatterIndexer bereits
+ein vollstaendiger vault.on-Watch-Pfad fuer Markdown-Notes
+implementiert. ADR-109 fuehrt beide Ansaetze zusammen ueber das
+Single-Listener-Pattern und reduziert damit Doppel-LLM-Cost,
+Doppel-Frontmatter-Parse und Notice-Spam-Risiko. ADR-87 wurde nie
+implementiert; die Verschiebung verursacht keinen Code-Refactor.
 
 ## Context
 

@@ -155,11 +155,12 @@ Konsistent mit FEAT-03-19 (Agent-als-Interface): User markiert Note ueber Agent-
 - **Impact:** Schema-Erweiterung in FEAT-03-15
 - **Quality Attribute:** Maintainability
 
-**MODERATE ASR #2:** vault.on('modify') und vault.on('delete') Hooks fuer memory-source-Notes.
+**MODERATE ASR #2:** Vault-Watch-Pipeline-Reuse statt eigenem vault.on-Listener (Spec-Update 2026-05-03, ADR-109).
 
-- **Why ASR:** Dirty-Tracking + Cascade-Cleanup brauchen Vault-Events
-- **Impact:** Hook-Registrierung beim Plugin-Start, debounced Re-Extract-Trigger
-- **Quality Attribute:** Reactivity
+- **Why ASR:** BA-25 hat einen `FrontmatterIndexer` mit vault.on(modify/create/rename/delete)-Listener fuer alle Markdown-Notes. Ein zweiter Listener wuerde doppelte LLM-Calls und Notice-Spam riskieren. Dirty-Tracking integriert sich in `note_freshness` (knowledge.db) statt in eine getrennte Tabelle.
+- **Impact:** Erweiterung des bestehenden FrontmatterIndexer um Erkennung des `memory-source`-Frontmatter-Properties + Brueckentabelle `memory_source_notes` haelt nur (note-path -> source_session_id), nicht den vollen State.
+- **Quality Attribute:** Maintainability + Resource-Efficiency
+- **Architectural Decision:** ADR-109 "Vault-zu-Memory-Bruecke via Single-Listener-Pattern"
 
 **MODERATE ASR #3:** Frontmatter-Marker `memory-source: true` als alternativer Trigger.
 
@@ -231,5 +232,7 @@ Konsistent mit FEAT-03-19 (Agent-als-Interface): User markiert Note ueber Agent-
 
 - Auto-Detection-Heuristik welche Notes als memory-source taugen (User-Wahl)
 - Image / PDF / DOCX als memory-source (nur .md initial)
+- **Eigener vault.on-Listener** -- siehe ADR-109. Wir reuse den BA-25 FrontmatterIndexer.
+- **Eigener VaultMemorySourceService als Top-Level-Klasse** -- die Logik lebt als Komponente im FrontmatterIndexer (Bridge-Pattern). Dadurch existiert nur ein Vault-Watch-Pfad mit drei Sinks (knowledge.db Ontology, memory.db Facts, BA-25 MOC-Pflege).
 - Cross-Note-Inferenz (mehrere Notes zusammenfuegen zu uebergreifenden Facts) -- separate Phase
 - Vault-Folder als bulk-memory-source -- klare Single-Note-Granularitaet im MVP
