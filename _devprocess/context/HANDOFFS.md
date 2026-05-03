@@ -1209,3 +1209,43 @@ triage_kind: feature
   aber boesartiger LLM-Output koennte Property-Namen kollidieren lassen.
 
 **Recommended next:** /security-audit fuer BA-25-Pfade.
+
+---
+
+## 2026-05-03 -- BA-25 Security-Audit AUDIT-014
+
+triage: BA-25
+triage_kind: feature
+
+**Phase:** /security-audit per-item fuer BA-25 abgeschlossen.
+
+**Overall Risk: Medium** (1 High, 2 Medium, 2 Low, 1 Info).
+
+**Resolved in dieser Session:**
+- H-1 Path-Traversal in IngestTriageTool source_uri (CWE-22):
+  validateVaultPath-Helper rejected `..`-Segmente, NUL-Chars, URL-encoded Escapes.
+- M-1 Prototype-Pollution in FrontmatterWriter (CWE-1321):
+  FORBIDDEN_PROPERTY_NAMES Set rejected __proto__/constructor/prototype.
+
+**Deferred to Backlog:**
+- M-2 -> FIX-03-26-01 (P2): Settings-UI-Hinweis fuer Top-Hub-Block Privacy
+- L-1 -> FIX-19-12-02 (P3): URL-Sanitizer in IngestTriageLogStore
+- L-2 -> FIX-19-27-01 (P3): Rate-Limit fuer AutoTriggerObserver
+- Info-1 -> IMP-19-20-01: Stufe3PeriodicJob state-Persistierung
+
+**Tests:** 1131/1131 gruen (+6 Security-Fix-Tests).
+**Build:** gruen, deployed.
+
+**Positive findings (im Audit-Report dokumentiert):**
+- SQL-Injection-Schutz konsequent (parameterized queries auch bei dynamic placeholders)
+- Atomic Frontmatter-Write via processFrontMatter + WriterLock
+- Token-Budget hard-capped in Stufe3PeriodicJob
+- Default-konservativ (alle BA-25-Toggles default off)
+- MOC-Marker SHA-Detection schuetzt User-Edits
+- Keine eval/Function/innerHTML, keine neuen Dependencies
+
+**Release-Empfehlung:** Yellow. P1-H-1 ist gefixt. P2-M-2 (Top-Hub-Block-Privacy-Hint) sollte vor Aktivierung von FEAT-03-26 erledigt werden, blockiert aber kein Default-Release.
+
+**Recommended next:** /dia-orchestrator Phase 7 Release Closure, ODER manueller Review der vier deferred FIX/IMP-Items vor Merge.
+
+**AUDIT-Report:** _devprocess/analysis/security/AUDIT-014-ba25-2026-05-03.md
