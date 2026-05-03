@@ -126,9 +126,14 @@ Phase: Released | Status: Done
 | FEAT-03-20 | Feature | History Search ueber alle Konversationen | Planned | Building | EPIC-03 | BA |  |  | 2026-04-30 |  |
 | FEAT-03-21 | Feature | Engine-Extract zu @obsilo/memory-engine | Planned | Building | EPIC-03 | BA |  |  | 2026-04-30 |  |
 | FEAT-03-22 | Feature | Privacy und Forget-Right | Planned | Building | EPIC-03 | BA |  |  | 2026-04-30 |  |
-| FEAT-03-23 | Feature | Memory-UX, Onboarding und Settings-Migration | Done | Released | EPIC-03 | BA |  |  | 2026-04-30 |  |
+| FEAT-03-23 | Feature | Memory-UX, Onboarding und Settings-Migration | Active | Building | EPIC-03 | BA |  |  | 2026-05-03 |  |
 | FEAT-03-24 | Feature | Inference-Pass fuer Derives | Planned | Building | EPIC-03 | BA |  |  | 2026-04-30 |  |
-| FEAT-03-25 | Feature | Vault-Note-zu-Fact-Extraction | Done | Released | EPIC-03 | BA |  |  | 2026-04-30 |  |
+| FEAT-03-25 | Feature | Vault-Note-zu-Fact-Extraction | Active | Building | EPIC-03, BA-25, ADR-109 | BA |  |  | 2026-05-03 |  |
+| IMP-03-17-01 | Improvement | recall_memory queryFacts auf Cosine ueber fact_embeddings | Planned | Building | FEAT-03-17, EPIC-03 | REV |  |  | 2026-05-03 | P2 |
+| IMP-03-18-01 | Improvement | AgingService Daily-Scheduler (setInterval, nicht nur onload) | Planned | Building | FEAT-03-18, EPIC-03 | REV |  |  | 2026-05-03 | P2 |
+| IMP-03-18-02 | Improvement | DriftEventBus Subscriber in ExtractionQueue (Throttle-Bypass) | Planned | Building | FEAT-03-18, EPIC-03 | REV |  |  | 2026-05-03 | P2 |
+| FIX-03-23-01 | Fix | FEAT-03-23 falsch auf Done markiert -- Onboarding-Memory-Step + Coach-Marks fehlen | Planned | Building | FEAT-03-23, EPIC-03 | REV |  |  | 2026-05-03 | P2 |
+| FIX-03-25-01 | Fix | FEAT-03-25 falsch auf Done markiert -- VaultMemorySourceService fehlt komplett | Planned | Building | FEAT-03-25, EPIC-03 | REV |  |  | 2026-05-03 | P2 |
 | FIX-03-06-01 | Fix | Session-Summary .md-Dateien werden nicht geschrieben | Done | Released | FEAT-03-06, EPIC-03 | BUG |  |  | 2026-04-30 | P1 |
 | FIX-03-06-02 | Fix | Memory-Extractor und Context-Prefix-Generator retry-spammen bei permanenten Prov | Done | Released | FEAT-03-06, EPIC-03 | BUG |  |  | 2026-04-30 | P2 |
 | FIX-03-14-01 | Fix | - WriterLock nicht verdrahtet | Done | Released | FEAT-03-14, EPIC-03 | BUG |  |  | 2026-04-30 | P2 |
@@ -424,6 +429,20 @@ Phase: Building | Status: Active
 | FEAT-22-07 | Feature | Prefix Split + `+` Menu Integration | Done | Released | EPIC-22 | BA |  |  | 2026-04-30 |  |
 | FIX-22-07-01 | Fix | Sidebar view crashes during BRAT hot-reload (opens before doLoad) | Open | Building | FEAT-22-07, EPIC-22 | BUG |  |  | 2026-04-30 | P0 |
 
+### EPIC-23: Cross-Surface AI Workflow
+
+Source: `_devprocess/requirements/epics/EPIC-23-cross-surface-ai-workflow.md`
+Phase: Building | Status: Active
+
+| ID | Type | Title | Status | Phase | Refs | Source | Commit | Claim | Last change | Notes |
+|----|------|-------|--------|-------|------|--------|--------|-------|-------------|-------|
+| FEAT-23-01 | Feature | save_to_memory + save_conversation MCP-Tools | Active | Building | EPIC-23, BA-26, ADR-107 | BA |  |  | 2026-05-03 | P0 |
+| FEAT-23-02 | Feature | recall_memory + search_history MCP-Tools | Active | Building | EPIC-23, BA-26, ADR-107, IMP-03-17-01 | BA |  |  | 2026-05-03 | P0 |
+| FEAT-23-03 | Feature | History-Sidebar Source-Tabs + Read-Only-View | Active | Building | EPIC-23, BA-26, FEAT-23-04 | BA |  |  | 2026-05-03 | P0 |
+| FEAT-23-04 | Feature | Source-Interface-Tagging + Settings Cross-Surface-Sync | Active | Building | EPIC-23, BA-26, ADR-108 | BA |  |  | 2026-05-03 | P0 |
+| FEAT-23-05 | Feature | update_memory V1-Deprecation + Migrations-Helper | Active | Building | EPIC-23, BA-26, ADR-107, FEAT-23-01 | BA |  |  | 2026-05-03 | P0 |
+| FEAT-23-06 | Feature | Memory-Profile-System (Wiedervorlage nach 2 Wochen Live-Use) | Planned | Candidates | EPIC-23, BA-26, BA-24, FEAT-23-01, FEAT-23-02, FEAT-23-04 | BA |  |  | 2026-05-03 | P1 |
+
 ## Cross-cutting Items (no Epic)
 
 ADRs and PLANs that span multiple epics.
@@ -516,11 +535,14 @@ ADRs and PLANs that span multiple epics.
 | ADR-84 | ADR | - Engine-Public-API-Versionierung | Accepted | Building | FEAT-03-21, ADR-77, ADR-80 | ARCH |  |  | 2026-04-30 |  |
 | ADR-85 | ADR | - Soft-Delete-Cascade | Accepted | Building | FEAT-03-22, ADR-77, ADR-79 | ARCH |  |  | 2026-04-30 |  |
 | ADR-86 | ADR | - Inference-Pass-Architektur | Accepted | Building | FEAT-03-24, ADR-77, ADR-83 | ARCH |  |  | 2026-04-30 |  |
-| ADR-87 | ADR | - Vault-Note-Memory-Source-Pipeline | Accepted | Building | FEAT-03-25, ADR-77, ADR-78, ADR-85 | ARCH |  |  | 2026-04-30 |  |
+| ADR-87 | ADR | - Vault-Note-Memory-Source-Pipeline | Superseded | Released | FEAT-03-25, ADR-77, ADR-78, ADR-85, ADR-109 | ARCH |  |  | 2026-05-03 |  |
 | ADR-88 | ADR | ChatGPT OAuth Provider Architecture | Accepted | Building |  | ARCH |  |  | 2026-04-30 |  |
 | ADR-89 | ADR | ChatGPT PKCE Loopback OAuth Flow | Accepted | Building |  | ARCH |  |  | 2026-04-30 |  |
 | ADR-90 | ADR | Cost-Aware Agent Heuristics | Accepted | Building |  | ARCH |  |  | 2026-04-30 |  |
 | ADR-91 | ADR | MCP Pipeline Routing and IgnoreService at Index Build | Accepted | Building |  | ARCH |  |  | 2026-04-30 |  |
+| ADR-107 | ADR | MCP-Memory-Tools Versionierung (V1 deprecaten, V2 als save_to_memory) | Proposed | Building | EPIC-23, BA-26, FEAT-23-01, FEAT-23-05 | ARCH |  |  | 2026-05-03 |  |
+| ADR-108 | ADR | Source-Interface-Tagging fuer cross-surface origin tracking | Proposed | Building | EPIC-23, BA-26, FEAT-23-04 | ARCH |  |  | 2026-05-03 |  |
+| ADR-109 | ADR | Vault-zu-Memory-Bruecke via Single-Listener-Pattern | Proposed | Building | FEAT-03-25, BA-25, ADR-87 (superseded) | ARCH |  |  | 2026-05-03 |  |
 | PLAN-01 | Plan | - Memory v2 Master Plan (Pfad alpha) | Active | Building | ADR-76, ADR-77, ADR-78, ADR-79 | ARCH |  |  | 2026-04-30 |  |
 | PLAN-04 | Plan | - Memory v2 Phase 1 Engine Foundation | Active | Building | FEAT-03-15, ADR-76, ADR-77, ADR-80 | ARCH |  |  | 2026-04-30 |  |
 | PLAN-05 | Plan | - Memory v2 Phase 2 Migration + Vault-RRF | Draft | Building | FEAT-03-16, ADR-77, ADR-78, ADR-80 | ARCH |  |  | 2026-04-30 |  |
