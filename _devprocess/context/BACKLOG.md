@@ -127,13 +127,13 @@ Phase: Released | Status: Done
 | FEAT-03-22 | Feature | Privacy und Forget-Right | Planned | Building | EPIC-03 | BA |  |  | 2026-04-30 |  |
 | FEAT-03-23 | Feature | Memory-UX, Onboarding und Settings-Migration | Active | Building | EPIC-03 | BA |  |  | 2026-05-03 |  |
 | FEAT-03-24 | Feature | Inference-Pass fuer Derives | Planned | Building | EPIC-03 | BA |  |  | 2026-04-30 |  |
-| FEAT-03-25 | Feature | Vault-Note-zu-Fact-Extraction | Active | Building | EPIC-03, BA-25, ADR-109 | BA |  |  | 2026-05-03 |  |
+| FEAT-03-25 | Feature | Vault-Note-zu-Fact-Extraction | Done | Released | EPIC-03, BA-25, ADR-109 | BA |  |  | 2026-05-03 |  |
 | FEAT-03-26 | Feature | Selektiver Top-Hub-Block im KV-Cache | Done | Released | EPIC-03, BA-25, ADR-97 | BA | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | P2 |
 | IMP-03-17-01 | Improvement | recall_memory queryFacts auf Cosine ueber fact_embeddings | Done | Released | FEAT-03-17, EPIC-03 | REV |  |  | 2026-05-03 | P2 |
 | IMP-03-18-01 | Improvement | AgingService Daily-Scheduler (setInterval, nicht nur onload) | Done | Released | FEAT-03-18, EPIC-03 | REV |  |  | 2026-05-03 | P2 |
 | IMP-03-18-02 | Improvement | DriftEventBus Subscriber in ExtractionQueue (Throttle-Bypass) | Done | Released | FEAT-03-18, EPIC-03 | REV |  |  | 2026-05-03 | P2 |
 | FIX-03-23-01 | Fix | FEAT-03-23 falsch auf Done markiert -- Onboarding-Memory-Step + Coach-Marks fehlen | Planned | Building | FEAT-03-23, EPIC-03 | REV |  |  | 2026-05-03 | P2 |
-| FIX-03-25-01 | Fix | FEAT-03-25 falsch auf Done markiert -- VaultMemorySourceService fehlt komplett | Planned | Building | FEAT-03-25, EPIC-03 | REV |  |  | 2026-05-03 | P2 |
+| FIX-03-25-01 | Fix | FEAT-03-25 falsch auf Done markiert -- VaultMemorySourceService fehlt komplett | Done | Released | FEAT-03-25, EPIC-03, ADR-109 | REV |  |  | 2026-05-03 | P2 |
 | FIX-03-06-01 | Fix | Session-Summary .md-Dateien werden nicht geschrieben | Done | Released | FEAT-03-06, EPIC-03 | BUG |  |  | 2026-04-30 | P1 |
 | FIX-03-06-02 | Fix | Memory-Extractor und Context-Prefix-Generator retry-spammen bei permanenten Prov | Done | Released | FEAT-03-06, EPIC-03 | BUG |  |  | 2026-04-30 | P2 |
 | FIX-03-14-01 | Fix | - WriterLock nicht verdrahtet | Done | Released | FEAT-03-14, EPIC-03 | BUG |  |  | 2026-04-30 | P2 |
@@ -592,7 +592,7 @@ ADRs and PLANs that span multiple epics.
 | ADR-106 | ADR | Health-Modal-Severity und Activity-Trigger-Cooldown | Accepted | Building | BA-25, FEAT-19-18, FEAT-19-19 | ARCH | | sebastian-opus-4.7 @ 2026-05-03 | 2026-05-03 | |
 | ADR-107 | ADR | MCP-Memory-Tools Versionierung (V1 deprecaten, V2 als save_to_memory) | Accepted | Released | EPIC-23, BA-26, FEAT-23-01, FEAT-23-05 | ARCH |  |  | 2026-05-03 |  |
 | ADR-108 | ADR | Source-Interface-Tagging fuer cross-surface origin tracking | Accepted | Released | EPIC-23, BA-26, FEAT-23-04 | ARCH |  |  | 2026-05-03 |  |
-| ADR-109 | ADR | Vault-zu-Memory-Bruecke via Single-Listener-Pattern | Proposed | Building | FEAT-03-25, BA-25, ADR-87 (superseded) | ARCH |  |  | 2026-05-03 |  |
+| ADR-109 | ADR | Vault-zu-Memory-Bruecke via Single-Listener-Pattern | Accepted | Released | FEAT-03-25, BA-25, ADR-87 (superseded) | ARCH |  |  | 2026-05-03 |  |
 | PLAN-01 | Plan | - Memory v2 Master Plan (Pfad alpha) | Active | Building | ADR-76, ADR-77, ADR-78, ADR-79 | ARCH |  |  | 2026-04-30 |  |
 | PLAN-04 | Plan | - Memory v2 Phase 1 Engine Foundation | Active | Building | FEAT-03-15, ADR-76, ADR-77, ADR-80 | ARCH |  |  | 2026-04-30 |  |
 | PLAN-05 | Plan | - Memory v2 Phase 2 Migration + Vault-RRF | Draft | Building | FEAT-03-16, ADR-77, ADR-78, ADR-80 | ARCH |  |  | 2026-04-30 |  |
