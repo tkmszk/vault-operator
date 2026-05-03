@@ -478,6 +478,8 @@ Phase: Building | Status: Active
 | FIX-23-01-02 | Fix | sync_session ohne source_interface -> Conversation landet im 'unknown'/'obsilo'-Tab statt Provider-Tab | Done | Released | FEAT-23-01, FEAT-23-03, EPIC-23 | BUG |  |  | 2026-05-03 | P1 |
 | FIX-23-01-03 | Fix | Auto-Session-Tracking erzeugt Duplikat-Eintrag im Unknown-Tab bei EPIC-23 Tools | Done | Released | FEAT-23-01, FEAT-23-03, EPIC-23 | BUG |  |  | 2026-05-03 | P1 |
 | FIX-23-01-04 | Fix | ensureSession erzeugt leere ConversationStore-Row bei jedem MCP-Call -> lazy machen | Done | Released | FEAT-23-01, EPIC-23, FIX-23-01-03 | BUG |  |  | 2026-05-03 | P1 |
+| FIX-23-01-05 | Fix | save_conversation per-message-size-cap (DoS-Vektor, AUDIT-015 H-1) | Done | Released | FEAT-23-01, EPIC-23, AUDIT-015 | SEC |  |  | 2026-05-03 | H |
+| IMP-23-01-01 | Improvement | Eval-Coverage Pass: MCP-Tool-Handlers + Vault-Tools + FrontmatterIndexer-Bridge (50 neue Tests) | Done | Released | EPIC-23, FEAT-03-25, AUDIT-015 | REV |  |  | 2026-05-03 | P2 |
 | ADR-110 | ADR | Living-Document-Semantik + Cross-Interface-Thread-Klammer fuer Cross-Surface MCP | Accepted | Released | FIX-23-01-01, BA-24, FEAT-23-01, FEAT-03-18 | ARCH |  |  | 2026-05-03 |  |
 
 ## Cross-cutting Items (no Epic)
