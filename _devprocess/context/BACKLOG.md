@@ -129,9 +129,9 @@ Phase: Released | Status: Done
 | FEAT-03-23 | Feature | Memory-UX, Onboarding und Settings-Migration | Active | Building | EPIC-03 | BA |  |  | 2026-05-03 |  |
 | FEAT-03-24 | Feature | Inference-Pass fuer Derives | Planned | Building | EPIC-03 | BA |  |  | 2026-04-30 |  |
 | FEAT-03-25 | Feature | Vault-Note-zu-Fact-Extraction | Active | Building | EPIC-03, BA-25, ADR-109 | BA |  |  | 2026-05-03 |  |
-| IMP-03-17-01 | Improvement | recall_memory queryFacts auf Cosine ueber fact_embeddings | Planned | Building | FEAT-03-17, EPIC-03 | REV |  |  | 2026-05-03 | P2 |
-| IMP-03-18-01 | Improvement | AgingService Daily-Scheduler (setInterval, nicht nur onload) | Planned | Building | FEAT-03-18, EPIC-03 | REV |  |  | 2026-05-03 | P2 |
-| IMP-03-18-02 | Improvement | DriftEventBus Subscriber in ExtractionQueue (Throttle-Bypass) | Planned | Building | FEAT-03-18, EPIC-03 | REV |  |  | 2026-05-03 | P2 |
+| IMP-03-17-01 | Improvement | recall_memory queryFacts auf Cosine ueber fact_embeddings | Done | Released | FEAT-03-17, EPIC-03 | REV |  |  | 2026-05-03 | P2 |
+| IMP-03-18-01 | Improvement | AgingService Daily-Scheduler (setInterval, nicht nur onload) | Done | Released | FEAT-03-18, EPIC-03 | REV |  |  | 2026-05-03 | P2 |
+| IMP-03-18-02 | Improvement | DriftEventBus Subscriber in ExtractionQueue (Throttle-Bypass) | Done | Released | FEAT-03-18, EPIC-03 | REV |  |  | 2026-05-03 | P2 |
 | FIX-03-23-01 | Fix | FEAT-03-23 falsch auf Done markiert -- Onboarding-Memory-Step + Coach-Marks fehlen | Planned | Building | FEAT-03-23, EPIC-03 | REV |  |  | 2026-05-03 | P2 |
 | FIX-03-25-01 | Fix | FEAT-03-25 falsch auf Done markiert -- VaultMemorySourceService fehlt komplett | Planned | Building | FEAT-03-25, EPIC-03 | REV |  |  | 2026-05-03 | P2 |
 | FIX-03-06-01 | Fix | Session-Summary .md-Dateien werden nicht geschrieben | Done | Released | FEAT-03-06, EPIC-03 | BUG |  |  | 2026-04-30 | P1 |
