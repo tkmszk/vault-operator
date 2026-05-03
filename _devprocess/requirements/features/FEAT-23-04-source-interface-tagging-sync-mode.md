@@ -85,13 +85,13 @@ dann bleibt das Memory-Layer transparent und vorhersagbar.
 
 ## Technical NFRs
 
-- **Migration**: ConversationStore-Schema v2 -> v3 additiv (ALTER
-  TABLE ADD COLUMN source_interface TEXT DEFAULT 'obsilo' plus
-  ALTER TABLE ADD COLUMN sync_state TEXT DEFAULT 'confirmed'),
-  bestehende Eintraege ohne Tag werden als 'obsilo' interpretiert,
-  ohne sync_state als 'confirmed'.
-- **Performance**: Migration laeuft auch bei 5000 Conversations
-  unter 1s (additives ALTER TABLE).
+- **Migration**: ConversationStore ist JSON-basiert; Migration
+  ueber additive optionale Felder am `ConversationMeta`-Interface
+  (`sourceInterface?`, `syncState?`). Bestehende Conversation-
+  Dateien ohne diese Felder werden beim Laden als 'obsilo' /
+  'confirmed' interpretiert. Kein Schreib-Pass noetig.
+- **Performance**: O(1) pro Conversation -- Default-Mapping passiert
+  beim Lesen.
 - **Settings-Persistenz**: ueber die bestehende Settings-Pipeline
   (`memory.crossSurface` als neuer Block, mit:
   - `defaultSyncMode: 'auto' | 'manual'` (Default: `'auto'`)

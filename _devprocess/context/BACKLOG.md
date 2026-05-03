@@ -436,12 +436,13 @@ Phase: Building | Status: Active
 
 | ID | Type | Title | Status | Phase | Refs | Source | Commit | Claim | Last change | Notes |
 |----|------|-------|--------|-------|------|--------|--------|-------|-------------|-------|
-| FEAT-23-01 | Feature | save_to_memory + save_conversation MCP-Tools | Active | Building | EPIC-23, BA-26, ADR-107 | BA |  |  | 2026-05-03 | P0 |
-| FEAT-23-02 | Feature | recall_memory + search_history MCP-Tools | Active | Building | EPIC-23, BA-26, ADR-107, IMP-03-17-01 | BA |  |  | 2026-05-03 | P0 |
-| FEAT-23-03 | Feature | History-Sidebar Source-Tabs + Read-Only-View | Active | Building | EPIC-23, BA-26, FEAT-23-04 | BA |  |  | 2026-05-03 | P0 |
-| FEAT-23-04 | Feature | Source-Interface-Tagging + Settings Cross-Surface-Sync | Active | Building | EPIC-23, BA-26, ADR-108 | BA |  |  | 2026-05-03 | P0 |
-| FEAT-23-05 | Feature | update_memory V1-Deprecation + Migrations-Helper | Active | Building | EPIC-23, BA-26, ADR-107, FEAT-23-01 | BA |  |  | 2026-05-03 | P0 |
+| FEAT-23-01 | Feature | save_to_memory + save_conversation MCP-Tools | Done | Released | EPIC-23, BA-26, ADR-107 | BA |  |  | 2026-05-03 | P0 |
+| FEAT-23-02 | Feature | recall_memory + search_history MCP-Tools | Done | Released | EPIC-23, BA-26, ADR-107, IMP-03-17-01 | BA |  |  | 2026-05-03 | P0 |
+| FEAT-23-03 | Feature | History-Sidebar Source-Tabs + Read-Only-View | Done | Released | EPIC-23, BA-26, FEAT-23-04 | BA |  |  | 2026-05-03 | P0 |
+| FEAT-23-04 | Feature | Source-Interface-Tagging + Settings Cross-Surface-Sync | Done | Released | EPIC-23, BA-26, ADR-108 | BA |  |  | 2026-05-03 | P0 |
+| FEAT-23-05 | Feature | update_memory V1-Deprecation + Migrations-Helper | Done | Released | EPIC-23, BA-26, ADR-107, FEAT-23-01 | BA |  |  | 2026-05-03 | P0 |
 | FEAT-23-06 | Feature | Memory-Profile-System (Wiedervorlage nach 2 Wochen Live-Use) | Planned | Candidates | EPIC-23, BA-26, BA-24, FEAT-23-01, FEAT-23-02, FEAT-23-04 | BA |  |  | 2026-05-03 | P1 |
+| FIX-23-04-01 | Fix | Perplexity MCP-Connect schlaegt mit "Unexpected content type" fehl | Planned | Building | FEAT-23-04, EPIC-23, ADR-108 | BUG |  |  | 2026-05-03 | P1 |
 
 ## Cross-cutting Items (no Epic)
 
@@ -540,8 +541,8 @@ ADRs and PLANs that span multiple epics.
 | ADR-89 | ADR | ChatGPT PKCE Loopback OAuth Flow | Accepted | Building |  | ARCH |  |  | 2026-04-30 |  |
 | ADR-90 | ADR | Cost-Aware Agent Heuristics | Accepted | Building |  | ARCH |  |  | 2026-04-30 |  |
 | ADR-91 | ADR | MCP Pipeline Routing and IgnoreService at Index Build | Accepted | Building |  | ARCH |  |  | 2026-04-30 |  |
-| ADR-107 | ADR | MCP-Memory-Tools Versionierung (V1 deprecaten, V2 als save_to_memory) | Proposed | Building | EPIC-23, BA-26, FEAT-23-01, FEAT-23-05 | ARCH |  |  | 2026-05-03 |  |
-| ADR-108 | ADR | Source-Interface-Tagging fuer cross-surface origin tracking | Proposed | Building | EPIC-23, BA-26, FEAT-23-04 | ARCH |  |  | 2026-05-03 |  |
+| ADR-107 | ADR | MCP-Memory-Tools Versionierung (V1 deprecaten, V2 als save_to_memory) | Accepted | Released | EPIC-23, BA-26, FEAT-23-01, FEAT-23-05 | ARCH |  |  | 2026-05-03 |  |
+| ADR-108 | ADR | Source-Interface-Tagging fuer cross-surface origin tracking | Accepted | Released | EPIC-23, BA-26, FEAT-23-04 | ARCH |  |  | 2026-05-03 |  |
 | ADR-109 | ADR | Vault-zu-Memory-Bruecke via Single-Listener-Pattern | Proposed | Building | FEAT-03-25, BA-25, ADR-87 (superseded) | ARCH |  |  | 2026-05-03 |  |
 | PLAN-01 | Plan | - Memory v2 Master Plan (Pfad alpha) | Active | Building | ADR-76, ADR-77, ADR-78, ADR-79 | ARCH |  |  | 2026-04-30 |  |
 | PLAN-04 | Plan | - Memory v2 Phase 1 Engine Foundation | Active | Building | FEAT-03-15, ADR-76, ADR-77, ADR-80 | ARCH |  |  | 2026-04-30 |  |
