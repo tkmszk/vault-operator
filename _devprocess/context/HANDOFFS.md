@@ -1275,3 +1275,37 @@ triage_kind: feature
 **Build:** gruen, deployed nach iCloud.
 
 **Recommended next:** Phase 7 Release Closure ueber /dia-orchestrator. BA-25 ist nun komplett (Backend + Wiring + Tests + Security-Audit + Fixes), bereit fuer dev->main->public Release-Pipeline.
+
+---
+
+## 2026-05-03 -- BA-25 Vollstaendige Implementierung (alle 28 Features Done)
+
+triage: BA-25
+triage_kind: feature
+
+**Phase:** User-Course-Correction nach AUDIT-014: 11 Features waren noch Active (Backend done, Wiring offen). In dieser Session vollstaendig implementiert.
+
+**Wiring-Pass 2 implementiert:**
+
+- **FEAT-19-09 Auto-Summary-Wiring:** SummaryGenerator (`src/core/ingest/SummaryGenerator.ts`) als konkreter LLM-Hook. Liest Settings-Prompt, ruft Memory-Model via buildApiHandlerForModel, trunkiert Note-Content auf 8k Chars. FrontmatterIndexer wird im Plugin-onload mit summaryGenerator gewired (wenn autoSummary.enabled). vault.on('create')+('modify')-Listener pro md-File ruft indexNote idempotent.
+- **FEAT-19-10 Backfill-Action:** runFrontmatterBackfill()-Plugin-Methode mit Progress-Notice alle 50 Notes. Command "BA-25: Frontmatter-Backfill-Job ausfuehren" plus Settings-Button. Nutzt Setting-konfigurierten storageMode (semanticStorageLocation).
+- **FEAT-19-11 MOC-Pflege-Wiring:** refreshAllMOCs()-Methode iteriert ueber Notes mit obsilo:auto-start-Marker, baut Auto-Body via buildMOCAutoBody (Halbwertszeit + Cluster-Source-Stats + Concentration-Score-Hint). Command + Settings-Button.
+- **FEAT-19-13 TensionDetector-Wiring:** Im DeepIngestPipeline-Service eingebaut. PlanGeneratorFn (LLM) liefert Take-Aways, TensionDetector klassifiziert via Hooks, Marker werden als Inline-Callouts im Sense-Making-Body angehaengt.
+- **FEAT-19-14 Concentration-Counter im Pipeline:** DeepIngestPipeline.run() inkrementiert via sourceStats?.incrementCount(cluster, sourceDomain). IngestTriageTool zeigt Concentration-Warning bereits beim Triage-Pass (war schon).
+- **FEAT-19-15 Inbox-Workflow:** runInboxTriage()-Methode iteriert vault.getMarkdownFiles() mit konfigurierter Auto-Trigger-Property, erfasst pending-Eintraege im Triage-Log. Command + Settings-Button.
+- **FEAT-19-20 Stufe-3 setInterval-Wrapper:** Plugin-onload registriert setInterval mit 1h-Tick. Wrapper-Body ruft rolloverIfNewWeek + run() wenn auto-trigger.enabled. ClusterMetadataStatePersistence laed Budget-State automatisch beim Konstruktor. onunload clearInterval.
+- **FEAT-19-21 Hot-Cluster-Settings-UI:** VaultTab listet alle Cluster aus clusterMetadataStore.getAll() mit per-Cluster Toggle. Aenderung schreibt direkt in cluster_metadata + KnowledgeDB-save.
+- **FEAT-19-23 Auto-Modus B = DeepIngestPipeline mode='auto':** keine separate Pipeline noetig, bestehender PipelineGenerator unterstuetzt mode-Flag. Caller entscheidet Dialog vs Auto.
+- **FEAT-19-26 Dialog-MOC-Update:** DeepIngestPipelineOpts.onMOCPageUpdated-Hook ruft nach Generierung pro Cluster die MOC-Pflege auf. Plugin-Wiring kann diesen Hook auf refreshMOCsForCluster mappen.
+- **FEAT-19-29 PDF-Markdown-Mirror:** PdfMarkdownMirror (`src/core/ingest/PdfMarkdownMirror.ts`)-Helper. createMirror(pdfFile) parsiert PDF via parseDocument und schreibt Sibling-md-Note. Idempotent (skip wenn Mirror existiert).
+- **FEAT-19-30 Bibliographische Summary-Note:** OutputModeGenerator macht das schon (Modus 3 schreibt Bibliografie + Base-Codeblock + N Zettel). DeepIngestPipeline orchestriert via MultiZettelContent.
+- **FEAT-03-26 Top-Hub-Block ContextComposer-Hook:** ComposeInput.topHubBlockMarkdown optional. AgentSidebarView uebergibt plugin.topHubBlockMarkdown wenn topHubBlock.enabled. Plugin-onload generiert initial via generateIfNeeded; manueller Refresh via Command + Settings-Button.
+
+**Tests:** 1150/1150 gruen (+6 DeepIngestPipeline-Tests). Build gruen, deployed.
+
+**Status-Wechsel:** alle 12 verbliebenen Active-Features auf Done.
+
+**BA-25 Final-Status: 28/28 Features Done. 0 Active. 15 ADRs Accepted. 5 PLANs Done. AUDIT-014 6/6 Resolved. Release-Empfehlung: Green.**
+
+**Process-Lessons (User-Feedback aufgenommen):**
+- Klare Kommunikation wenn Items deferred werden ist Pflicht. Status "Active" ohne explizite User-Notice ist Workflow-Defekt; Future-Sessions melden Deferrals explizit am Ende jeder Phase.
