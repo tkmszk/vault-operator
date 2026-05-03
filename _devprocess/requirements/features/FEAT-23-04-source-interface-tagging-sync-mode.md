@@ -18,9 +18,18 @@ depends-on: []
 Source-Interface-Tag (`'chatgpt' | 'claude-ai' | 'claude-code' |
 'perplexity' | 'obsilo' | 'unknown'`) wird durchgaengig in Memory
 und History gespeichert. Settings-Tab "Memory" bekommt einen neuen
-Bereich "Cross-Surface Sync" mit zwei Modi (Auto-Sync vs Manual-
-Sync). Memory-Thresholds (Throttle, Auto-Save) werden mit der
-internen Pipeline geteilt.
+Bereich "Cross-Surface Sync" mit:
+- einem globalen Default-Sync-Mode (Auto vs Manual),
+- einem Per-Provider-Override (`global / Auto / Manual`) fuer jeden
+  Provider in der Whitelist.
+
+Memory-Thresholds (Throttle, Auto-Save) werden mit der internen
+Pipeline geteilt.
+
+**Privacy-Use-Case**: ChatGPT und Perplexity werden im Familien-
+Kontext mit geteilten Accounts genutzt. Per-Provider-Override
+verhindert, dass Familien-Threads ungewollt in Sebastians Memory
+landen.
 
 ## Benefits Hypothesis
 
@@ -30,18 +39,28 @@ dann bleibt das Memory-Layer transparent und vorhersagbar.
 
 ## User Stories
 
-**US-01** -- Settings-Sicht:
+**US-01** -- Settings-Sicht (global):
 - **As** Sebastian
-- **I want to** zwischen Auto-Sync und Manual-Sync waehlen koennen,
-- **so that** ich die Cross-Surface-Cost selbst kontrolliere.
+- **I want to** einen globalen Default-Sync-Mode (Auto / Manual)
+  setzen koennen,
+- **so that** neue oder unbekannte Provider sinnvoll vorkonfiguriert
+  sind.
 
-**US-02** -- Konsistente Thresholds:
+**US-02** -- Per-Provider-Override (Privacy):
+- **As** Sebastian
+- **I want to** pro Provider entscheiden, ob Auto-Sync oder
+  Manual-Sync gilt,
+- **so that** ChatGPT und Perplexity (Familien-Account, Kinder-
+  Hausaufgaben-Threads) auf Manual stehen koennen, waehrend
+  Claude.ai und Claude Code auf Auto laufen.
+
+**US-03** -- Konsistente Thresholds:
 - **As** Sebastian
 - **I want to** dass externe Conversations dieselben Auto-Save-
   Schwellen wie interne nutzen,
 - **so that** ich Settings nicht doppelt pflegen muss.
 
-**US-03** -- Filter:
+**US-04** -- Filter:
 - **As** Sebastian
 - **I want to** in `recall_memory` und `search_history` nach
   source_interface filtern koennen,
@@ -54,12 +73,15 @@ dann bleibt das Memory-Layer transparent und vorhersagbar.
 |----|-----------|-------------|--------|
 | SC-01 | source_interface-Spalte in `conversations`-Tabelle (Migration v3) | Schema-Audit | SQL |
 | SC-02 | source_interface in `facts.source_interface` ueberall gesetzt | DB-Audit | SQL |
-| SC-03 | Settings "Cross-Surface Sync" mit Toggle Auto/Manual sichtbar | UI-Sicht | Manuell |
-| SC-04 | Auto-Sync triggert ExtractionQueue mit Plugin-internen Throttles | Eval | Test |
-| SC-05 | Manual-Sync schreibt Conversation in pending-Bucket, ohne Extraction zu triggern | Eval | Test |
-| SC-06 | Whitelist-Validation, unbekannte Werte fallen auf 'unknown' | Test | Test |
-| SC-07 | Pending-Conversations sind im jeweiligen History-Tab sichtbar mit `pending`-Marker | UI-Sicht | Manuell |
-| SC-08 | Pending -> Confirmed-Pfade: Star-Click in Obsilo, mark_for_memory MCP-Call, save_to_memory parallel | Eval | Test |
+| SC-03 | Settings "Cross-Surface Sync" mit globalem Default-Toggle Auto/Manual | UI-Sicht | Manuell |
+| SC-04 | Per-Provider-Override-Liste mit drei Werten ('global', 'auto', 'manual') pro Whitelist-Provider | UI-Sicht | Manuell |
+| SC-05 | Default-Settings auf neuer Installation: Claude.ai/Claude Code = Auto, ChatGPT/Perplexity/Unknown = Manual | Test | Test |
+| SC-06 | Auto-Sync triggert ExtractionQueue mit Plugin-internen Throttles | Eval | Test |
+| SC-07 | Manual-Sync schreibt Conversation in pending-Bucket, ohne Extraction zu triggern | Eval | Test |
+| SC-08 | Effektiver Mode pro Conversation = `perProvider[source_interface] ?? defaultSyncMode` | Test | Test |
+| SC-09 | Whitelist-Validation, unbekannte Werte fallen auf 'unknown' (Sync-Mode laut Per-Provider-Override fuer 'unknown') | Test | Test |
+| SC-10 | Pending-Conversations sind im jeweiligen History-Tab sichtbar mit `pending`-Marker | UI-Sicht | Manuell |
+| SC-11 | Pending -> Confirmed-Pfade: Star-Click in Obsilo, mark_for_memory MCP-Call, save_to_memory parallel | Eval | Test |
 
 ## Technical NFRs
 
@@ -71,8 +93,14 @@ dann bleibt das Memory-Layer transparent und vorhersagbar.
 - **Performance**: Migration laeuft auch bei 5000 Conversations
   unter 1s (additives ALTER TABLE).
 - **Settings-Persistenz**: ueber die bestehende Settings-Pipeline
-  (`memory.crossSurface` als neuer Block, mit `syncMode:
-  'auto' | 'manual'` und Default `'auto'`).
+  (`memory.crossSurface` als neuer Block, mit:
+  - `defaultSyncMode: 'auto' | 'manual'` (Default: `'auto'`)
+  - `perProvider: Record<SourceInterface, 'global' | 'auto' |
+    'manual'>` mit Defaults: claude-ai/claude-code = 'global',
+    chatgpt/perplexity/unknown = 'manual', obsilo = 'global').
+  Default-Mapping macht Sebastians Familien-Use-Case (ChatGPT,
+  Perplexity geteilt) sofort sicher, ohne dass er die Settings
+  selbst erstmal aufrufen muss.
 - **Pending-Bucket**: `sync_state = 'pending' | 'confirmed' |
   'rejected'`. Pending-Conversations werden gelistet aber nicht
   im ExtractionQueue verarbeitet. Pending -> Confirmed Uebergang
@@ -89,7 +117,9 @@ dann bleibt das Memory-Layer transparent und vorhersagbar.
 ## Definition of Done
 
 - [ ] Schema-Migration + Tests
-- [ ] Settings-UI + Persistenz
+- [ ] Settings-UI mit Default-Toggle + Per-Provider-Liste
+- [ ] Settings-Persistenz mit privacy-sicheren Defaults
+- [ ] resolveSyncMode(sourceInterface) Helper mit Test
 - [ ] Whitelist-Validation im MCP-Tool-Layer
 - [ ] Filter-API in ConversationStore + RecallMemoryTool +
       SearchHistoryTool
@@ -99,3 +129,5 @@ dann bleibt das Memory-Layer transparent und vorhersagbar.
 
 - Profil-Routing (FEAT-23-06)
 - Per-Source Cost-Telemetrie (Folge-IMP wenn Bedarf entsteht)
+- Per-Conversation-Override (waere noch granularer; falls Bedarf,
+  IMP-Folge mit `conversations.sync_mode_override`-Spalte)

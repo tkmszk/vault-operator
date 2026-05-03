@@ -82,6 +82,12 @@ Konkret:
    - `SearchHistoryTool` mit optionalem Filter
 6. UI: History-Sidebar Source-Tabs, Source-Pill am Listeneintrag,
    Read-Only-Banner in Chat-View bei externen Conversations.
+7. Sync-Mode wird **per Provider** aufgeloest, nicht global. Settings
+   tragen einen globalen Default plus Per-Provider-Override
+   (`'global' | 'auto' | 'manual'`). Privacy-sichere Defaults:
+   chatgpt + perplexity + unknown = manual. Helper
+   `resolveSyncMode(sourceInterface)` zentralisiert die Aufloesung
+   damit MCP-Handler und ExtractionQueue konsistent sind.
 
 ## Konsequenzen
 

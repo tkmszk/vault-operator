@@ -207,14 +207,41 @@ Der Tool-Handler nimmt diesen Wert als Default. Ohne expliziten
 Wert: Whitelist-Fallback `'unknown'` (sichtbar als eigener Tab,
 manuell re-tagbar).
 
-#### Globale Setting vs Per-Provider
+#### Per-Provider-Setting mit globalem Default
 
-Sync-Mode ist global, nicht pro Provider. Begruendung: weniger
-Konfigurations-Aufwand. Falls Live-Use zeigt dass ein
-Per-Provider-Override gebraucht wird (zB ChatGPT auf Auto,
-Perplexity auf Manual), wird das als Folge-IMP nachgezogen.
+Sync-Mode ist **pro Provider** konfigurierbar mit einem globalen
+Default. Begruendung: ChatGPT und Perplexity nutzt Sebastian im
+Familienkontext (geteilte Accounts, Kinder-Hausaufgaben-Threads),
+Claude.ai und Claude Code sind seine persoenlichen Tools. Eine
+globale Auto-Sync-Setting wuerde Familien-Inhalte ungewollt in
+Sebastians Memory ziehen.
 
-Setting-Pfad: `Settings -> Memory -> Cross-Surface Sync`.
+Setting-Struktur:
+
+```
+Settings -> Memory -> Cross-Surface Sync
+  Default Sync-Mode (fuer 'unknown' und neu erkannte Provider): [Auto / Manual]
+  Per Provider:
+    Obsilo               [global / Auto / Manual]   default: global
+    Claude.ai            [global / Auto / Manual]   default: Auto
+    Claude Code          [global / Auto / Manual]   default: Auto
+    ChatGPT              [global / Auto / Manual]   default: Manual
+    Perplexity           [global / Auto / Manual]   default: Manual
+    Unknown              [global / Auto / Manual]   default: Manual
+```
+
+Werte:
+- `'global'` -> nimmt den Default-Mode.
+- `'auto'` / `'manual'` -> ueberschreibt den Default fuer diesen
+  Provider.
+
+Defaults sind so gewaehlt, dass sensible / geteilte Provider auf
+Manual stehen. Sebastian kann pro Provider umstellen ohne andere zu
+beruehren.
+
+Effektiver Mode pro Conversation = `perProvider[source_interface]
+?? defaultSyncMode`. Resolved zur Schreib-Zeit; Aenderungen am
+Setting wirken nur auf zukuenftige Eintraege.
 
 ### 5.5 Memory-Threshold-Sharing
 
@@ -306,8 +333,14 @@ Bewusst deferred:
   Mitigation: Threshold-Sharing mit interner Pipeline + sichtbares
   Cost-Pannel im Settings-Tab.
 - **R-Privacy**: Externe Tools senden potenziell sensible Inhalte
-  via MCP. Mitigation: Source-Interface-Tag erlaubt selektiven
-  Filter / Loeschung; Hard-Delete-Pfad (FEAT-03-22 Folge-IMP).
+  via MCP. **Konkretes Szenario**: ChatGPT + Perplexity werden im
+  Familien-Kontext mit geteilten Accounts genutzt (Kinder-
+  Hausaufgaben-Threads). Globaler Auto-Sync wuerde Familien-Inhalte
+  in Sebastians persoenliches Memory ziehen.
+  Mitigation: Per-Provider-Sync-Mode-Override (siehe Section 5.4).
+  Default-Settings: Claude.ai / Claude Code Auto, ChatGPT /
+  Perplexity / Unknown Manual. Source-Interface-Tag bleibt fuer
+  spaeteres Filtern / Loeschen.
 - **R-Schema-Drift**: Externe Clients koennen unbekannte
   source_interface-Werte schicken. Mitigation: Whitelist-Validation
   + 'unknown'-Fallback.
