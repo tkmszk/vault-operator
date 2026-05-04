@@ -1,7 +1,6 @@
 ---
 id: ADR-105
 title: Stufe-3 Job-Runner und Token-Budget-Enforcement
-status: Proposed
 deciders: Architecture
 date: 2026-05-03
 related:

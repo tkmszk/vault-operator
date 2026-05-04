@@ -3,7 +3,7 @@ id: BA-26
 title: Cross-Surface AI Workflow via Obsilo Remote MCP
 date: 2026-05-03
 scope: PoC
-status: Validated (skipped formal validation -- direct user need)
+status: Validated (PoC implemented, see Section 12 Implementation Mapping)
 related-bas: BA-24 (Unified Chat Memory v2)
 related-epics: EPIC-23 (Cross-Surface AI Workflow)
 ---
@@ -351,3 +351,27 @@ Bewusst deferred:
 ## 11. Stakeholder
 
 Sebastian (Solo-User), spaeter UCM-Initiative-User.
+
+## 12. Implementation Mapping (Phase-7 Closure 2026-05-04)
+
+EPIC-23 Cross-Surface AI Workflow umgesetzt mit folgenden Bausteinen:
+
+| BA-26 Element | Realisiert via | Status |
+|---|---|---|
+| H1: Externe Surfaces wollen Memory ueber MCP | FEAT-23-01 save_to_memory + save_conversation MCP | Released (commit 36fb055) |
+| H2: Cross-Surface-Recall ohne Re-Erklaerung | FEAT-23-02 recall_memory + search_history MCP | Released (commit 36fb055) |
+| H3: Source-Tabs in History | FEAT-23-03 History-Sidebar Tabs (Auto, Claude, ChatGPT, Perplexity, Other) | Released (commit 36fb055) |
+| H4: Source-Identitaet pro Provider | FEAT-23-04 Source-Interface-Tagging + per-Provider Sync-Mode | Released (commit 36fb055) |
+| H4: V1-update_memory abloesen | FEAT-23-05 V1-Deprecation + Migration-Helper | Released (commit 36fb055) |
+| Memory-Profile (Wiedervorlage) | FEAT-23-06 Memory-Profile Wiedervorlage | Planned (geparkt, Trigger: erstes Multi-Persona-Setup) |
+| Cloudflare Worker Relay | obsilo-relay.se-hanke.workers.dev (FEATURE-1403 Foundation) | Released |
+| Living Documents + Cross-Interface-Threads | ADR-110 + FIX-23-01-01..05 | Released |
+| Security Hardening | AUDIT-015 + AUDIT-016 (10 Findings, 9 resolved, 1 deferred IMP-23-04-05) | Released |
+
+Validation der Critical Hypotheses:
+- H1: Bestaetigt durch Live-Test mit Claude Desktop, Perplexity, ChatGPT.
+- H2: Bestaetigt durch Cross-Source-Recall in Obsilo-Sidebar (Source-Tabs sichtbar).
+- H3: Bestaetigt durch Tab-Filterung in HistoryPanel.
+- H4: V1 deprecated, Migration-Helper im Settings-Tab verfuegbar.
+
+KPIs (Section 6) muessen gegen Live-Nutzung gemessen werden -- erste 4 Wochen Production-Use als Datengrundlage.

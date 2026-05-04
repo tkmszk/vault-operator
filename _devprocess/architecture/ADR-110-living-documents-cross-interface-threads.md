@@ -1,7 +1,6 @@
 ---
 id: ADR-110
 title: Living-Document-Semantik plus Cross-Interface-Thread-Klammer fuer Cross-Surface MCP
-status: Proposed
 date: 2026-05-03
 deciders: Sebastian + Architekt-Agent
 related-features: FEAT-23-01, FEAT-23-03, FEAT-03-18, FEAT-03-19

@@ -1,7 +1,6 @@
 ---
 id: ADR-107
 title: MCP-Memory-Tools Versionierung -- V1 update_memory deprecaten, V2 als save_to_memory
-status: Proposed
 date: 2026-05-03
 deciders: Sebastian + Architekt-Agent
 related-features: FEAT-23-01, FEAT-23-02, FEAT-23-05

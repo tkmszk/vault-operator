@@ -1,7 +1,6 @@
 ---
 id: ADR-108
 title: Source-Interface-Tagging fuer cross-surface origin tracking
-status: Proposed
 date: 2026-05-03
 deciders: Sebastian + Architekt-Agent
 related-features: FEAT-23-04, FEAT-23-01, FEAT-23-02, FEAT-23-03

@@ -1,7 +1,6 @@
 ---
 id: ADR-103
 title: Source-Position-Marker und PDF-Strategie
-status: Proposed
 deciders: Architecture
 date: 2026-05-03
 related:

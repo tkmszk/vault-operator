@@ -5,6 +5,7 @@ epic: EPIC-03-context-memory-scaling
 priority: P1
 effort: M
 depends-on: [FEAT-03-14, FEAT-03-15, FEAT-03-17, FEAT-03-18, FEAT-03-22]
+adr-refs: [ADR-109]
 related:
   - PLAN-01-memory-v2-master.md
   - BA-UNIFIED-CHAT-MEMORY-V2.md (Section 5.1.1, Differenzierung Supermemory)

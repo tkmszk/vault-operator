@@ -1,7 +1,6 @@
 ---
 id: ADR-100
 title: Dialog-Ingest-State-Storage (ingest_session-Tabelle)
-status: Proposed
 deciders: Architecture
 date: 2026-05-03
 related:
