@@ -1,7 +1,6 @@
 ---
 id: ADR-102
 title: Auto-Trigger-Detection-Mechanik (vault.on-Listener)
-status: Proposed
 deciders: Architecture
 date: 2026-05-03
 related:

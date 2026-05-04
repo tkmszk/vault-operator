@@ -1338,3 +1338,61 @@ Auth/AccessControl).
 (LIKE-Escape), M-3 (get_context Source-Isolation), M-4 (UUID-IDs)
 live wirken. Worker-Redeploy NICHT noetig (alle Aenderungen
 plugin-side).
+
+---
+
+## 2026-05-04 -- BA-26 Cross-Surface AI Workflow (Implementation Mapping nachgereicht)
+
+**Branch:** chore/phase-7-release-closure
+**Phase:** Business-Analysis -> Requirements Engineering (rueckwirkend dokumentiert)
+
+BA-26 wurde am 2026-05-03 als PoC-Scope direkt in EPIC-23 + 5 P0
+Features (FEAT-23-01..05) + 1 P1 (FEAT-23-06 Wiedervorlage) ueberfuehrt
+ohne formale RE-Phase. Dieser Handoff dokumentiert das Mapping
+nachtraeglich, damit die V-Model-Kette Validated -> Implemented
+sichtbar bleibt.
+
+**Realisierte Features:** FEAT-23-01..05 alle Done/Released (commit
+36fb055). FEAT-23-06 Memory-Profile Wiedervorlage Planned mit
+explizitem Trigger (erstes Multi-Persona-Setup).
+
+**Critical Hypotheses Validation:** H1 Live-Test mit Claude/Perplexity/
+ChatGPT ok. H2 Cross-Source-Recall ok. H3 Source-Tabs ok. H4 V1
+deprecated, Migration-Helper im Settings-Tab.
+
+**KPIs (BA-26 Section 6):** muessen gegen Live-Nutzung gemessen werden.
+Erste 4 Wochen Production-Use als Datengrundlage.
+
+---
+
+## 2026-05-04 -- Phase 7 Release Closure (Phase 7 Final-Sync)
+
+**Branch:** chore/phase-7-release-closure
+**Phase:** Release-Closure (V-Model Endpunkt fuer den Zyklus seit v2.6.0)
+
+**Final-Sync der Artefakte:**
+- BA-25: Anhang C Implementation Closure ergaenzt (PLAN-10..14, Schema v9 -> v10, AUDIT-014 resolved)
+- BA-26: Section 12 Implementation Mapping ergaenzt, Status auf "Validated (PoC implemented)"
+- FEAT-03-25: ADR-109 in adr-refs Frontmatter eingetragen
+- ADR-100..110: status:Proposed aus Frontmatter entfernt (lebt im BACKLOG-Row, dort Accepted)
+- arc42 Section 1: Stand 2026-04-13 -> 2026-05-04, Status um EPIC-23, BA-25, AUDIT-014/015/016 erweitert
+- arc42 Section 5.5: KnowledgeDB Schema v5 -> v10
+- arc42 Section 5.9.1: Memory v2 Cross-Surface MCP-Block ergaenzt
+- arc42 Section 8.14: MCP-Tools-Block aktualisiert (Memory-v2 Tools, Hardening, ADRs 107/108/110)
+- arc42 Section 9: ADR-Tabelle um ADR-90..110 erweitert (21 neue Eintraege)
+
+**Backlog-Cleanup:** 8 FIXes von Open auf Done (commit 37ce55a),
+20 Stub-Detail-Files fuer Backlog-Orphans erstellt, 5 PLAN-10..14
+Rows nachgetragen, dashboard counts aktualisiert.
+
+**Release-Empfehlung:** v2.7.0 (minor bump). Begruendung:
+- Neue benutzersichtbare Features (EPIC-23 Cross-Surface MCP, BA-25 Vault-Summary-Pflege)
+- Backwards-kompatibel (V1 update_memory deprecated, nicht entfernt; Migration-Helper)
+- Schema-Migration v9 -> v10 idempotent
+- 0 Critical / 0 High Findings im AUDIT-016 nach Fix-Loop
+
+**Naechste Iteration:**
+- IMP-23-04-05 relay /poll Partitionierung (P3, deferred, kein User-Impact heute)
+- FEAT-23-06 Memory-Profile Wiedervorlage (Trigger: erstes Multi-Persona-Setup)
+- Live-KPI-Messung BA-26 + BA-25 (4 Wochen Production-Use)
+- Section 9 arc42 ADR-Liste fuer Vorzyklus-ADRs (75-89) nach Audit-Pass auffrischen

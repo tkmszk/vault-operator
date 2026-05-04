@@ -1,7 +1,6 @@
 ---
 id: ADR-101
 title: Output-Modus-Architektur (3 Modi + Folder-Layout + Bibliografie)
-status: Proposed
 deciders: Architecture
 date: 2026-05-03
 related:

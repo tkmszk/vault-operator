@@ -1,7 +1,6 @@
 ---
 id: ADR-104
 title: Web-Search-Provider-Strategie (BYOK obligatorisch)
-status: Proposed
 deciders: Architecture
 date: 2026-05-03
 related:

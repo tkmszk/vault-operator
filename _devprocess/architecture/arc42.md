@@ -1,8 +1,8 @@
 # arc42 — Obsidian Agent Architecture
 
-**Version:** 5.0
-**Stand:** 2026-04-13
-**Status:** Aktuell — EPIC-18 Token-Kostenreduktion implementiert, EPIC-19 Knowledge Maintenance Phase 1 teilweise implementiert, EPIC-20 Graph Intelligence implementiert (v2.4.3), MCP Remote Transport (FEAT-14-03) implementiert
+**Version:** 5.1
+**Stand:** 2026-05-04
+**Status:** Aktuell — EPIC-18 Token-Kostenreduktion implementiert, EPIC-19 Knowledge Maintenance Phase 1 implementiert, EPIC-20 Graph Intelligence implementiert (v2.4.3), MCP Remote Transport (FEAT-14-03) implementiert, **EPIC-23 Cross-Surface AI Workflow** ausgeliefert (v2.7.0): MCP-Remote-Tools save_to_memory / save_conversation / recall_memory / search_history; Cloudflare-Worker-Relay; Source-Interface-Tagging; Living Documents + Cross-Interface-Threads. **BA-25 Vault-Summary-Pflege** komplett: PLAN-10..14 released, knowledge.db Schema v9 -> v10. Memory v2 Stabilisierungs-Pass (3 IMPs). Drei Security-Audits (AUDIT-014/015/016) abgeschlossen mit Hardening: McpRateLimiter, sanitizeVaultContentForLLM, strictSourceIsolation, content-caps, crypto.randomUUID.
 
 ---
 
@@ -363,7 +363,7 @@ Zwei-DB-Strategie (ADR-50):
     └── Implicit Computation: Paarweiser Cosine auf Note-Level-Vektoren
 
 Key Files:
-  ├── src/core/knowledge/KnowledgeDB.ts        (SQLite Wrapper, Schema v5)
+  ├── src/core/knowledge/KnowledgeDB.ts        (SQLite Wrapper, Schema v10 -- BA-25 Bundle, ADR-92)
   ├── src/core/knowledge/MemoryDB.ts           (Zweite DB fuer Memory-Daten)
   ├── src/core/knowledge/VectorStore.ts        (Vector CRUD + Cosine Search)
   ├── src/core/knowledge/GraphStore.ts         (Edge/Tag CRUD + BFS)
@@ -407,9 +407,11 @@ Asynchrone Verarbeitung:
 
 V1-ADRs: [ADR-13](ADR-13-memory-architecture.md), [ADR-18 Episodic](ADR-18-episodic-task-memory.md), [ADR-58 Recipe-Promotion](ADR-58-semantic-recipe-promotion.md), [ADR-59 Memory-Decay](ADR-59-memory-decay-prevention.md), [ADR-60 Session-Summary](ADR-60-session-summary-reliability.md). Feature-Spec: `FEAT-03-04-memory-personalization.md` (Subsumed by Memory v2).
 
-### 5.9.1 Memory v2 Architecture (in Vorbereitung, EPIC-03 Initiative 2026-04-26)
+### 5.9.1 Memory v2 Architecture (Phase 6 released, EPIC-03 Initiative; Cross-Surface MCP released 2026-05-04 EPIC-23)
 
 Memory v2 ersetzt das 3-Tier-Modell durch ein **Fact-zentrisches Schema mit Persistenz-Service-Pattern**. Die Engine ist UCM-Foundation (separates Repo Q3/Q4 2026, eigene BA `BA-UNIFIED-CHAT-MEMORY-V2.md`).
+
+**Cross-Surface MCP (EPIC-23, released 2026-05-04):** Externe Surfaces (Claude Desktop, ChatGPT, Perplexity) sprechen Memory v2 jetzt ueber den Cloudflare-Worker-Relay an. Fuenf neue MCP-Tools: save_to_memory, save_conversation, recall_memory, search_history und sync_session. Source-Interface-Tagging (ADR-108) markiert jede Conversation mit ihrer Origin-Surface; History-Sidebar-Tabs filtern danach. Living-Document-Semantik (ADR-110) buendelt mehrere Append-Calls in einen Cross-Interface-Thread (Format `thread-YYYY-MM-DD-{6-hex}`). ActiveMcpSessions sliding 30-min Map haelt MCP-Sessions zusammen. Per-Provider Sync-Mode (Auto / Manual) -- Default Auto fuer eigene Surfaces, Manual fuer Drittanbieter mit Privacy-Trade-Off. V1 update_memory ist deprecated; Migration-Helper im Settings-Tab (FEAT-23-05).
 
 ```
 Engine (@obsilo/memory-engine, FEAT-03-21):
@@ -840,12 +842,14 @@ ADRs: [ADR-69](ADR-69-confidence-storage.md), [ADR-70](ADR-70-community-detectio
 
 MCP-Server-Architektur fuer externen Zugriff auf Obsilo-Funktionen:
 
-- **McpBridge** (`src/mcp/McpBridge.ts`): Hauptorchestrator, stdio JSON-RPC
-- **6 MCP Tools**: getContext, searchVault, readNotes, writeVault, executeVaultOp, syncSession, updateMemory
+- **McpBridge** (`src/mcp/McpBridge.ts`): Hauptorchestrator, stdio JSON-RPC plus Streamable-HTTP-konformer Worker-Pfad
+- **Vault-Tools (Approval-tiered)**: getContext, searchVault, readNotes, writeVault, executeVaultOp, syncSession
+- **Memory-v2 Cross-Surface Tools (EPIC-23)**: save_to_memory, save_conversation, recall_memory, search_history, plus update_memory (deprecated, V1-Migration). Source-Interface-Tagging (ADR-108), Living-Documents (ADR-110), McpRateLimiter (sliding-window 60s, drei Klassen cheap=60/min, medium=30/min, expensive=10/min).
 - **3-Tier Approval**: read (auto) / search (auto) / write (User-Approval)
-- **Remote Transport (FEAT-14-03)**: Cloudflare Workers + Durable Objects Relay (`CloudflareDeployer.ts`, `RelayClient.ts`). HTTP Long-Polling, Token-in-URL Auth, Auto-Deployment.
+- **Remote Transport (FEAT-14-03)**: Cloudflare Workers + Durable Objects Relay (`CloudflareDeployer.ts`, `RelayClient.ts`). HTTP Long-Polling, Token-in-URL Auth, Auto-Deployment. Worker antwortet Spec-konform Streamable-HTTP (Accept-Negotiation JSON vs SSE, Notification-202, Mcp-Session-Id Echo).
+- **Sicherheit (AUDIT-015 / AUDIT-016)**: per-message + transcript caps; sanitizeVaultContentForLLM mit Prompt-Injection-Filter; strictSourceIsolation Setting fuer Cross-Source-ACL; LIKE-wildcard escaping in search_history; crypto.randomUUID statt Math.random fuer ConversationStore-IDs.
 
-ADRs: [ADR-53](ADR-53-mcp-server-architecture.md), [ADR-54](ADR-54-mcp-tool-mapping.md), [ADR-55](ADR-55-remote-relay.md).
+ADRs: [ADR-53](ADR-53-mcp-server-architecture.md), [ADR-54](ADR-54-mcp-tool-mapping.md), [ADR-55](ADR-55-remote-relay.md), [ADR-107](ADR-107-mcp-memory-tools-versionierung.md), [ADR-108](ADR-108-source-interface-tagging.md), [ADR-110](ADR-110-living-documents-cross-interface-threads.md).
 
 ---
 
@@ -931,6 +935,27 @@ Siehe einzelne ADRs in `_devprocess/architecture/`:
 | [ADR-74](ADR-74-dependency-override-strategy.md) | Dependency-Override-Strategie fuer transitive Vulnerabilities (Querschnitt: Security-Maintenance) |
 | [ADR-88](ADR-88-chatgpt-oauth-provider-architecture.md) | ChatGPT OAuth Provider Architecture (Service plus Mapper, Node-https-Streaming, verschachteltes Settings-Schema, EPIC-21) |
 | [ADR-89](ADR-89-chatgpt-pkce-loopback-flow.md) | ChatGPT PKCE Loopback OAuth Flow (Renderer-Loopback-Server auf 127.0.0.1, Port-Range, EPIC-21) |
+| [ADR-90](ADR-90-cost-aware-agent-heuristics.md) | Cost-Aware Agent Heuristics (Token-Budget pro Tool-Loop, EPIC-18) |
+| [ADR-91](ADR-91-mcp-pipeline-routing-and-ignore-at-index-build.md) | MCP-Pipeline-Routing und Ignore-at-Index-Build (EPIC-19) |
+| [ADR-92](ADR-92-knowledge-db-schema-v10-bundle.md) | knowledge.db Schema v10 Bundle (BA-25 Foundation, 4 neue Tabellen) |
+| [ADR-93](ADR-93-source-identitaet-domain-only.md) | Source-Identitaet domain-only fuer Cluster-Stabilitaet (BA-25) |
+| [ADR-94](ADR-94-cluster-halbwertszeit-modell.md) | Cluster-Halbwertszeit-Modell fuer Top-Hub-Block-Pflege (BA-25) |
+| [ADR-95](ADR-95-frontmatter-write-conflict-detection.md) | Frontmatter Write-Conflict-Detection (BA-25 Phase 4) |
+| [ADR-96](ADR-96-moc-marker-konvention.md) | MOC-Marker-Konvention fuer Auto-Hub-Detection (BA-25) |
+| [ADR-97](ADR-97-kv-cache-block-lifecycle.md) | KV-Cache-Block-Lifecycle fuer Top-Hub-Block (BA-25) |
+| [ADR-98](ADR-98-pre-triage-tool-architektur.md) | Pre-Triage-Tool-Architektur (BA-25 Phase 3) |
+| [ADR-99](ADR-99-tension-detection-hybrid.md) | Tension-Detection-Hybrid (BA-25 Lint-Foundation) |
+| [ADR-100](ADR-100-dialog-ingest-state-storage.md) | Dialog-Ingest-State-Storage (ingest_session-Tabelle, BA-25) |
+| [ADR-101](ADR-101-output-modus-architektur.md) | Output-Modus-Architektur (3 Modi + Folder-Layout + Bibliografie, BA-25) |
+| [ADR-102](ADR-102-auto-trigger-detection-mechanik.md) | Auto-Trigger-Detection-Mechanik (vault.on-Listener, BA-25) |
+| [ADR-103](ADR-103-source-position-marker-und-pdf-strategie.md) | Source-Position-Marker und PDF-Strategie (BA-25) |
+| [ADR-104](ADR-104-web-search-provider-strategie.md) | Web-Search-Provider-Strategie (BYOK obligatorisch, BA-25) |
+| [ADR-105](ADR-105-stufe-3-job-runner-token-budget.md) | Stufe-3 Job-Runner und Token-Budget-Enforcement (BA-25 Phase 5) |
+| [ADR-106](ADR-106-health-modal-severity-und-cooldown.md) | Health-Modal-Severity und Activity-Trigger-Cooldown (BA-25) |
+| [ADR-107](ADR-107-mcp-memory-tools-versionierung.md) | MCP-Memory-Tools Versionierung -- V1 update_memory deprecaten, V2 als save_to_memory (EPIC-23) |
+| [ADR-108](ADR-108-source-interface-tagging.md) | Source-Interface-Tagging fuer cross-surface origin tracking (EPIC-23) |
+| [ADR-109](ADR-109-vault-zu-memory-bruecke.md) | Vault-zu-Memory-Bruecke via Single-Listener-Pattern (FEAT-03-25, supersedes ADR-87) |
+| [ADR-110](ADR-110-living-documents-cross-interface-threads.md) | Living-Document-Semantik plus Cross-Interface-Thread-Klammer (EPIC-23) |
 
 ---
 

@@ -1,7 +1,6 @@
 ---
 id: ADR-109
 title: Vault-zu-Memory-Bruecke via Single-Listener-Pattern
-status: Proposed
 date: 2026-05-03
 deciders: Sebastian + Architekt-Agent
 related-features: FEAT-03-25, FEAT-19-09

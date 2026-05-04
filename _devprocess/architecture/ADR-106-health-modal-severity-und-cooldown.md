@@ -1,7 +1,6 @@
 ---
 id: ADR-106
 title: Health-Modal-Severity und Activity-Trigger-Cooldown
-status: Proposed
 deciders: Architecture
 date: 2026-05-03
 related:
