@@ -11,12 +11,12 @@ Last update: by /dia-migration
 
 | Status | Count | | Phase | Count | | Type | Count |
 |---|---|-|---|---|-|---|---|
-| Planned | 17 | Released | 358 | Epic | 23 |
-| Active | 23 | Building | 41 | Feature | 203 |
-| Done | 248 | Planned | 12 | Fix | 49 |
+| Planned | 16 | Released | 358 | Epic | 23 |
+| Active | 23 | Building | 43 | Feature | 203 |
+| Done | 250 | Planned | 10 | Fix | 49 |
 | Accepted | 110 | Candidates | 0 | Improvement | 13 |
 | Draft | 12 |  |  | ADR | 110 |
-| Proposed | 1 |  |  | Plan | 13 |
+| Proposed | 0 |  |  | Plan | 13 |
 
 Total artifacts: 411
 
@@ -391,7 +391,7 @@ Phase: Building | Status: Active
 | FIX-19-01-02 | Fix | Vault-health badge disappeared + redesign to heart-pulse icon | Done | Released | FEAT-19-01, EPIC-19 | BUG |  |  |  | P1  Issue: https://github.com/pssah4/obsilo-dev/issues/44 |
 | FIX-19-12-02 | Fix | 12-02: URL-Sanitizer in IngestTriageLogStore (Query-Params strippen) | Done | Released | FEAT-19-12, EPIC-19 | BUG |  |  |  | P2  Issue: https://github.com/pssah4/obsilo-dev/issues/45 |
 | FIX-19-27-01 | Fix | 27-01: Rate-Limit fuer AutoTriggerObserver gegen vault.on-Storm | Done | Released | FEAT-19-27, EPIC-19 | BUG |  |  |  | P2  Issue: https://github.com/pssah4/obsilo-dev/issues/46 |
-| FIX-19-28-01 | Fix | 28-01: Sense-Making-Note enthaelt keine Source-Position-Marker (Page-Refs / Block-Refs fehlen im Default-Pfad) | Planned | Planned | FEAT-19-28, EPIC-19 | BUG |  |  | 2026-05-07 | P0 Issue#11  Issue: https://github.com/pssah4/obsilo-dev/issues/47 |
+| FIX-19-28-01 | Fix | 28-01: Sense-Making-Note enthaelt keine Source-Position-Marker (Page-Refs / Block-Refs fehlen im Default-Pfad) | Done | Building | FEAT-19-28, EPIC-19 | BUG |  |  | 2026-05-07 | P0 Issue#11 PLAN-15 (1307 tests pass, build clean, awaiting merge to dev for Released)  Issue: https://github.com/pssah4/obsilo-dev/issues/47 |
 | FEAT-19-31 | Feature | Ingest- und Synthese-Skill-Suite (/ingest-deep, /ingest, /meeting-summary) | Planned | Planned | EPIC-19, ADR-103, FIX-19-28-01 | BA |  |  | 2026-05-07 | Issue#11  Issue: https://github.com/pssah4/obsilo-dev/issues/49 |
 | IMP-19-08-01 | Improvement | 08-01: Strukturierter Output-Parser fuer Summary-Prompt (Keywords/Themen/Konzepte) | Planned | Planned | FEAT-19-08, EPIC-19 | AUDIT |  |  | 2026-05-07 | P2 Audit2026-05-07  Issue: https://github.com/pssah4/obsilo-dev/issues/50 |
 | IMP-19-13-01 | Improvement | 13-01: TensionDetector default-instanziiert im IngestDeepTool-Produktpfad | Planned | Planned | FEAT-19-13, EPIC-19 | AUDIT |  |  | 2026-05-07 | P2 Audit2026-05-07  Issue: https://github.com/pssah4/obsilo-dev/issues/51 |
@@ -600,5 +600,5 @@ Phase: Building | Status: Active
 | PLAN-12 | Plan | BA-25 Phase 3 Ingest-Foundation | Draft | Building | FEAT-19-12, FEAT-19-22, FEAT-19-24, FEAT-19-25 | ARCH |  |  |  |  |
 | PLAN-13 | Plan | BA-25 Phase 4 Power-User-Erweiterungen | Draft | Building | FEAT-19-10, FEAT-19-11, FEAT-19-13, FEAT-19-14 | ARCH |  |  |  |  |
 | PLAN-14 | Plan | BA-25 Phase 5 Erweiterte Schichten | Draft | Building | FEAT-19-11, FEAT-19-15, FEAT-19-20, FEAT-03-26 | ARCH |  |  |  |  |
-| PLAN-15 | Plan | FIX-19-28-01 Source-Position-Marker im Ingest-Output | Proposed | Planned | FIX-19-28-01, FEAT-19-28, FEAT-19-29, ADR-103 | ARCH |  |  | 2026-05-07 | Issue#11 |
+| PLAN-15 | Plan | FIX-19-28-01 Source-Position-Marker im Ingest-Output | Done | Building | FIX-19-28-01, FEAT-19-28, FEAT-19-29, ADR-103 | ARCH |  |  | 2026-05-07 | Issue#11 Implemented |
 

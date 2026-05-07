@@ -1504,3 +1504,67 @@ Mehrere FEATs sind als Done markiert, aber im Code Skelett:
 - Mobile-Plattform-Test fuer page-refs (ADR-103 offene Frage zu
   Android).
 
+
+---
+
+## 2026-05-07 -- coding-to-testing -- FIX-19-28-01 implemented
+
+triage: FIX-19-28-01
+triage_kind: fix
+epic: EPIC-19
+feature: FEAT-19-28
+
+**Branch:** feature/block-source-citations
+**Commit:** TBD (pending phase-end)
+**Plan:** PLAN-15 status Implemented
+
+### Was implementiert wurde
+
+FIX-19-28-01 (Issue #11) -- Source-Position-Marker werden jetzt in der
+Sense-Making-Note inline mit dezentem ↗-Symbol gerendert. 6-Schritt-
+Plan-15 vollstaendig durchlaufen, alle 8 Akzeptanzkriterien gruen.
+
+**Geaenderte / neue Files:**
+
+- `src/core/ingest/SourceReader.ts` (neu) -- liest .md / .pdf / Office
+  einheitlich als Markdown via parseDocument-Pipeline.
+- `src/core/ingest/SummaryPositionAnnotator.ts` (neu) -- rendert
+  Take-Aways als Bullet-Liste mit inline `[[source#^block-N|↗]]`,
+  `[[source.pdf#page=N|↗]]`, `[[source#anchor|↗]]`.
+- `src/core/ingest/DeepIngestPipeline.ts` -- Plan-Schema akzeptiert
+  legacy string[] + neue DeepIngestTakeAway[] (backward-compat),
+  Source-Body von hardcoded `''` auf SourceReader-Output, BlockIdSetter
+  Pre-Pass, SummaryPositionAnnotator-Aufruf bei fehlendem summaryBody.
+- `src/core/tools/vault/IngestDeepTool.ts` -- planGenerator-Default
+  nutzt readSourceAsMarkdown statt cachedRead (PDF-Garbage-Bug fix),
+  liefert Take-Aways mit kind='block-anchor', kein summaryBody mehr.
+- `src/core/tools/vault/IngestDocumentTool.ts` -- Tool-Description
+  enthaelt Provenance-Konvention (`[[OUTPUT_BASENAME#... |↗]]`),
+  Tool-Output meldet Position-Marker-Check pro Aufruf.
+
+**Tests:** 1307 / 1307 (133 Files, 6.4s). 25 neue Tests fuer FIX-19-28-01.
+**Build:** tsc + esbuild clean, Deploy in iCloud-Vault erfolgt.
+
+### Open Concerns fuer /testing
+
+- **Live-Repro mit echter PDF:** Unit-Tests decken die Bausteine ab,
+  aber ein echter Ingest mit einer PDF aus dem Vault sollte zeigen, ob
+  Page-Refs in Obsidian korrekt klickbar sind (AC-02 Desktop-Test).
+- **Tool-Description-Wirkung im Agent:** der Agent liest die Description
+  und soll den ↗-Marker in `## Kernaussagen` setzen. Verhalten muss in
+  einer echten Chat-Session getestet werden.
+- **PDF-Mirror-Pfad:** wenn `pdfStrategy='markdown-mirror'` aktiv ist,
+  laeuft der Sense-Making-Output anders (Mirror als actualSource). Nicht
+  gegen reale PDF getestet.
+- **Multi-Zettel-Modus mit Position-Markern:** Take-Aways gehen in
+  multiZettel.zettel[*].body, aber Annotation passiert nur in
+  source-plus-summary. Multi-Zettel-Notes haben keine Block-Refs --
+  separates IMP wenn der User es will.
+- **Cross-platform Mobile (iOS/Android):** ADR-103 Open Question, kein
+  Test gelaufen.
+
+### Naechster Schritt
+
+`/testing` -- Unit-Tests sind drin, aber Integration-Tests gegen die
+echte Vault-API + Live-Verifikation am Beispiel-PDF stehen aus.
+Anschliessend Phase-2 (FEAT-19-31 Skill-Suite-Deployment).

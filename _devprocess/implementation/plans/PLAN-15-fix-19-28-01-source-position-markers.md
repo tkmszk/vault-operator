@@ -1,7 +1,7 @@
 ---
 plan-id: PLAN-15
 title: FIX-19-28-01 Source-Position-Marker im Ingest-Output
-status: Proposed
+status: Implemented
 refs:
   - FIX-19-28-01
   - FEAT-19-28
@@ -10,7 +10,9 @@ refs:
   - EPIC-19
   - GitHub Issue#11 pssah4/obsilo-dev
 created: 2026-05-07
+implemented: 2026-05-07
 branch: feature/block-source-citations
+pair-id: sebastian-opus-4.7
 ---
 
 # PLAN-15: FIX-19-28-01 Source-Position-Marker im Ingest-Output
@@ -417,3 +419,91 @@ Nach Phase-1-Abschluss zurueckwirkend in:
 - `HANDOFFS.md` -- coding -> testing handoff mit Verweis auf PLAN-15 und
   Test-Resultaten.
 - METRICS -- Cycle-Time fuer FIX-19-28-01 erfassen.
+
+## Coverage Gate (run 2026-05-07, 16:21)
+
+Mapping AC -> Tasks:
+
+| AC | Test / Task | Status |
+|---|---|---|
+| AC-01 | `IngestDocumentTool.test.ts` checkPositionMarkers + Tool-Description-Update | gruen |
+| AC-02 | `DeepIngestPipeline.test.ts` "FIX-19-28-01: injects ↗-markers" + Pipeline annotateTakeAways-Verkettung | gruen |
+| AC-02b | implizit ueber gleichen Pfad (Mirror -> markedSource via SourceReader) | gruen |
+| AC-02c | `DeepIngestPipeline.test.ts` Markdown-Source-Pfad | gruen |
+| AC-03 | Tool-Description in `IngestDocumentTool.ts` Z. ~50-72 enthaelt `[[OUTPUT_BASENAME#... \|↗]]`-Konvention | manuelle Verifikation, gruen |
+| AC-04 | `BlockIdSetter.test.ts` Idempotenz-Test (existing) + Pipeline ruft markBlockIds idempotent auf | gruen |
+| AC-05 | `DeepIngestTakeAway` mit Position-Discriminated-Union in `SummaryPositionAnnotator.ts`, exportiert + von Pipeline verwendet | gruen (TS Build clean) |
+| AC-06 | `DeepIngestPipeline.test.ts` "source-note body is no longer empty" | gruen |
+| AC-07 | `BlockIdSetter.test.ts` "respects existing ^block-N IDs" | gruen |
+| AC-08 | Volltest 1307/1307 + manuelle Verifikation Tool-Description | gruen |
+
+Keine SC deferred. Alle ADR-Refs (ADR-103, FEAT-19-28, FEAT-19-29) durch
+mind. einen Task oder Test abgedeckt.
+
+## Implementation Notes (run 2026-05-07)
+
+**Files written / modified:**
+
+- `src/core/ingest/SourceReader.ts` (neu, 39 Zeilen)
+- `src/core/ingest/SummaryPositionAnnotator.ts` (neu, 84 Zeilen)
+- `src/core/ingest/DeepIngestPipeline.ts` (refactored, +57 / -16 Zeilen):
+  Plan-Schema akzeptiert legacy string[] + neue DeepIngestTakeAway[],
+  Source-Body wird via SourceReader gelesen, BlockIdSetter pre-pass,
+  SummaryPositionAnnotator-Aufruf bei fehlendem summaryBody.
+- `src/core/tools/vault/IngestDeepTool.ts` (planGenerator-Default
+  refactored): nutzt readSourceAsMarkdown statt cachedRead, liefert
+  Take-Aways mit kind='block-anchor', kein summaryBody mehr.
+- `src/core/tools/vault/IngestDocumentTool.ts` (Tool-Description +
+  Helpers): Provenance-Konvention in Description, neue
+  countPageHeadings + checkPositionMarkers Helpers, erweiterter
+  Tool-Output mit Position-Marker-Check.
+
+**Tests:**
+
+- `__tests__/SourceReader.test.ts` (neu, 5 Tests)
+- `__tests__/SummaryPositionAnnotator.test.ts` (neu, 9 Tests)
+- `__tests__/DeepIngestPipeline.test.ts` (+3 Regression-Tests fuer
+  FIX-19-28-01)
+- `__tests__/IngestDocumentTool.test.ts` (neu, 8 Tests fuer Helpers)
+
+**Volltest:** 1307 / 1307 (133 Test-Files), 6.4s.
+**Build:** `tsc -noEmit -skipLibCheck && esbuild` clean, Deploy in
+iCloud-Vault erfolgt.
+
+**Deviationen vom Plan:**
+
+- Schema-Migration: statt Breaking-Change auf `DeepIngestTakeAway[]`
+  habe ich den Discriminated-Input-Type `LegacyOrNewTakeAway = string |
+  DeepIngestTakeAway` gewaehlt. Pipeline normalisiert intern. Damit
+  bleiben bestehende Tests gruen (5/6 nutzten string[]) ohne dass die
+  neue Form blockiert ist.
+- BlockIdSetter-Map: statt OutputModeGenerator-Refactor (writeSourceNote
+  gibt die Map zurueck) habe ich einen Pre-Pass in der Pipeline gewaehlt.
+  Body wird im Pre-Pass markiert, sourceContent.blockAnchors=[]
+  uebergeben (OutputModeGenerator's eigener markBlockIds-Aufruf wird
+  zum No-Op). OutputModeGenerator bleibt unveraendert.
+- Auto-Inject-Heuristic in IngestDocumentTool (PLAN-15 Phase-2-Stretch):
+  nicht implementiert. Stattdessen Tool-Description-Konvention + Tool-
+  Output-Marker-Check. Heuristic-Auto-Inject bleibt fuer separates IMP.
+
+**Phase-2 (FEAT-19-31 Skill-Suite-Deployment):** noch offen. Drei
+Skill-Drafts liegen unter `_devprocess/architecture/skills/`. Deployment-
+Pfad (Built-in via embedded-assets vs Skill-Folder-Importer) ist ASR-1
+in FEAT-19-31. Wird in einem separaten /coding-Run angegangen.
+
+**Wayfinder:** zwei neue entry-points (SourceReader, SummaryPositionAnnotator).
+Beide haben kompakte JSDoc-Header mit FEAT/ADR-Bezug. Eintrag in
+`src/ARCHITECTURE.map` ist nicht zwingend, da das File noch keine
+Wayfinder-Eintraege fuer den `src/core/ingest/`-Bereich enthaelt
+(stichprobenartig geprueft); kein neues Modul.
+
+## Change Log
+
+- 2026-05-07 16:00 - PLAN-15 erstellt (Status=Proposed)
+- 2026-05-07 16:13 - Status=Active, Implementation gestartet
+- 2026-05-07 16:14 - Step 1 SourceReader.ts (TDD, 5 Tests gruen)
+- 2026-05-07 16:16 - Step 2 SummaryPositionAnnotator.ts (TDD, 9 Tests gruen)
+- 2026-05-07 16:18 - Step 3 DeepIngestPipeline refactored (9 Tests gruen, 3 neue Regressions-Tests)
+- 2026-05-07 16:19 - Step 4 IngestDeepTool planGenerator refactored
+- 2026-05-07 16:21 - Step 5 IngestDocumentTool Description + Helpers (8 Tests gruen)
+- 2026-05-07 16:21 - Volltest 1307 / 1307, Build clean, Deploy ok. Status=Implemented
