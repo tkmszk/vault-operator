@@ -1396,3 +1396,28 @@ Rows nachgetragen, dashboard counts aktualisiert.
 - FEAT-23-06 Memory-Profile Wiedervorlage (Trigger: erstes Multi-Persona-Setup)
 - Live-KPI-Messung BA-26 + BA-25 (4 Wochen Production-Use)
 - Section 9 arc42 ADR-Liste fuer Vorzyklus-ADRs (75-89) nach Audit-Pass auffrischen
+
+
+---
+
+## dia-migration 2026-05-07 -- migration complete
+
+Branch: chore/dia-migration-2026-05-07
+Phases run: 1 (foundation spot-check, already in v2 shape), 2 (frontmatter status cleanup), 4 (analysis/ flatten), 5 (BACKLOG.md regeneration), 6 (skill-name renames), 7 (consistency check). Phase 3 (filename naming) bewusst uebersprungen pro User-Entscheidung.
+
+Counts after migration:
+- Artifacts: 401 (23 Epic, 202 Feature, 48 Fix, 6 Improvement, 110 ADR, 12 Plan)
+- Backlog rows: 401
+- Frontmatter status drift removed: 15 fields
+- Body status drift: 0
+- analysis/security/ subdirectory: removed (3 AUDITs flat-moved)
+- archive/ folders: 0
+- Skill renames: 4 files (BA-23, REFLECTION-2026-05-03, METRICS, context/README)
+
+Known limitation:
+- Consistency-Check Mode A meldet 11 LOW-Findings (orphan-backlog-row fuer ADR-100..ADR-110). Ursache: die DIA-v3.4 consistency-check.py erkennt nur 2-stellige ADR-IDs (Regex `^ADR-\d{2}`) und stuft 3-stellige Files als orphan ein. Die ADRs existieren physisch und sind korrekt referenziert. Der User hat in Phase 0 bewusst entschieden, das gemischte 2-/3-stellige Numbering beizubehalten und Phase 3 (Bulk-Rename) zu ueberspringen, um massiven Diff zu vermeiden. Findings sind kein Datenproblem.
+
+Next steps:
+1. Migration-Branch reviewen und als chore-PR nach dev mergen.
+2. Zukuenftige neue ADRs weiterhin als ADR-{nnn} (3-stellig) erstellen.
+3. Sobald die DIA consistency-check.py ein 3-stelliges ADR-Schema unterstuetzt, automatisch greenern.
