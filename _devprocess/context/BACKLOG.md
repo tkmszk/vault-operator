@@ -11,14 +11,14 @@ Last update: by /dia-migration
 
 | Status | Count | | Phase | Count | | Type | Count |
 |---|---|-|---|---|-|---|---|
-| Planned | 6 | Released | 360 | Epic | 23 |
-| Active | 23 | Building | 41 | Feature | 202 |
-| Done | 250 | Planned | 0 | Fix | 48 |
-| Accepted | 110 | Candidates | 0 | Improvement | 6 |
+| Planned | 17 | Released | 358 | Epic | 23 |
+| Active | 23 | Building | 41 | Feature | 203 |
+| Done | 248 | Planned | 12 | Fix | 49 |
+| Accepted | 110 | Candidates | 0 | Improvement | 13 |
 | Draft | 12 |  |  | ADR | 110 |
-|  |  |  |  | Plan | 12 |
+| Proposed | 1 |  |  | Plan | 13 |
 
-Total artifacts: 401
+Total artifacts: 411
 
 ---
 
@@ -357,41 +357,50 @@ Phase: Building | Status: Active
 | ID | Type | Title | Status | Phase | Refs | Source | Commit | Claim | Last change | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
 | FEAT-19-00 | Feature | Knowledge Ingest Skill | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-01 | Feature | Vault Health Check (Lint) | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-02 | Feature | Knowledge Ontologie | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-03 | Feature | Template-Onboarding | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-04 | Feature | Synthese → Zettel | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-05 | Feature | OCR-Integration | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-06 | Feature | Attachment-Batch-Umbenennung | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-07 | Feature | Chat UI Polish | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-08 | Feature | Konfigurierbarer Standard-Prompt fuer Note-Summary-Generierung | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-09 | Feature | Auto-Summary-Generierung beim Indexing | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-10 | Feature | Frontmatter-Write Toggle plus Backfill-Job | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-11 | Feature | Aktive MOC-File-Pflege mit Marker-Konvention | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-12 | Feature | Pre-Triage-Tool mit 10s-Triage-Karte | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-13 | Feature | Tension-Detection beim Deep-Ingest | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-14 | Feature | Concentration-Warning UI plus Anti-Echo-Vorschlag | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-15 | Feature | Inbox-Workflow fuer Batch-Triage | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-16 | Feature | Stufe-1 Composite-Freshness-Score als VaultHealth-Check | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-17 | Feature | Source-Diversity-Check als Bias-Lint-Kategorie | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-18 | Feature | Health-Modal-Erweiterung mit kontext-spezifischen Action-Buttons | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-19 | Feature | Stufe-2 Activity-Trigger plus Web-Search-Update-Pass | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-20 | Feature | Stufe-3 Periodischer Job plus Token-Budget-Cap plus Notifications | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-21 | Feature | Hot-Cluster-Konfiguration in Settings | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-22 | Feature | Aktiver Dialog-Ingest-Modus (Modus A) | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-23 | Feature | Auto-Ingest-Modus (Modus B) | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-24 | Feature | Output-Modus-Auswahl | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-25 | Feature | Source-Folder vs Wissens-Folder Konfiguration | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-26 | Feature | Dialog-getriebener MOC-Page-Update beim Ingest | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-27 | Feature | Konfigurierbarer Auto-Trigger via Frontmatter-Property | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-28 | Feature | Source-Position-Marker (Block-Refs MD, Page-Refs PDF, Anchor URL) | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-29 | Feature | PDF-Strategie (Page-Refs Default vs Markdown-Mirror opt-in) | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FEAT-19-30 | Feature | Bibliographische Summary-Note mit Base-Block fuer Multi-Zettel-Modus | Done | Released | EPIC-19 | BA |  |  |  |  |
-| FIX-19-01-01 | Fix | vault_health_check and ingest_document missing from builtin mode tool groups | Done | Released | FEAT-19-01, EPIC-19 | BUG |  |  |  | P2 |
-| FIX-19-01-02 | Fix | Vault-health badge disappeared + redesign to heart-pulse icon | Done | Released | FEAT-19-01, EPIC-19 | BUG |  |  |  | P1 |
-| FIX-19-12-02 | Fix | 12-02: URL-Sanitizer in IngestTriageLogStore (Query-Params strippen) | Done | Released | FEAT-19-12, EPIC-19 | BUG |  |  |  | P2 |
-| FIX-19-27-01 | Fix | 27-01: Rate-Limit fuer AutoTriggerObserver gegen vault.on-Storm | Done | Released | FEAT-19-27, EPIC-19 | BUG |  |  |  | P2 |
-| IMP-19-20-01 | Improvement | IMP-19-20-01: Stufe3PeriodicJob state-Persistierung in DB | Planned | Building | FEAT-19-20, EPIC-19 | USER |  |  |  |  |
+| FEAT-19-01 | Feature | Vault Health Check (Lint) | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/13 |
+| FEAT-19-02 | Feature | Knowledge Ontologie | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/14 |
+| FEAT-19-03 | Feature | Template-Onboarding | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/15 |
+| FEAT-19-04 | Feature | Synthese → Zettel | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/16 |
+| FEAT-19-05 | Feature | OCR-Integration | Planned | Planned | EPIC-19 | BA |  |  | | Spec ohne Code (Audit 2026-05-07) Issue: https://github.com/pssah4/obsilo-dev/issues/17 |
+| FEAT-19-06 | Feature | Attachment-Batch-Umbenennung | Planned | Planned | EPIC-19 | BA |  |  | | Spec ohne Code (Audit 2026-05-07) Issue: https://github.com/pssah4/obsilo-dev/issues/18 |
+| FEAT-19-07 | Feature | Chat UI Polish | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/19 |
+| FEAT-19-08 | Feature | Konfigurierbarer Standard-Prompt fuer Note-Summary-Generierung | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/20 |
+| FEAT-19-09 | Feature | Auto-Summary-Generierung beim Indexing | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/21 |
+| FEAT-19-10 | Feature | Frontmatter-Write Toggle plus Backfill-Job | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/22 |
+| FEAT-19-11 | Feature | Aktive MOC-File-Pflege mit Marker-Konvention | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/23 |
+| FEAT-19-12 | Feature | Pre-Triage-Tool mit 10s-Triage-Karte | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/24 |
+| FEAT-19-13 | Feature | Tension-Detection beim Deep-Ingest | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/25 |
+| FEAT-19-14 | Feature | Concentration-Warning UI plus Anti-Echo-Vorschlag | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/26 |
+| FEAT-19-15 | Feature | Inbox-Workflow fuer Batch-Triage | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/27 |
+| FEAT-19-16 | Feature | Stufe-1 Composite-Freshness-Score als VaultHealth-Check | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/28 |
+| FEAT-19-17 | Feature | Source-Diversity-Check als Bias-Lint-Kategorie | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/29 |
+| FEAT-19-18 | Feature | Health-Modal-Erweiterung mit kontext-spezifischen Action-Buttons | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/30 |
+| FEAT-19-19 | Feature | Stufe-2 Activity-Trigger plus Web-Search-Update-Pass | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/31 |
+| FEAT-19-20 | Feature | Stufe-3 Periodischer Job plus Token-Budget-Cap plus Notifications | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/32 |
+| FEAT-19-21 | Feature | Hot-Cluster-Konfiguration in Settings | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/33 |
+| FEAT-19-22 | Feature | Aktiver Dialog-Ingest-Modus (Modus A) | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/34 |
+| FEAT-19-23 | Feature | Auto-Ingest-Modus (Modus B) | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/35 |
+| FEAT-19-24 | Feature | Output-Modus-Auswahl | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/36 |
+| FEAT-19-25 | Feature | Source-Folder vs Wissens-Folder Konfiguration | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/37 |
+| FEAT-19-26 | Feature | Dialog-getriebener MOC-Page-Update beim Ingest | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/38 |
+| FEAT-19-27 | Feature | Konfigurierbarer Auto-Trigger via Frontmatter-Property | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/39 |
+| FEAT-19-28 | Feature | Source-Position-Marker (Block-Refs MD, Page-Refs PDF, Anchor URL) | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/40 |
+| FEAT-19-29 | Feature | PDF-Strategie (Page-Refs Default vs Markdown-Mirror opt-in) | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/41 |
+| FEAT-19-30 | Feature | Bibliographische Summary-Note mit Base-Block fuer Multi-Zettel-Modus | Done | Released | EPIC-19 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/42 |
+| FIX-19-01-01 | Fix | vault_health_check and ingest_document missing from builtin mode tool groups | Done | Released | FEAT-19-01, EPIC-19 | BUG |  |  |  | P2  Issue: https://github.com/pssah4/obsilo-dev/issues/43 |
+| FIX-19-01-02 | Fix | Vault-health badge disappeared + redesign to heart-pulse icon | Done | Released | FEAT-19-01, EPIC-19 | BUG |  |  |  | P1  Issue: https://github.com/pssah4/obsilo-dev/issues/44 |
+| FIX-19-12-02 | Fix | 12-02: URL-Sanitizer in IngestTriageLogStore (Query-Params strippen) | Done | Released | FEAT-19-12, EPIC-19 | BUG |  |  |  | P2  Issue: https://github.com/pssah4/obsilo-dev/issues/45 |
+| FIX-19-27-01 | Fix | 27-01: Rate-Limit fuer AutoTriggerObserver gegen vault.on-Storm | Done | Released | FEAT-19-27, EPIC-19 | BUG |  |  |  | P2  Issue: https://github.com/pssah4/obsilo-dev/issues/46 |
+| FIX-19-28-01 | Fix | 28-01: Sense-Making-Note enthaelt keine Source-Position-Marker (Page-Refs / Block-Refs fehlen im Default-Pfad) | Planned | Planned | FEAT-19-28, EPIC-19 | BUG |  |  | 2026-05-07 | P0 Issue#11  Issue: https://github.com/pssah4/obsilo-dev/issues/47 |
+| FEAT-19-31 | Feature | Ingest- und Synthese-Skill-Suite (/ingest-deep, /ingest, /meeting-summary) | Planned | Planned | EPIC-19, ADR-103, FIX-19-28-01 | BA |  |  | 2026-05-07 | Issue#11  Issue: https://github.com/pssah4/obsilo-dev/issues/49 |
+| IMP-19-08-01 | Improvement | 08-01: Strukturierter Output-Parser fuer Summary-Prompt (Keywords/Themen/Konzepte) | Planned | Planned | FEAT-19-08, EPIC-19 | AUDIT |  |  | 2026-05-07 | P2 Audit2026-05-07  Issue: https://github.com/pssah4/obsilo-dev/issues/50 |
+| IMP-19-13-01 | Improvement | 13-01: TensionDetector default-instanziiert im IngestDeepTool-Produktpfad | Planned | Planned | FEAT-19-13, EPIC-19 | AUDIT |  |  | 2026-05-07 | P2 Audit2026-05-07  Issue: https://github.com/pssah4/obsilo-dev/issues/51 |
+| IMP-19-15-01 | Improvement | 15-01: Bulk-UI fuer Triage-Inbox-Tab im Vault-Health-Modal | Planned | Planned | FEAT-19-15, EPIC-19 | AUDIT |  |  | 2026-05-07 | P2 Audit2026-05-07  Issue: https://github.com/pssah4/obsilo-dev/issues/52 |
+| IMP-19-19-01 | Improvement | 19-01: Stufe-2-Klick startet Web-Pass direkt (statt nur @anti_echo_search-Hint) | Planned | Planned | FEAT-19-19, EPIC-19 | AUDIT |  |  | 2026-05-07 | P2 Audit2026-05-07  Issue: https://github.com/pssah4/obsilo-dev/issues/53 |
+| IMP-19-20-01 | Improvement | IMP-19-20-01: Stufe3PeriodicJob state-Persistierung in DB | Planned | Building | FEAT-19-20, EPIC-19 | USER |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/48 |
+| IMP-19-22-01 | Improvement | 22-01: planGenerator LLM-Hook + Multi-Turn-Dialog im IngestDeepTool | Planned | Planned | FEAT-19-22, ADR-100, EPIC-19 | AUDIT |  |  | 2026-05-07 | P1 Audit2026-05-07  Issue: https://github.com/pssah4/obsilo-dev/issues/54 |
+| IMP-19-23-01 | Improvement | 23-01: Auto-Modus mit echtem LLM-Plan (nicht Stub-Default) | Planned | Planned | FEAT-19-23, EPIC-19 | AUDIT |  |  | 2026-05-07 | P2 abh.IMP-19-22-01  Issue: https://github.com/pssah4/obsilo-dev/issues/55 |
+| IMP-19-25-01 | Improvement | 25-01: Settings-UI fuer Sources- und Knowledge-Folder | Planned | Planned | FEAT-19-25, EPIC-19 | AUDIT |  |  | 2026-05-07 | P2 Audit2026-05-07  Issue: https://github.com/pssah4/obsilo-dev/issues/56 |
 
 ### EPIC-20: Graph Intelligence
 
@@ -591,4 +600,5 @@ Phase: Building | Status: Active
 | PLAN-12 | Plan | BA-25 Phase 3 Ingest-Foundation | Draft | Building | FEAT-19-12, FEAT-19-22, FEAT-19-24, FEAT-19-25 | ARCH |  |  |  |  |
 | PLAN-13 | Plan | BA-25 Phase 4 Power-User-Erweiterungen | Draft | Building | FEAT-19-10, FEAT-19-11, FEAT-19-13, FEAT-19-14 | ARCH |  |  |  |  |
 | PLAN-14 | Plan | BA-25 Phase 5 Erweiterte Schichten | Draft | Building | FEAT-19-11, FEAT-19-15, FEAT-19-20, FEAT-03-26 | ARCH |  |  |  |  |
+| PLAN-15 | Plan | FIX-19-28-01 Source-Position-Marker im Ingest-Output | Proposed | Planned | FIX-19-28-01, FEAT-19-28, FEAT-19-29, ADR-103 | ARCH |  |  | 2026-05-07 | Issue#11 |
 

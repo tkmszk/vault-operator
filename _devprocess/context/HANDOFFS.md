@@ -1421,3 +1421,86 @@ Next steps:
 1. Migration-Branch reviewen und als chore-PR nach dev mergen.
 2. Zukuenftige neue ADRs weiterhin als ADR-{nnn} (3-stellig) erstellen.
 3. Sobald die DIA consistency-check.py ein 3-stelliges ADR-Schema unterstuetzt, automatisch greenern.
+
+---
+
+## 2026-05-07 -- Issue #11 Block-Citations -- BA->FIX-Capture + Skill-Suite-Plan
+
+**Branch:** feature/block-source-citations
+**Phase:** Business-Analysis -> Bug-Capture -> Architecture-Amendment
+
+triage: FIX-19-28-01
+triage_kind: fix
+epic: EPIC-19
+feature: FEAT-19-28
+
+### Was passiert ist
+
+GitHub Issue #11 ("Blockweises Zitieren von Quellen") wurde initial
+als Item-BA-Pfad fuer ein neues Feature aufgesetzt (`/business-analysis`).
+3-Pfad-Audit der existierenden Implementation hat gezeigt:
+
+- **FEAT-19-28 (Source-Position-Marker) ist Done/Released, aber
+  funktional broken** -- Sense-Making-Note enthaelt keine Page-Refs
+  oder Block-Refs. Erfasst als FIX-19-28-01 (P0).
+- **PLAN-15** geschrieben mit 6-Schritt-Implementations-Plan
+  (Helpers SourceReader + SummaryPositionAnnotator, Pipeline-
+  Anpassung, IngestDocumentTool-Description-Update).
+- **User-Vorgabe revidiert** Marker-Form: nicht Perplexity-`[1]`,
+  sondern dezentes `↗`-Symbol inline am Satzende. ADR-103 mit
+  Amendment 2026-05-07 angepasst (Skill-Layer entscheidet die
+  Marker-Form, Tool-Layer bleibt strukturiert).
+- **User-Vorgabe ergaenzt** Skill-Suite als Steuerungs-Layer:
+  - `/ingest-deep` (Karpathy Multi-Turn, Markdown-Mirror Pflicht)
+  - `/ingest` (Single-Pass, page-refs Default)
+  - `/meeting-summary` (Transkript-Block-Refs, single-note-Layout)
+  Erfasst als **FEAT-19-31**, 3 Skill-Drafts unter
+  `_devprocess/architecture/skills/`.
+
+### Code-vs-Spec-Audit (User + LLM)
+
+Mehrere FEATs sind als Done markiert, aber im Code Skelett:
+- FEAT-19-22 Dialog-Modus -> IMP-19-22-01 (LLM-Hook fuer Multi-Turn)
+- FEAT-19-23 Auto-Modus -> IMP-19-23-01 (echter Plan statt Stub)
+- FEAT-19-13 Tension -> IMP-19-13-01 (default-instanziiert)
+- FEAT-19-25 Folder -> IMP-19-25-01 (Settings-UI)
+- FEAT-19-15 Inbox -> IMP-19-15-01 (Bulk-UI)
+- FEAT-19-19 Stufe-2 -> IMP-19-19-01 (One-Click Web-Pass)
+- FEAT-19-08 Summary -> IMP-19-08-01 (strukturierter Output)
+- FEAT-19-05 OCR -> Status Done -> Planned (Spec ohne Code)
+- FEAT-19-06 Batch-Rename -> Status Done -> Planned (Spec ohne Code)
+
+### GitHub-Sync (Schritt 1+2 abgeschlossen)
+
+- `.dia/config.toml` mit mode=github-sync angelegt
+- 36 EPIC-19-Issues (EPIC + 30 FEATs + 5 FIX + 1 IMP) auf
+  pssah4/obsilo-dev erstellt via flow.py
+- Status synchronisiert (Done -> closed, Planned -> open)
+- 8 neue Issues fuer FEAT-19-31 + 7 IMPs (#49-#56)
+- FEAT-19-05/06 reopened nach Status-Korrektur (#17, #18)
+- Labels bootstrapped: epic, feature, fix, improvement, p0-p3,
+  phase:planned/ba/re/arch/coding/testing/sec/review
+
+### Naechste Schritte (recommended)
+
+- **Phase 1 (Code):** PLAN-15 ausfuehren -- Tool-Layer-Reparatur fuer
+  FIX-19-28-01. SourceReader + SummaryPositionAnnotator + Pipeline-
+  Verkettung + IngestDocumentTool-Description-Update.
+- **Phase 2 (Skill-Deployment):** 3 .skill.md Files in
+  `.obsidian-agent/plugin-skills/` deployen. Tooling-Frage offen:
+  Built-in-Seeding via embedded-assets.json oder Skill-Folder-
+  Importer.
+- **Tech-Debt-Tickets:** 7 IMPs separat planen (insbesondere
+  IMP-19-22-01 als Voraussetzung fuer echten Karpathy-Dialog im Tool-
+  Layer).
+- **`/dia-guide` Mode-B-Run** vor naechstem Release-Zyklus.
+
+### Open Questions
+
+- Skill-Deployment-Pfad (Built-in vs Vault-Folder-Seed): ASR in
+  FEAT-19-31, ADR-Bedarf.
+- ADR-100 ingest_session-Tabelle ist accepted aber nicht im
+  Produktpfad genutzt (haengt an IMP-19-22-01).
+- Mobile-Plattform-Test fuer page-refs (ADR-103 offene Frage zu
+  Android).
+
