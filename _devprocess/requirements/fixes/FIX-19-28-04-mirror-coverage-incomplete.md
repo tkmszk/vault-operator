@@ -25,31 +25,38 @@ Aktuelles Verhalten ist nicht dokumentiert (kein Setting, kein
 Hinweis, kein Skill-Step), wirkt fuer den User wie ein willkuerlicher
 Cut-off.
 
-## Root cause
+## Root cause -- konsolidiert mit FIX-19-28-01
 
-Noch offen. Drei Hypothesen:
+Diagnose 2026-05-08: gemeinsame Wurzel mit FIX-19-28-01 und
+FIX-19-28-03. Der `/ingest-deep`-Skill instruiert `ingest_deep` als
+Tool-Call, das ist aber nicht in `TOOL_GROUP_MAP`. Der LLM faellt auf
+`read_document`-Aufrufe zurueck und entscheidet selbst, welche Pages
+er liest. Im Live-Test sind nur zwei `read_document`-Aufrufe sichtbar
+(Pages 1-8 und 9-20), gefolgt von einem manuellen "Wirtschaftsbericht
+und Prognosebericht" Read, dann Mirror-Schreiben.
 
-1. **Skill-Logic-Filter**: Der `/ingest-deep`-Skill triggert eine
-   Cut-off-Heuristik fuer "strategisch relevante Abschnitte" und stoppt
-   nach Lagebericht / Wirtschaftsbericht. Der LLM-Agent kompiliert
-   den Mirror selbst (statt deterministischem Tool-Pfad) und entscheidet
-   was relevant ist. Footer-Text "(strategisch relevante Abschnitte)"
-   stuetzt diese Hypothese -- der Wortlaut riecht nach LLM-Output.
+Der LLM destilliert daraus "1-135 strategisch relevant" -- der
+Wortlaut im Mirror-Footer ("strategisch relevante Abschnitte") ist
+LLM-Sprache, kein deterministisches Tool-Output-Format.
 
-2. **Token-/Char-Cap im Mirror-Builder**: `PdfMarkdownMirror.ts`
-   hat einen Hard-Cap (z.B. 100k Zeichen oder 200 Seiten), der bei
-   grossen PDFs frueh abbricht. Der Footer wird trotzdem geschrieben.
+```
+LLM bekommt PDF mit 410 Seiten
+  -> ohne ingest_deep-Tool faellt er auf read_document
+  -> liest 2-4 Page-Ranges, max ~50 Pages real gelesen
+  -> destilliert daraus selbst Take-Aways + Mirror
+  -> Mirror enthaelt nur das, was der LLM relevant fand
+  -> Footer "1-135 strategisch relevant" ist LLM-Halluzination,
+     keine echte Coverage-Garantie
+```
 
-3. **read_document-Pagination ohne Auto-Continue**: Skill ruft
-   `read_document` mit `start_page`/`end_page` und stoppt nach 2-3
-   Aufrufen, weil der Skill-Workflow den naechsten Block nicht
-   automatisch nachlaedt. Der User-Test-Transcript zeigt nur Reads bis
-   `start_page=9, end_page=20`, danach Triage und Mirror-Erstellung.
+Der deterministische Pfad `PdfMarkdownMirror.ts` waere unauffaellig:
+`parseDocument` liefert den vollen PDF-Text, der wird ohne Filter in
+`vault.create` geschrieben. Die ganze PDF landet im Mirror, mit
+`## Page N`-Headings als deterministische Anker.
 
-Die User-Beobachtung 43 Anchors fuer 135 Seiten passt zu Hypothese 1
-(LLM destilliert) oder 3 (Pagination-Stop nach manuellem read).
-Hypothese 2 (deterministischer Cap) waere weniger wahrscheinlich,
-weil der Footer dann eher "abgebrochen bei N Zeichen" lauten wuerde.
+Mit dem Tool-Group-Fix aus FIX-19-28-01 wird `ingest_deep` aufgerufen,
+PdfMarkdownMirror erzeugt vollstaendigen Mirror, Coverage-Bug
+verschwindet automatisch.
 
 ## Fix
 

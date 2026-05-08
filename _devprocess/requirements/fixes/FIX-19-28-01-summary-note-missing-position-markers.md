@@ -5,11 +5,62 @@
 **Verwandt:** ADR-103 (Block-Reference-Konvention + PDF-Strategie), GitHub Issue #11 (pssah4/obsilo-dev)
 **Entdeckt:** 2026-05-07 (User-Repro `ingest_deep` auf PDF, Modus `source-plus-summary`)
 
-## Reopen 2026-05-08
+## Reopen 2026-05-08 -- konsolidierte Root-Cause-Diagnose
 
 Live-Test mit `Attachements/enbw-geschaeftsbericht-2025.pdf` auf
 branch `feature/block-source-citations` (PLAN-15 Code drauf, awaiting
 dev-merge). User-Beobachtung: "Block refs sind nur Text: `^block-9`".
+
+### Smoking Gun
+
+`src/core/modes/builtinModes.ts:20-32` (`TOOL_GROUP_MAP`) listet
+**weder `ingest_deep` noch `ingest_triage`** in irgendeiner Tool-Group.
+Der `/ingest-deep`-Skill (
+`_devprocess/architecture/skills/ingest-deep.skill.md`) instruiert
+den LLM explizit, beide Tools zu rufen (Schritt 1 + Schritt 6). Da
+sie nicht im Tool-Schema des Agent-Modes sind, kann der LLM sie
+nicht aufrufen und macht den gesamten Workflow manuell mit
+`read_document` + `write_vault`.
+
+Konsequenz: PLAN-15 hat den Tool-Pfad korrekt verdrahtet
+(planGenerator nutzt `readSourceAsMarkdown`, BlockIdSetter,
+SummaryPositionAnnotator), aber der Tool-Pfad wird nie betreten.
+Der LLM-only-Pfad produziert keine Wikilink-Wraps, weil die
+SummaryPositionAnnotator-Logik nur im Tool-Run greift.
+
+Identisches Pattern wurde 2026-04-XX als BUG-021 fuer
+`vault_health_check` und `ingest_document` gefixt; die ingest-Tools
+`ingest_deep` und `ingest_triage` sind im selben Drift-Topf
+liegen geblieben.
+
+### Konsolidiertes Symptom-Cluster (drei FIXes, eine Wurzel)
+
+| FIX | Symptom | Folgt aus Tool-Drift |
+|----|----|----|
+| FIX-19-28-01 | Block-Refs als Plain-Text statt [[Mirror#^block-N\|↗]] | LLM rendert Anchor selbst, ohne Skill-Form-Compliance |
+| FIX-19-28-03 | Mirror-Mojibake (UTF-8 als Latin-1) | LLM reserialisiert PDF-Text statt parseDocument-Output direkt zu speichern |
+| FIX-19-28-04 | Coverage 1-135/410 | LLM entscheidet selbst was er liest und mirrord |
+
+### Vorgeschlagener Single-Fix
+
+`ingest_deep` und `ingest_triage` zu `TOOL_GROUP_MAP` ergaenzen.
+Plus: Coverage-Test in `builtinModes.coverage.test.ts` so
+erweitern, dass alle Tools aus `ToolName` mindestens in einer
+Group landen (statt Whitelisting der bekannten Drift-Faelle). Sonst
+wird das gleiche Pattern beim naechsten ingest-Tool wieder
+zuschlagen.
+
+Skill-seitig zusaetzlich: harten Fail einbauen wenn die Tools nicht
+verfuegbar sind ("Tool ingest_triage nicht im aktuellen Mode --
+wechsle zu Mode mit edit-Group oder aktiviere die Tools"), statt
+silent fallback auf manuellen Pfad.
+
+### Bisheriger Mirror und Sense-Making-Note vom Live-Test 2026-05-08
+
+Mirror: `Sources/EnBW-Geschaeftsbericht-2025-Mirror.md` (vom
+LLM-Pfad geschrieben, daher unter `Sources/` und nicht als
+PDF-Sibling, plus mit Mojibake). Sense-Making-Note: vom User
+nachzuliefern.
 
 Mirror selbst hat korrekte Anchors `^block-1` ... `^block-43` an den
 Take-Away-Stellen (Obsidian-Block-Anchor-Syntax intakt). Die

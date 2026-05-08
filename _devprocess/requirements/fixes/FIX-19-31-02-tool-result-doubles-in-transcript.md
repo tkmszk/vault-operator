@@ -26,25 +26,39 @@ aber Token-Kosten verdoppeln sich pro Tool-Call.
 
 ## Root cause
 
-Diagnose-pending. Drei Kandidaten:
+Diagnose-pending nach erstem Pass. Tool-Side ausgeschlossen:
+`ReadDocumentTool` macht genau einen `pushToolResult` pro Pfad
+(`src/core/tools/vault/ReadDocumentTool.ts:140`/`:143`).
 
-1. **ChatView Render-Doppelung**: Display-only Bug, das gleiche
-   tool_result wird zweimal im DOM gerendert (z.B. `setText` und
-   anschliessendes `appendText` ohne `clear`). Funktional und
-   Token-seitig harmlos. Devtools-Inspect des DOM wuerde das zeigen.
+Verbleibende Kandidaten:
+
+1. **ChatView Render-Doppelung**: tool_result wird zweimal in den
+   View geschrieben (z.B. einmal beim live-stream-update, einmal beim
+   Final-state-flush). Devtools-Inspect des DOM wuerde das zeigen.
 
 2. **AgentTask-Pipeline ruft Tool zweimal**: Skill-Workflow oder
    Power-Steering-Reminder triggert einen erneuten Tool-Call mit
-   identischen Args. Token-relevant, weil das LLM jeden Call
-   beantwortet. Hinweis: `[InputBreakdown]` im Transcript zeigt
-   `33 tools` durchgehend stabil -- kein Hinweis auf zusaetzliche
-   Calls in der History.
+   identischen Args. `[InputBreakdown]` zeigt `33 tools` stabil ueber
+   alle messages -- spricht **gegen** Doppel-Calls.
 
-3. **Stream-Concat-Bug im Provider-Adapter**: Bedrock
-   event-stream chunks werden bei der Reassembly doppelt
-   appended. User nutzt `eu.anthropic.claude-sonnet-4-6` via
-   Bedrock (sichtbar im Cost-Log). Differenzialtest mit OpenRouter
-   wuerde diese Hypothese eingrenzen.
+3. **Stream-Concat-Bug im Provider-Adapter**: Bedrock event-stream
+   chunks werden bei der Reassembly doppelt appended. User nutzt
+   `eu.anthropic.claude-sonnet-4-6` via Bedrock. Differenzialtest mit
+   OpenRouter wuerde das eingrenzen.
+
+4. **Skill-Verlauf-Replay**: Doppel-Output kommt vom Skill-Wiedergabe-
+   Header, der die letzten Tool-Calls noch einmal als Kontext zeigt.
+   Wenig wahrscheinlich, aber pruefbar mit `grep -c "<content"` im
+   Transcript-Export.
+
+Vermutung nach Diagnose-Pass: Hypothese 1 (Render-Double) ist am
+wahrscheinlichsten, weil Hypothese 2 ist schon am InputBreakdown-Counter
+erkennbar ausgeschlossen, und die Doppel-Outputs sind exakt identisch
+(kein Drift) was bei einem Stream-Concat-Bug eher ungewoehnlich waere.
+
+Reproducer: ein Tool-Call mit gut sichtbarer Ausgabe (`list_files .`)
+absetzen und im DevTools-DOM nachschauen, ob der `<content>`-Block
+zweimal im DOM oder nur einmal mit doppeltem Text steht.
 
 Memory-Kontext: BUG-017 (Wave-1 Beta) hatte ein verwandtes
 tool_use/tool_result Pairing-Problem, das via `sanitizeHistoryForApi`

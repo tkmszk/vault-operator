@@ -29,32 +29,37 @@ User sieht Mojibake im Editor und in Reading-Mode. Frontmatter ist
 ebenfalls betroffen (`title: EnBW GeschÃ¤ftsbericht 2025 â Mirror`).
 Block-Anchors `^block-N` sind syntaktisch unbeschaedigt.
 
-## Root cause
+## Root cause -- konsolidiert mit FIX-19-28-01
 
-Klassisches "UTF-8-as-Latin-1" Pattern: das Byte-Paar `0xC3 0xA4`
-(UTF-8 fuer ae) wurde irgendwo als zwei einzelne Latin-1-Zeichen
-`Ã` plus `(c)` interpretiert und dann erneut UTF-8-encodiert. `write_vault`
-selbst nutzt `vault.create` (Obsidian-API), das UTF-8 erwartet, ist
-also nicht der Verursacher.
+Diagnose 2026-05-08: gemeinsame Wurzel mit FIX-19-28-01 und FIX-19-28-04.
+Der `/ingest-deep`-Skill instruiert `ingest_deep` als Tool-Call. Das
+Tool ist aber nicht in `TOOL_GROUP_MAP`
+(`src/core/modes/builtinModes.ts:20-32`), also nicht im
+Function-Schema des Agent-Modes verfuegbar. Der LLM faellt zurueck
+auf `read_document` + `write_vault` und schreibt den Mirror selbst.
 
-Verdaechtige Stellen, die noch zu pruefen sind (ohne Code-Lese-Pass
-festgenagelt):
+Beim manuellen LLM-Pfad reserialisiert der Provider (Bedrock,
+`eu.anthropic.claude-sonnet-4-6` laut Cost-Log) den extrahierten
+PDF-Text. UTF-8-Bytes aus `read_document` werden als Latin-1
+interpretiert, dann wieder UTF-8-encodiert -- klassisches
+Mojibake-Pattern.
 
 ```
-PDF-Tool extrahiert Text als UTF-8 Bytes
-  -> Skill-Logic im PdfMarkdownMirror dekodiert als Latin-1
-  -> Resultierender String wird vom Provider (Bedrock) als UTF-8
-     reserialisiert
-  -> write_vault speichert Mojibake
+read_document liefert UTF-8 PDF-Text
+  -> LLM-Stream serialisiert ihn (Provider-spezifisch)
+  -> write_vault content-Argument enthaelt Mojibake
+  -> vault.create persistiert es
 ```
 
-Alternative Hypothese: der LLM-Provider (Bedrock event-stream) liefert
-die Antwort als Mojibake aus, wenn der eingehende PDF-Text ungewohnte
-Bytes enthaelt. Live-Test mit OpenRouter waere ein Differenzialtest.
+Der deterministische Pfad `PdfMarkdownMirror.ts` waere immun: dort
+geht `parsedDocument.text` direkt in `vault.create`, ohne LLM-Roundtrip.
+Mit dem Tool-Group-Fix in FIX-19-28-01 verschwindet der Bug damit
+automatisch.
 
-Zwei Hauptkandidaten im Code:
-- `src/core/ingest/PdfMarkdownMirror.ts` (Mirror-Builder)
-- `src/core/ingest/parsePdf.ts` oder PDF-Tool-Output-Pipeline
+Resttest noetig: bestaetigen, dass `PdfMarkdownMirror.ts` selbst kein
+Mojibake produziert (separater Smoke-Test gegen ein Umlaut-PDF). Wenn
+der deterministische Pfad clean ist, ist FIX-19-28-03 ein reines
+Folge-Symptom von FIX-19-28-01.
 
 ## Fix
 
