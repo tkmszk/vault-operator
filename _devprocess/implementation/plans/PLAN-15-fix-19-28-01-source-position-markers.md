@@ -1,7 +1,6 @@
 ---
 plan-id: PLAN-15
 title: FIX-19-28-01 Source-Position-Marker im Ingest-Output
-status: Implemented
 refs:
   - FIX-19-28-01
   - FEAT-19-28
