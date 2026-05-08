@@ -5,6 +5,40 @@
 **Verwandt:** ADR-103 (Block-Reference-Konvention + PDF-Strategie), GitHub Issue #11 (pssah4/obsilo-dev)
 **Entdeckt:** 2026-05-07 (User-Repro `ingest_deep` auf PDF, Modus `source-plus-summary`)
 
+## Reopen 2026-05-08
+
+Live-Test mit `Attachements/enbw-geschaeftsbericht-2025.pdf` auf
+branch `feature/block-source-citations` (PLAN-15 Code drauf, awaiting
+dev-merge). User-Beobachtung: "Block refs sind nur Text: `^block-9`".
+
+Mirror selbst hat korrekte Anchors `^block-1` ... `^block-43` an den
+Take-Away-Stellen (Obsidian-Block-Anchor-Syntax intakt). Die
+Sense-Making-Note enthaelt aber laut User die Block-Referenzen nur
+als **Plain-Text** `^block-9`, nicht als klickbaren Wikilink
+`[[Sources/EnBW-Geschaeftsbericht-2025-Mirror#^block-9]]`. AC-02
+("Sense-Making-Note enthaelt pro Take-Away `#page=N` oder
+`#^block-N`") gilt damit nicht als erfuellt -- der Marker steht zwar
+da, aber nicht im klickbaren Wikilink-Wrap.
+
+Vermutete Ursache (zu verifizieren am Code):
+- Pipeline schreibt die Take-Away-Texte aus dem Plan in die
+  Sense-Making-Note, mit Block-Anchor angehaengt
+- Aber der Anchor wird nicht zu einem Cross-File-Wikilink gewrapped,
+  sondern landet als bare `^block-N`-Token im Output
+- In Obsidian wird `^block-N` ohne Wikilink-Klammern nicht als
+  Reference erkannt, sondern bestenfalls als Anchor *innerhalb* der
+  Sense-Making-Note (auf nicht-existierende lokale Blocks)
+
+Nicht in PLAN-15 abgedeckt: Wrap der Block-Anchors in Cross-File-
+Wikilinks `[[<MirrorPath>#^block-N]]` an der Konsumenten-Seite. Der
+Plan deckt offenbar nur die Anchor-Setup-Seite (Mirror) ab, nicht
+die Konsumenten-Seite (Sense-Making-Note).
+
+Status zurueck auf Open. Branch fuer Weiter-Implementierung bleibt
+`feature/block-source-citations`. Sense-Making-Note vom User-Test
+sollte zur naechsten Implementierung als Sample dienen (User
+liefert nach).
+
 ---
 
 ## Problem
