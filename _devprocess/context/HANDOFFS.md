@@ -1618,3 +1618,49 @@ Wie schalten wir Prompt Caching fuer alle Provider ein, die es unterstuetzen, oh
 - `_devprocess/requirements/improvements/IMP-18-01-02-prompt-cache-providers.md`
 
 Anschliessend `/architecture` fuer eine ADR zum Capability-Flag-Pattern (Erweiterung zu ADR-62), dann `/coding` Phase 1, danach `/coding` Phase 2.
+
+---
+
+## 2026-05-09 -- RE fuer Issue #313 (zwei IMP-Specs)
+
+**Phase:** Requirements Engineering
+**Branch:** chore/imp-18-01-prompt-cache-settings
+**Items:** IMP-18-01-01, IMP-18-01-02
+**Bezug:** BA-12 Section 11, FEAT-18-01, ADR-62, Issue #313
+
+### Was diese Phase produziert hat
+
+- `_devprocess/requirements/improvements/IMP-18-01-01-prompt-cache-settings-ui.md`: Phase 1 Spec (Default-on, Capability-Flag, UI-Visibility, Tooltip). 5 Akzeptanzkriterien.
+- `_devprocess/requirements/improvements/IMP-18-01-02-prompt-cache-provider-coverage.md`: Phase 2 Spec (Bedrock cachePoint, OpenAI cached_tokens, Kilo Gateway Passthrough). 5 Akzeptanzkriterien. `depends-on: [IMP-18-01-01]`.
+
+### NFR-Zusammenfassung (kein klassischer NFR-Block, weil IMP)
+
+- **Performance:** keine zusaetzliche Latenz pro Call, im Gegenteil weniger Bytes durch Cache-Reads.
+- **Kosten:** Anthropic -90% auf cached prefix nach erstem Call; OpenAI -50%; Bedrock vergleichbar zu Anthropic-direct sobald cachePoint greift.
+- **Backward-Compat:** keine Daten-Migration (`undefined === true` zur Laufzeit), bestehende explizite `false`-Werte bleiben erhalten.
+- **Sichtbarkeit:** Toggle-Visibility datengetrieben statt provider-spezifisch hardcoded.
+
+### Critical ASRs (fuer Architektur-Phase)
+
+- **ASR-1 Capability-Flag-Standort:** wo sitzt `supportsPromptCache` -- in `ModelInfo` (pro Modell) oder in `LLMProvider` (pro Provider-Typ)? Heute hat Obsilo keine zentrale `ModelInfo`-Struktur in `src/types/settings.ts`. Architektur-Entscheidung ueber das Pattern noetig (ADR-Update zu ADR-62 oder neuer ADR).
+- **ASR-2 Bedrock cachePoint-Format:** AWS-SDK-Spezifik. Architektur entscheidet, ob das Setzen im Provider-Code direkt oder ueber den Adapter-Pattern aus FEAT-18-01 (PromptCacheAdapter) gehen soll.
+
+### Open architecture questions
+
+- Muss ADR-62 erweitert werden oder ein neuer ADR aufgesetzt werden fuer das Capability-Flag-Pattern?
+- Ist der Adapter-Pattern aus FEAT-18-01 (das im Code unter welchem Namen lebt?) heute schon nutzbar fuer Bedrock und Kilo Gateway, oder braucht es ein Refactoring?
+- Soll der Tooltip-Text im UI-Konstanten-File oder in i18n liegen? Heute hat `src/ui/settings/constants.ts` Labels, `i18n/locales/en.ts` ebenfalls.
+
+### Constraints
+
+- **Review-Bot-Compliance:** keine `console.log`/`fetch`/`require`/`element.style.X = Y`/`innerHTML`/`any` neu einfuehren.
+- **Kein Breaking Change** in Settings-Schema (`data.json`): Feld `promptCachingEnabled` bleibt optional, Defaults werden zur Laufzeit interpretiert.
+- **iOS/Android/Desktop:** Settings-UI muss auf allen drei Obsidian-Plattformen funktionieren.
+
+### Forbidden-terms check
+
+IMPs erlauben technische Begriffe in Loesung und Akzeptanzkriterien (anders als Feature-Specs mit tech-agnostischen SC). Beide Specs nutzen technische Begriffe nur dort, wo der Kontext (Provider-API, AWS-SDK, OpenAI-Usage-Feld) sie erfordert. Problem-Section beschreibt User-Outcome ("zahlen volle Rate", "sehen weder den Rabatt").
+
+### Naechster Schritt
+
+`/architecture` -- klaert ASR-1 (Capability-Flag-Standort) und ggf. ASR-2 (Adapter vs. direkter Provider-Code). Output: ADR-Update oder neuer ADR, plan-context.md fuer beide IMPs. Anschliessend `/coding` IMP-18-01-01, dann `/coding` IMP-18-01-02.
