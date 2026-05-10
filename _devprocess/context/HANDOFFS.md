@@ -1825,3 +1825,44 @@ Damit ist die Annahme von FIX-19-28-02 ("Turn 1 funktioniert, Turn 2+ nicht") wi
 ### Naechster Schritt
 
 `/requirements-engineering` auf FIX-19-28-05. Sebastian moechte vor dem Fix RE/ARCH-Disziplin halten, weil der Bug bereits zweimal an Folge-Symptomen "gefixt" wurde, ohne dass der Lifecycle-Bug erkannt wurde. RE soll den Scope und die Akzeptanzkriterien sauber gegen die Out-of-Scope-Themen abgrenzen, ARCH soll entscheiden ob der `clear()`-Lifecycle umgebaut wird (z.B. Trennung in `clearPending()` und `clearAll()`) oder ob der Snapshot in `handleSendMessage` reicht.
+
+---
+
+## 2026-05-10 -- FIX-19-28-05 RE complete: Architecture-Handoff vorbereitet
+
+**Phase:** Requirements Engineering abgeschlossen. Ready for Architecture.
+
+**Item:** FIX-19-28-05
+**Bezug:** FEAT-19-28, FEAT-19-31, EPIC-19, FIX-19-28-02 (verwandt)
+
+### Was passiert ist
+
+RE hat die im Bug-Capture erfassten Akzeptanzkriterien geschaerft, einen User-Outcome-Block und Technical NFRs ergaenzt und einen Architecture-Handoff geschrieben mit drei offenen Architektur-Fragen.
+
+### Artefakte erzeugt / aktualisiert
+
+- [FIX-19-28-05-attachment-clear-lifecycle.md](../requirements/fixes/FIX-19-28-05-attachment-clear-lifecycle.md): Neue Sections "User-Outcome" und "Technical NFRs". AC-Tabelle erweitert um Verifikationsart pro Kriterium. Test-Strategie hinzugefuegt (Unit + Integration + Live).
+- [architect-handoff-fix-19-28-05.md](../requirements/handoff/architect-handoff-fix-19-28-05.md) (neu): Scope, ASRs (2 Moderate, 0 Critical), NFR-Summary, Constraints inkl. Out-of-Scope-Block, drei Open Questions (Q-01 Snapshot vs API-Split, Q-02 Push vs Pull, Q-03 ADR-Granularitaet).
+
+### NFR-Summary fuer den Architekten
+
+| Category | Target |
+|---|---|
+| Performance | Keine Regression. Snapshot O(N) auf <= 4 MB. |
+| Memory | MAX_TOTAL_DOC_TEXT_SIZE-Schutz bleibt aktiv. |
+| Backward compatibility | Keine Aenderung an Tool-Public-API (ReadDocumentTool, IngestDocumentTool). |
+| Observability | Bestehende Errormsg aus FIX-19-28 bleibt der Failure-Pfad. |
+
+### Open Questions an /architecture
+
+- **Q-01 (Moderate):** Snapshot-Pattern in handleSendMessage oder API-Split in AttachmentHandler? RE empfiehlt API-Split, weil clear() zwei Verantwortungen vermischt.
+- **Q-02 (Moderate):** setAttachmentTexts immer aufrufen (Push) oder Tool-Side-Reset (Pull)? RE empfiehlt Push, weil Pull die Tool-Sidebar-Kopplung verstaerken wuerde.
+- **Q-03 (Decision):** Eigener ADR oder Notiz in bestehendem ADR? RE empfiehlt eigenen kleinen ADR, weil das Snapshot-vs-Split-Muster wiederverwendbar ist.
+
+### Forbidden-Terms-Check
+
+AC-Tabelle enthaelt minimale technische Anker (`/ingest-deep`, "0 attachments available"-Errormsg) im selben Stil wie FIX-19-28-02. User-Outcome-Block ist tech-agnostisch. Technical NFRs sind sauber separiert.
+
+### Naechster Schritt
+
+`/architecture` auf FIX-19-28-05. ADR-Vorschlag oder Notiz, plus plan-context fuer den Coder. Architekt entscheidet die drei offenen Fragen und produziert die finale Implementierungs-Anleitung.

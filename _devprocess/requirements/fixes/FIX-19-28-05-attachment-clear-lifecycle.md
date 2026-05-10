@@ -109,15 +109,37 @@ Out-of-Scope (separates Folge-Issue):
 - **Persistent attachment state ueber den Task-Lifecycle.** Wenn der User in Turn 2 eine Folge-Message ohne neues Attachment schickt, sollte das Attachment aus Turn 1 fuer den laufenden AgentTask weiterhin abrufbar sein (fuer "echte" Multi-Turn-Skills). Das ist ein separates Architektur-Thema (eigener IMP unter EPIC-19).
 - **Skill-Architektur-Vereinfachung.** Solange der Bug existiert, hat sich `/ingest-deep` so entwickelt, dass es Chat-Attachments umschiffen muss (Step 0a "erst in Vault speichern"). Nach dem Fix kann dieser Step vereinfacht werden.
 
+## User-Outcome (was sich nach dem Fix sichtbar aendert)
+
+- `/ingest-deep` mit Datei-Chat-Attachment liefert eine Notiz, deren Inhalt aus der tatsaechlich angehaengten Datei stammt.
+- Keine fabrizierten Block-Refs zu nicht existierenden Mirror-Dateien.
+- Keine Errormsg-Storms im Console-Log waehrend `/ingest-deep` auf Chat-Attachments.
+- Tool-Aufrufe in spaeteren Turns ohne neues Attachment scheitern weiterhin (Persistent-State ist out-of-scope dieses FIX), aber mit klarer Errormsg statt mit silentem Fall-Through auf alten Attachment-State.
+
 ## Akzeptanzkriterien
 
-| ID | Criterion |
-|---|---|
-| AC-01 | Nach Send mit PDF-Attachment: `ReadDocumentTool.attachmentTexts.length > 0` waehrend des gesamten Turns. |
-| AC-02 | `read_document(attachment_index=0)` funktioniert in Turn 1, gibt den geparsten Text zurueck (ohne STOP-Errormsg). |
-| AC-03 | Wenn der vorherige Turn Attachments hatte und der aktuelle Turn keine, ist `attachmentTexts` zu Beginn des aktuellen Turns leer (kein State-Leak). |
-| AC-04 | Live-Test `/ingest-deep` mit PDF-Chat-Attachment laeuft ohne Retry-Loop und ohne fabrizierte Notiz durch. |
-| AC-05 | Regression-Test deckt den Lifecycle-Bug ab (clear() vor getFullDocTexts() im selben Turn). |
+| ID | Criterion | Verifikationsart |
+|---|---|---|
+| AC-01 | In dem Turn in dem der User eine Datei anhaengt, kann der Agent ueber das Attachment-Tooling den vollstaendigen Inhalt der Datei lesen, ohne "0 attachments available"-Error zu bekommen. | Live-Test + Unit-Test |
+| AC-02 | `/ingest-deep` mit PDF-Chat-Attachment in Turn 1 produziert eine Notiz, deren Quelltext mit dem geparsten Inhalt der Datei uebereinstimmt (kein Stale-Mirror-Fallback, keine dead Block-Refs). | Live-Test |
+| AC-03 | Beginnt ein neuer Turn ohne Attachment, sieht der Agent keine Reste aus vorherigen Turns. Der Attachment-State des Tool-Layers ist explizit leer. | Unit-Test |
+| AC-04 | Live-Test `/ingest-deep` mit PDF-Chat-Attachment laeuft ohne Retry-Loop und ohne fabrizierte Notiz durch (Plan -> Triage -> ingest_document/ingest_deep -> Note mit echten Block-Refs). | Live-Test |
+| AC-05 | Automatisierter Regression-Test reproduziert den Lifecycle-Bug (clear-vor-handoff im selben Turn) und faengt eine zukuenftige Regression vor dem Build ab. | Unit-Test |
+
+## Technical NFRs
+
+Die folgenden Punkte sind nicht user-sichtbar, aber binding fuer den Fix:
+
+- NFR-T01: Der Snapshot der Attachment-Texte erfolgt VOR jedem `clear()`-Aufruf im selben Lifecycle-Schritt. Alternative: `clear()` wird in zwei Methoden aufgeteilt, die explizit benannt sind (z.B. `clearPending` vs. `clearAll`).
+- NFR-T02: Der Tool-State (`ReadDocumentTool.attachmentTexts`, `IngestDocumentTool.attachmentTexts`) wird auf JEDEM Send-Pass synchronisiert (auch mit `[]`), damit alter State aus vorherigen Turns nicht silent leakt.
+- NFR-T03: `MAX_TOTAL_DOC_TEXT_SIZE`-Schutz aus `AttachmentHandler` bleibt erhalten (kein OOM bei grossen PDFs).
+- NFR-T04: Keine neuen Public-API-Aenderungen an `ReadDocumentTool` / `IngestDocumentTool`. Der Fix bleibt im Sidebar-Layer.
+
+## Test-Strategie
+
+1. **Unit-Test fuer den Lifecycle.** Reproduziert den Bug: Erst `getFullDocTexts()` mit befuelltem State pruefen, dann `clear()` aufrufen, dann erneut `getFullDocTexts()` und sicherstellen dass die Reihenfolge korrekt ist. Plus: Pruefe dass `setAttachmentTexts` nach Send aufgerufen wurde.
+2. **Integration-Test fuer State-Leak.** Zwei Sequential-Sends: erster mit Attachment, zweiter ohne. Pruefe dass `ReadDocumentTool.attachmentTexts` zu Beginn des zweiten Sends `[]` ist.
+3. **Live-Test (manuell).** PDF in Chat ziehen, `/ingest-deep <text>` senden, Console + UI beobachten. Erfolg: Note hat echten Inhalt, keine Errors im Log, keine Retry-Loop.
 
 ## Files (vorraussichtlich)
 

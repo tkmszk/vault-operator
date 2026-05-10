@@ -3,7 +3,7 @@
 > Single source of truth for state and the artifact relation graph.
 > Status fields live HERE, not in artifact frontmatter.
 
-Last update: 2026-05-10 by /coding (fix/19-28-05-attachment-clear-lifecycle, bug-capture)
+Last update: 2026-05-10 by /requirements-engineering (fix/19-28-05-attachment-clear-lifecycle)
 
 ---
 
