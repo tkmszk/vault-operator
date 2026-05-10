@@ -1720,3 +1720,70 @@ Diese Punkte loest /coding gegen den realen Codebase-Stand:
 ### Naechster Schritt
 
 `/coding` mit IMP-18-01-01 (Phase 1, Settings & Default). Implementiert die Capability-Tabelle, Default-Switch, UI-Visibility, Tooltip. Anschliessend `/testing` fuer Phase 1, dann `/coding` IMP-18-01-02 (Phase 2, Provider-Coverage), `/testing`, `/security-audit`.
+
+---
+
+## 2026-05-10 -- CODING fuer IMP-18-01-01 (Phase 1, Settings & Default) -- DONE
+
+**Phase:** Coding (Implementation)
+**Branch:** chore/imp-18-01-prompt-cache-settings
+**Item:** IMP-18-01-01
+**Plan:** PLAN-16
+**Bezug:** ADR-111, ADR-62, FEAT-18-01, BA-12 Section 11
+
+### Was implementiert wurde
+
+- **Capability-Modul**: `src/api/capabilities.ts` (105 Zeilen, neu).
+  Schema: `CacheStyle` Type Union, `CacheCapabilityEntry` Interface,
+  `CACHE_CAPABILITY_TABLE` mit 18 Eintraegen, `getCacheCapability()`
+  Pure Function mit eigener Wildcard-Match-Implementierung (~10 Zeilen,
+  keine externe Dependency). Conservative Default `none`.
+- **Default-Switch**: `src/types/settings.ts:265`
+  -- `promptCachingEnabled: model.promptCachingEnabled !== false`.
+  Effekt: undefined wirkt als true, explizit false bleibt false. Keine Daten-Migration noetig.
+- **UI-Visibility**: `src/ui/settings/ModelConfigModal.ts`. Init nutzt
+  Capability-Default fuer neue Modelle, Visibility-Bedingung aus
+  Capability-Tabelle statt provider-hardcoded Strings. Drei
+  Modell-Aenderungs-Pfade (Input-Field, Ollama-Browser, Custom-Browser)
+  triggern jetzt `updateFieldVisibility()`, weil Capability vom Modell-ID abhaengt.
+- **Tooltip**: neuer i18n-Key `modal.modelConfig.promptCachingTooltip` in
+  `src/i18n/locales/en.ts`. Checkbox bekommt `attr.title` mit dem Cost-Hinweis-Text.
+
+### Tests
+
+- 33 neue Tests (29 in `capabilities.test.ts`, 4 in `settings-prompt-cache.test.ts`).
+- Gesamt-Suite: 1341/1341 gruen, Build (tsc + esbuild) exit 0.
+- Auto-Deploy in iCloud-Vault erfolgreich.
+
+### Akzeptanzkriterien-Erfuellung
+
+| AC | Status | Nachweis |
+|---|---|---|
+| AC-1 Default-Verhalten | gruen | settings-prompt-cache.test.ts (4 Tests) |
+| AC-2 Capability-Flag fuer alle Provider | gruen | capabilities.test.ts (29 Tests, 12 Provider abgedeckt) |
+| AC-3 UI-Visibility datengetrieben | gruen via Build + Code | Visibility-Bedingung nutzt `getCacheCapability` |
+| AC-4 Tooltip mit Cost-Hinweis | gruen via Build + Code | i18n-Key + DOM-Attribut title gesetzt |
+| AC-5 Keine Regression bei nicht-cache-faehigen Providern | gruen | capabilities.test.ts (Out-of-Scope-Block, 7 Provider) |
+
+### Deviations vom Plan
+
+Keine. Implementierung folgt PLAN-16 1:1.
+
+### Open Concerns fuer /testing
+
+- **Live-UI-Test fehlt:** AC-3 und AC-4 wurden nur durch Build + Code-Inspektion bestaetigt. Manueller Walk durch das Settings-Modal (alle 12 Provider, Modell-Wechsel via Quick-Pick und Browser) steht aus. Test-Plan in PLAN-16 Implementation Notes festgelegt.
+- **Live-Anthropic-Call:** Anthropic-Provider-Code unveraendert. Bestehender cache_control-Mechanismus muss weiter funktionieren. Empfohlener Test: zwei aufeinanderfolgende Anfragen, Pruefung ob Token-Counter Cache-Hit zeigt.
+- **Bestehende Configs (data.json) mit `promptCachingEnabled: undefined`:** wirken jetzt als enabled. Empfohlener Test: Plugin in einer Vault mit aelteren Settings starten, Verhalten beobachten.
+
+### Vorbereitung Phase 2 (IMP-18-01-02)
+
+In dieser Phase NICHT angefasst, aber als Pfad-Hinweis fuer Phase 2:
+
+- Token-Display fuer cached_tokens: noch nicht im Code identifiziert (Sidebar-Komponente).
+- Cost-Calc-Modul: noch nicht identifiziert.
+- Bedrock cachePoint-Insertion: braucht AWS-SDK `ContentBlock.cachePoint`-Format, AWS-SDK-Version v3.1031 ist installiert.
+- Phase 2 nutzt `getCacheCapability(...).cacheStyle` als Dispatch-Schluessel: `bedrock-cachepoint`, `openai-implicit`, `passthrough`.
+
+### Naechster Schritt
+
+`/testing` -- automatisierte Tests sind drin, aber Live-UI-Verifikation des Settings-Modals und Live-Anthropic-Cache-Verifikation stehen aus. Anschliessend `/coding` mit IMP-18-01-02 (Phase 2, Provider-Coverage).
