@@ -3,7 +3,7 @@
 > Single source of truth for state and the artifact relation graph.
 > Status fields live HERE, not in artifact frontmatter.
 
-Last update: 2026-05-08 by /coding (chore/bug-capture-2026-05-08)
+Last update: 2026-05-10 by /coding (chore/imp-18-01-prompt-cache-settings)
 
 ---
 
@@ -12,14 +12,14 @@ Last update: 2026-05-08 by /coding (chore/bug-capture-2026-05-08)
 | Status | Count | | Phase | Count | | Type | Count |
 |---|---|-|---|---|-|---|---|
 | Planned | 16 | Released | 358 | Epic | 23 |
-| Active | 24 | Building | 52 | Feature | 203 |
-| Done | 251 | Planned | 9 | Fix | 55 |
-| Accepted | 110 | Candidates | 0 | Improvement | 15 |
-| Draft | 12 |  |  | ADR | 110 |
-| Open | 5 |  |  | Plan | 13 |
-| Proposed | 0 |  |  |  |  |
+| Active | 25 | Building | 54 | Feature | 203 |
+| Done | 253 | Planned | 11 | Fix | 55 |
+| Accepted | 110 | Candidates | 0 | Improvement | 17 |
+| Draft | 12 |  |  | ADR | 111 |
+| Open | 5 |  |  | Plan | 14 |
+| Proposed | 1 |  |  |  |  |
 
-Total artifacts: 419
+Total artifacts: 423
 
 ---
 
@@ -349,6 +349,8 @@ Phase: Building | Status: Active
 | FEAT-18-02 | Feature | Context Externalization (Dateisystem als Kontext) | Done | Released | EPIC-18 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/284 |
 | FEAT-18-03 | Feature | Cross-Platform TMP-Pfade fuer Context Externalization | Done | Released | EPIC-18 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/285 |
 | FEAT-18-04 | Feature | Cost-Aware Agent Heuristics | Done | Released | EPIC-18 | BA |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/286 |
+| IMP-18-01-01 | Improvement | Prompt Cache Settings UI: Default-on + provider-agnostische Toggle-Visibility | Done | Building | FEAT-18-01, EPIC-18, ADR-62, ADR-111, PLAN-16 | BA-12 |  |  | 2026-05-10 | P1 Issue #313 Phase 1 implemented (Capability-Tabelle src/api/capabilities.ts, Default-on in modelToLLMProvider, datengetriebene UI-Visibility, Tooltip). 33 Tests, 1341 total green. Live-UI-Verifikation deferred to /testing  Issue: https://github.com/pssah4/obsilo-dev/issues/313 |
+| IMP-18-01-02 | Improvement | Prompt Caching Provider-Coverage: Bedrock cachePoints + OpenAI cached_tokens + Kilo Gateway/OpenRouter Passthrough | Active | Planned | FEAT-18-01, EPIC-18, ADR-62, ADR-111 | BA-12 |  | 2026-05-09 | 2026-05-09 | P1 Issue #313 Phase 2 (Provider-Implementierungen). Bedrock setzt cachePoint-Marker, OpenAI trackt cached_tokens in Usage, Kilo Gateway/OpenRouter reichen cache_control durch  Issue: https://github.com/pssah4/obsilo-dev/issues/313 |
 | FIX-18-03-01 | Fix | TMP-Files nicht lesbar auf Windows (Pfad-Trennzeichen) | Done | Released | FEAT-18-03, EPIC-18 | BUG |  |  |  | P1  Issue: https://github.com/pssah4/obsilo-dev/issues/91 |
 | FIX-18-03-02 | Fix | read_file cannot open externalised tool results under tmp/ | Done | Released | FEAT-18-03, EPIC-18 | BUG |  |  |  | P1  Issue: https://github.com/pssah4/obsilo-dev/issues/92 |
 | FIX-18-03-03 | Fix | Externalise cleanup fails with EPERM on iCloud-synced vaults | Done | Released | FEAT-18-03, EPIC-18 | BUG |  |  |  | P2  Issue: https://github.com/pssah4/obsilo-dev/issues/93 |
@@ -512,6 +514,7 @@ Phase: Building | Status: Active
 | ADR-109 | ADR | Vault-zu-Memory-Bruecke via Single-Listener-Pattern | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-11 | ADR | Multi-Provider API Architecture (Adapter Pattern) | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-110 | ADR | Living-Document-Semantik + Cross-Interface-Thread-Klammer | Accepted | Released |  | ARCH |  |  |  |  |
+| ADR-111 | ADR | Provider Capability-Flag und Bedrock cachePoint (Erweiterung zu ADR-62) | Proposed | Building | IMP-18-01-01, IMP-18-01-02, FEAT-18-01, ADR-62 | ARCH |  | 2026-05-09 | 2026-05-09 |  |
 | ADR-12 | ADR | Context Condensing Strategy (Keep-First-Last) | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-13 | ADR | 3-Tier Memory Architecture (Chat -> Session -> Long-Term) | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-14 | ADR | VaultDNA — Automatische Plugin-Erkennung als Skills | Accepted | Released |  | ARCH |  |  |  |  |
@@ -613,4 +616,5 @@ Phase: Building | Status: Active
 | PLAN-13 | Plan | BA-25 Phase 4 Power-User-Erweiterungen | Draft | Building | FEAT-19-10, FEAT-19-11, FEAT-19-13, FEAT-19-14 | ARCH |  |  |  |  |
 | PLAN-14 | Plan | BA-25 Phase 5 Erweiterte Schichten | Draft | Building | FEAT-19-11, FEAT-19-15, FEAT-19-20, FEAT-03-26 | ARCH |  |  |  |  |
 | PLAN-15 | Plan | FIX-19-28-01 Source-Position-Marker im Ingest-Output | Done | Building | FIX-19-28-01, FEAT-19-28, FEAT-19-29, ADR-103 | ARCH |  |  | 2026-05-07 | Issue#11 Implemented |
+| PLAN-16 | Plan | IMP-18-01-01 Prompt Cache Settings UI | Done | Building | IMP-18-01-01, FEAT-18-01, ADR-62, ADR-111 | ARCH |  |  | 2026-05-10 | Implemented 2026-05-10. 33 Tests, 1341 total green |
 
