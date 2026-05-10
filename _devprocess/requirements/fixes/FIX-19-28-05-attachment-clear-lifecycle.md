@@ -157,8 +157,25 @@ Die folgenden Punkte sind nicht user-sichtbar, aber binding fuer den Fix:
 
 ## Fix
 
-(leer; wird im naechsten `/coding`-Pass nach RE/ARCH gefuellt)
+Implementiert via PLAN-17 / ADR-112 am 2026-05-10.
+
+- `src/ui/sidebar/AttachmentHandler.ts`: `clear()` verengt auf UI-Reset (pending + chipBar); `consumeFullDocTexts()` neu hinzugefuegt mit atomarem Snapshot+Clear (gibt eine flache Kopie zurueck und leert intern).
+- `src/ui/AgentSidebarView.ts:1710-1722` (Send-Flow Tool-Handoff): `getFullDocTexts()` durch `consumeFullDocTexts()` ersetzt; `if (docTexts.length > 0)`-Guard entfernt; `setAttachmentTexts` wird jetzt unconditional pro Turn aufgerufen.
+- `src/ui/AgentSidebarView.ts:2587` (newConversation-Reset) und `:2917` (loadConversation): nach `clear()` wird `void this.attachments.consumeFullDocTexts()` ergaenzt, damit Conversation-Wechsel die fullDocTexts explizit leert.
 
 ## Regression test
 
-(leer; wird im naechsten `/coding`-Pass nach RE/ARCH gefuellt)
+`src/ui/sidebar/__tests__/AttachmentHandler.test.ts` mit 5 Szenarien:
+
+1. `clear()` laesst `fullDocTexts` unveraendert.
+2. `consumeFullDocTexts()` gibt Snapshot zurueck und leert atomar.
+3. Snapshot ist eine flache Kopie (Mutationen am Returnwert leaken nicht in den State).
+4. `consumeFullDocTexts()` auf leerem State gibt `[]` zurueck.
+5. State-Leak-Schutz: zweiter `consumeFullDocTexts()` ohne dazwischen geschobenes `pushFullDocText()` gibt `[]` zurueck.
+
+Regression test verified via red-green cycle on 2026-05-10:
+- GREEN with fix: 5/5 passing.
+- RED with fix stashed: 5/5 failing (4x `consumeFullDocTexts is not a function`, 1x clear() leakage).
+- GREEN after stash pop: 5/5 passing.
+
+Volle Test-Suite: 1346/1346 gruen (vorher 1341, +5 neue Tests). Build (tsc + esbuild) exit 0, Auto-Deploy in iCloud-Vault erfolgreich.

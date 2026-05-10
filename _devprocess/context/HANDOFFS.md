@@ -1910,3 +1910,73 @@ plan-context-fix-19-28-05.md zitiert ADR-112 in Sektion 2 und in der ADR-Summary
 ### Naechster Schritt
 
 `/coding` auf FIX-19-28-05 mit plan-context-fix-19-28-05.md als Eingabe. Coder folgt der konkreten Implementierungs-Anleitung pro File (`AttachmentHandler.ts` zuerst, dann `AgentSidebarView.ts`), schreibt erst die Unit-Tests RED, baut dann gruen, und verifiziert per Live-Test mit PDF.
+
+---
+
+## 2026-05-10 -- FIX-19-28-05 Coding complete: AttachmentHandler-Lifecycle-Fix
+
+**Phase:** Coding abgeschlossen. Live-Test ausstehend (Sebastian manuell).
+
+**Item:** FIX-19-28-05
+**Plan:** PLAN-17
+**Bezug:** ADR-112, FEAT-19-28, FEAT-19-31, EPIC-19, FIX-19-28-02 (verwandt, durch diesen Fix de-facto erledigt)
+
+### Was implementiert wurde
+
+ADR-112 1:1 operationalisiert in zwei Code-Files plus einem neuen Test-File:
+
+- **`src/ui/sidebar/AttachmentHandler.ts`**: `clear()` verengt auf UI-Reset (pending + chipBar), `consumeFullDocTexts()` neu hinzugefuegt mit atomarem Snapshot+Clear. JSDoc-Hinweise auf ADR-112 / FIX-19-28-05 in beiden Methoden.
+- **`src/ui/AgentSidebarView.ts:1710-1722`** (Send-Flow): `getFullDocTexts()` -> `consumeFullDocTexts()`, if-Guard entfernt, Loop unconditional. Tools werden jetzt pro Turn synchronisiert (auch mit `[]`).
+- **`src/ui/AgentSidebarView.ts:2587`** (newConversation-Reset) und **`:2917`** (loadConversation): nach `clear()` jeweils `void this.attachments.consumeFullDocTexts()` ergaenzt mit Inline-Comment.
+- **`src/ui/sidebar/__tests__/AttachmentHandler.test.ts`** (neu): 5 Test-Szenarien fuer Lifecycle und State-Leak.
+
+### Tests
+
+- 5 neue Tests in AttachmentHandler.test.ts. Volle Suite: **1346/1346 gruen** (vorher 1341).
+- Build: `npm run build` exit 0 (tsc + esbuild).
+- Deploy: Auto-Copy in iCloud-Vault erfolgreich.
+- Regression-Cycle (red-green) bestaetigt: ohne Fix sind alle 5 Tests RED, mit Fix sind alle 5 GREEN.
+
+### Akzeptanzkriterien-Erfuellung
+
+| AC | Status | Nachweis |
+|---|---|---|
+| AC-01 (Datei lesbar im selben Turn) | gruen | Test-Szenario 2 (consume-Atomicity) |
+| AC-02 (`/ingest-deep` ohne Errormsg) | gruen via Code | Wird via AC-04-Live-Test bestaetigt |
+| AC-03 (kein State-Leak) | gruen | Test-Szenario 5 (cross-turn-Leak) plus Code-Audit Z.2587/2917 |
+| AC-04 (Live-Test ohne Retry-Loop) | offen | Sebastian fuehrt manuell aus |
+| AC-05 (Regression-Test) | gruen | red-green-Cycle 2026-05-10 |
+
+### Deviations vom Plan
+
+Keine. Alle 8 PLAN-17-Tasks 1:1 ausgefuehrt.
+
+### Bezug zu FIX-19-28-02
+
+FIX-19-28-02 ist im Backlog noch "Active / Building". Mit dem Lifecycle-Fix aus FIX-19-28-05 ist die ursprueng zugrundeliegende Beobachtung ("read_document mit attachment_index=0 schlaegt fehl") weg. FIX-19-28-02 hat ergaenzend sinnvolle Skill-Disziplin (Source-Type-Detection, STOP-on-Error, Kosten-Disziplin) eingebaut. **Empfehlung an Sebastian:** FIX-19-28-02 nach erfolgreichem Live-Test als Done markieren (das Symptom, das es loesen sollte, ist konstruktiv weg).
+
+### Bekannte Risiken
+
+- **Live-Test offen:** AC-02 und AC-04 brauchen den manuellen UI-Walk durch Obsidian. Falls dabei ein Edge-Case auftaucht (z.B. zweite Send-Welle mit neuem Attachment waehrend ein Tool-Run noch laeuft), wuerde sich das im Console-Log zeigen.
+- **Mid-Run-State-Race:** Wenn zwei Sends sehr schnell hintereinander gefeuert werden, ueberschreibt der zweite die Tool-State des ersten. Verhalten ist heute identisch (gleicher Singleton-State); dieser Fix aendert daran nichts.
+
+### Out-of-Scope (binding aus ADR-112)
+
+- Persistent attachment state ueber den AgentTask-Lifecycle. Wenn der User in Turn 2 ohne neues Attachment fragt, kann das Attachment aus Turn 1 weiterhin nicht abgerufen werden. Eigenes IMP unter EPIC-19.
+- Skill-Vereinfachung in `/ingest-deep`. Step 0a ("erst in Vault speichern") wurde als Workaround eingebaut und kann nach diesem Fix zurueckgebaut werden. FEAT-19-31-Folgearbeit, separater PR.
+
+### Live-Test-Anleitung fuer Sebastian
+
+1. Build laufen schon (Auto-Deploy in iCloud-Vault). Obsidian neuladen oder Plugin disable/enable.
+2. PDF in den Chat ziehen (z.B. `enbw-geschaeftsbericht-2025.pdf`).
+3. Eingabe: `/ingest-deep <freier Text>` und Senden.
+4. Erwartet:
+   - Plan wird erstellt, Triage laeuft durch.
+   - `read_document` oder `ingest_document` mit `attachment_index=0` funktioniert (KEINE "0 attachments available"-Errormsg mehr im Console-Log).
+   - Note in `Notes/` enthaelt echten Inhalt aus der PDF mit echten Block-Refs zum Mirror (oder zur Source).
+5. Console-Log: keine `Tool error in read_document: Error: No chat attachments available`-Errors.
+6. Folgetest: zweite Message ohne neues Attachment senden. Erwartet: Tool-Aufrufe mit `attachment_index=0` failen weiterhin sauber, Note wird NICHT auf Basis alter PDF-Texte fabriziert.
+
+### Naechster Schritt
+
+Live-Test (Sebastian, manuell). Bei Erfolg: FIX-19-28-02 als Done markieren, ggf. weiter mit `/testing` (formaler Test-Pass) oder direkt Merge nach dev. Bei Misserfolg: Rueckkehr zu `/architecture` mit Mid-course-Trigger.
