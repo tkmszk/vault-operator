@@ -1866,3 +1866,47 @@ AC-Tabelle enthaelt minimale technische Anker (`/ingest-deep`, "0 attachments av
 ### Naechster Schritt
 
 `/architecture` auf FIX-19-28-05. ADR-Vorschlag oder Notiz, plus plan-context fuer den Coder. Architekt entscheidet die drei offenen Fragen und produziert die finale Implementierungs-Anleitung.
+
+---
+
+## 2026-05-10 -- FIX-19-28-05 ARCH complete: ADR-112 + plan-context fuer /coding
+
+**Phase:** Architecture abgeschlossen. Ready for Coding.
+
+**Item:** FIX-19-28-05
+**Bezug:** ADR-112 (neu), FEAT-19-28, FEAT-19-31, EPIC-19
+
+### Was passiert ist
+
+Architecture-Pass hat die drei Open Questions aus dem RE-Handoff entschieden und einen kleinen, fokussierten ADR plus den plan-context fuer den Coder geschrieben. Dem RE-Empfehlungs-Trio (Split, Push, eigener ADR) wurde gefolgt, mit einer Konkretisierung in Q-01: API-Split LIGHT mit atomarem `consumeFullDocTexts()` statt zweier separater Methoden `clearPending` / `clearAll`.
+
+### Tech-Stack-Justification
+
+Der Fix bleibt im Sidebar-Layer (TypeScript strict, Obsidian Plugin API). Kein neues Modul, keine neue Dependency. `AttachmentHandler` bekommt eine zusaetzliche oeffentliche Methode (`consumeFullDocTexts`), `clear()` wird semantisch verengt (nur UI-Reset). Tool-Layer-API unveraendert.
+
+### Rejected Alternatives
+
+- **Snapshot-Pattern im Caller (Option A im ADR).** Loest den heutigen Bug, kodiert den Lifecycle aber nur in der Aufruf-Reihenfolge. Drift-anfaellig fuer zukuenftige Code-Aenderungen in `handleSendMessage`.
+- **Tool-Side-Pull (Option C im ADR).** Tool-Layer wuerde direkt aus `AttachmentHandler` lesen. Verstaerkt Sidebar-Tool-Kopplung, macht Tools ohne Sidebar-Instanz untestbar (z.B. bei MCP-Workflows). Ueberdimensioniert fuer den Bug.
+
+### Bekannte Risiken
+
+- Falls eine andere `attachments.clear()`-Aufrufstelle als `handleSendMessage` (heute Z.2587, Z.2917) unausgesprochen erwartet hat, dass `clear()` auch fullDocTexts loescht, kann nach dem Umbau ein subtiler Memory-Leak entstehen (Texte bleiben liegen, bis der naechste Send konsumiert). **Mitigation:** Audit-Pflicht jeder `clear()`-Aufrufstelle ist im plan-context als Coder-Constraint festgehalten. `MAX_TOTAL_DOC_TEXT_SIZE`-Schutz greift weiterhin auf `pushFullDocText`.
+- Falls zwei Sends sehr schnell hintereinander geschickt werden, ueberschreibt der zweite die Tool-State des ersten. Verhalten ist heute identisch (gleicher Tool-Singleton-State); kein Regress.
+
+### Open Items fuer /coding
+
+- Audit der drei `attachments.clear()`-Aufrufstellen in `AgentSidebarView.ts`. Jede Stelle muss kommentiert werden, ob sie weiterhin auch fullDocTexts-Loeschung erwartet (= zusaetzlicher `consumeFullDocTexts()`-Aufruf, Wert ignorieren).
+- Live-UI-Verifikation: Sebastian zieht PDF in Chat, `/ingest-deep` starten, Console + UI beobachten.
+
+### Wayfinder
+
+`AttachmentHandler` ist heute nicht in `src/ARCHITECTURE.map` (nur ein internes Submodul von Sidebar). Kein Wayfinder-Update notwendig. ADR-112 dokumentiert das Konzept, ein Wayfinder-Eintrag waere ueberproportional fuer die Groesse des Konzepts.
+
+### Consistency Check
+
+plan-context-fix-19-28-05.md zitiert ADR-112 in Sektion 2 und in der ADR-Summary-Tabelle. Tech-Stack-Anker in plan-context und ADR-112 sind konsistent (TypeScript strict, Obsidian, kein Refactor des Tool-Layers).
+
+### Naechster Schritt
+
+`/coding` auf FIX-19-28-05 mit plan-context-fix-19-28-05.md als Eingabe. Coder folgt der konkreten Implementierungs-Anleitung pro File (`AttachmentHandler.ts` zuerst, dann `AgentSidebarView.ts`), schreibt erst die Unit-Tests RED, baut dann gruen, und verifiziert per Live-Test mit PDF.
