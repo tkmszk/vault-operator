@@ -3,7 +3,7 @@
 > Single source of truth for state and the artifact relation graph.
 > Status fields live HERE, not in artifact frontmatter.
 
-Last update: 2026-05-10 by /coding (chore/imp-18-01-prompt-cache-settings)
+Last update: 2026-05-10 by /coding (fix/19-28-05-attachment-clear-lifecycle, bug-capture)
 
 ---
 
@@ -12,14 +12,14 @@ Last update: 2026-05-10 by /coding (chore/imp-18-01-prompt-cache-settings)
 | Status | Count | | Phase | Count | | Type | Count |
 |---|---|-|---|---|-|---|---|
 | Planned | 16 | Released | 358 | Epic | 23 |
-| Active | 25 | Building | 54 | Feature | 203 |
-| Done | 253 | Planned | 11 | Fix | 55 |
+| Active | 25 | Building | 55 | Feature | 203 |
+| Done | 253 | Planned | 11 | Fix | 56 |
 | Accepted | 110 | Candidates | 0 | Improvement | 17 |
 | Draft | 12 |  |  | ADR | 111 |
-| Open | 5 |  |  | Plan | 14 |
+| Open | 6 |  |  | Plan | 14 |
 | Proposed | 1 |  |  |  |  |
 
-Total artifacts: 423
+Total artifacts: 424
 
 ---
 
@@ -405,6 +405,7 @@ Phase: Building | Status: Active
 | FIX-19-28-04 | Fix | 28-04: PdfMarkdownMirror deckt nur 1-135 von 410 Seiten ab (User erwartet vollen Mirror, kein selektiver Filter dokumentiert) | Open | Building | FEAT-19-28, EPIC-19, ADR-103 | BUG |  |  | 2026-05-08 | P1 Live-Test 2026-05-08  Issue: https://github.com/pssah4/obsilo-dev/issues/97 |
 | FIX-19-31-02 | Fix | 31-02: Tool-Result-Doubles im Chat-Transkript bei /ingest-deep (jedes content-Block erscheint zweimal) | Open | Building | FEAT-19-31, EPIC-19 | BUG |  |  | 2026-05-08 | P2 Diagnose-pending Live-Test 2026-05-08  Issue: https://github.com/pssah4/obsilo-dev/issues/98 |
 | FIX-19-28-02 | Fix | 28-02: Chat-Attachments leben nur 1 Turn -- ingest_document attachment_index schlaegt ab Turn 2 fehl, Skill rutscht in Retry-Loop (~12 EUR Token-Cost) | Active | Building | FEAT-19-28, FEAT-19-31, EPIC-19 | BUG |  |  | 2026-05-07 | P1 Live-Test 2026-05-07 (Skill v2 + Tool-Errormsg landed, persistent-attachment-state als IMP separat)  Issue: https://github.com/pssah4/obsilo-dev/issues/57 |
+| FIX-19-28-05 | Fix | 28-05: AttachmentHandler.clear() laeuft VOR setAttachmentTexts -- ReadDocumentTool sieht nie die fullDocTexts (Lifecycle-Bug, Skill-Design unerfuellbar in Turn 1) | Open | Building | FEAT-19-28, FEAT-19-31, EPIC-19, FIX-19-28-02 | BUG |  |  | 2026-05-10 | P0 Live-Test 2026-05-10. Root cause unter FIX-19-28-02-Annahme falsch: nicht "Turn 2+ failure" sondern "Turn 1 failure". AttachmentHandler.clear() (Z.1443) leert fullDocTexts BEVOR getFullDocTexts() (Z.1713) gerufen wird, setAttachmentTexts() nie aufgerufen. Existiert seit commit 67d5b1cd (2026-04-11). |
 | IMP-19-31-01 | Improvement | 31-01: User-konfigurierbare Note-Templates fuer /ingest, /ingest-deep, /meeting-summary (Settings-UI + bundled defaults) | Done | Building | FEAT-19-31, EPIC-19 | AUDIT |  |  | 2026-05-07 | P1 Live-Test 2026-05-07  Issue: https://github.com/pssah4/obsilo-dev/issues/58 |
 | FEAT-19-31 | Feature | Ingest- und Synthese-Skill-Suite (/ingest-deep, /ingest, /meeting-summary) | Done | Building | EPIC-19, ADR-103, FIX-19-28-01 | BA |  |  | | Issue#11 (3 SKILL.md in bundled-skills/, embed-assets 9->12, vault-deploy ok)  Issue: https://github.com/pssah4/obsilo-dev/issues/49 |
 | IMP-19-08-01 | Improvement | 08-01: Strukturierter Output-Parser fuer Summary-Prompt (Keywords/Themen/Konzepte) | Planned | Planned | FEAT-19-08, EPIC-19 | AUDIT |  |  | 2026-05-07 | P2 Audit2026-05-07  Issue: https://github.com/pssah4/obsilo-dev/issues/50 |

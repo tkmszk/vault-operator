@@ -1787,3 +1787,41 @@ In dieser Phase NICHT angefasst, aber als Pfad-Hinweis fuer Phase 2:
 ### Naechster Schritt
 
 `/testing` -- automatisierte Tests sind drin, aber Live-UI-Verifikation des Settings-Modals und Live-Anthropic-Cache-Verifikation stehen aus. Anschliessend `/coding` mit IMP-18-01-02 (Phase 2, Provider-Coverage).
+
+---
+
+## 2026-05-10 -- FIX-19-28-05 Bug-Capture: AttachmentHandler Lifecycle (Coding-Capture-Pfad)
+
+**Phase:** Coding (Bug-Capture-Entry-Point). Kein Fix in dieser Iteration, naechste Phase ist `/requirements-engineering`.
+
+**Item:** FIX-19-28-05
+**Bezug:** FEAT-19-28, FEAT-19-31, EPIC-19, FIX-19-28-02 (verwandt, falsche Diagnose dort)
+
+### Was passiert ist
+
+Live-Test 2026-05-10 mit `/ingest-deep` auf einem PDF-Chat-Attachment scheitert in Turn 1: `read_document(attachment_index=0)` wirft die STOP-Errormsg aus FIX-19-28 (Issue #312), der Agent ignoriert das Stale-Mirror-Verbot im Skill und schreibt eine fabrizierte "Deep Ingest"-Note mit dead Block-Refs zu einer nicht existierenden Quelldatei.
+
+Auf den ersten Blick sah es nach einer Skill-Compliance-Schwaeche aus. Code-Reading hat den eigentlichen Lifecycle-Bug freigelegt:
+
+1. `handleSendMessage` snapshottet nur `pending` (Zeile 1442), nicht `fullDocTexts`.
+2. `clear()` (Zeile 1443, AttachmentHandler:268) leert beide Listen.
+3. 270 Zeilen spaeter liest `getFullDocTexts()` (Zeile 1713) das jetzt-leere Array.
+4. Der `if (docTexts.length > 0)`-Guard (Zeile 1714) verhindert den `setAttachmentTexts`-Call vollstaendig.
+5. `ReadDocumentTool.attachmentTexts` bleibt `[]`, jeder Attachment-Aufruf failed mit der STOP-Errormsg.
+
+Damit ist die Annahme von FIX-19-28-02 ("Turn 1 funktioniert, Turn 2+ nicht") widerlegt. Der Bug existiert seit Commit 67d5b1cd (2026-04-11) und war 4 Wochen unentdeckt, weil die Symptom-Behandlung (besseres Errormsg, Skill-Disziplin, Stale-Mirror-Verbot) das Failure-Mode harmlos aussehen liess.
+
+### Artefakte erzeugt
+
+- BACKLOG-Zeile FIX-19-28-05 (Open / Building, P0). Dashboard-Counts auf 424.
+- [FIX-19-28-05-attachment-clear-lifecycle.md](../requirements/fixes/FIX-19-28-05-attachment-clear-lifecycle.md): Symptom, Root-Cause, Failure-Trace, Console-Output, Repro-Schritte, Akzeptanzkriterien, Scope-Abgrenzung gegen FIX-19-28-02 / FIX-19-28 / Persistent-Attachment-State.
+- Branch `fix/19-28-05-attachment-clear-lifecycle` aus `dev` erstellt.
+
+### Out-of-Scope dieses FIX
+
+- **Persistent attachment state ueber den Task-Lifecycle:** wenn der User in Turn 2 ohne neues Attachment sendet, sollte das Attachment aus Turn 1 weiter abrufbar sein. Eigenes IMP unter EPIC-19, getrennt von der Lifecycle-Korrektur.
+- **Skill-Architektur-Vereinfachung:** `/ingest-deep` Step 0a ("erst in Vault speichern") wurde nur eingebaut um diesen Bug zu umschiffen. Nach dem Fix kann der Step verschlankt werden, aber das ist FEAT-19-31-Folge, nicht dieser FIX.
+
+### Naechster Schritt
+
+`/requirements-engineering` auf FIX-19-28-05. Sebastian moechte vor dem Fix RE/ARCH-Disziplin halten, weil der Bug bereits zweimal an Folge-Symptomen "gefixt" wurde, ohne dass der Lifecycle-Bug erkannt wurde. RE soll den Scope und die Akzeptanzkriterien sauber gegen die Out-of-Scope-Themen abgrenzen, ARCH soll entscheiden ob der `clear()`-Lifecycle umgebaut wird (z.B. Trennung in `clearPending()` und `clearAll()`) oder ob der Snapshot in `handleSendMessage` reicht.
