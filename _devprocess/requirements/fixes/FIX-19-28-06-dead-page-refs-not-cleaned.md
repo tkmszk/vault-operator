@@ -169,8 +169,44 @@ Out-of-Scope (separate FIXes / IMPs):
 
 ## Fix
 
-(zu fuellen nach Implementierung)
+[IngestDocumentTool.ts:303](src/core/tools/vault/IngestDocumentTool.ts#L303)
+-- Regex in `checkPositionMarkers` erweitert um optionalen
+Block-Anchor-Suffix:
+
+```typescript
+// vorher
+/\[\[[^\]]+\|↗\]\]\s*$/.test(line)
+
+// nachher
+/\[\[[^\]]+\|↗\]\](?:\s+\^[A-Za-z0-9_-]+)?\s*$/.test(line)
+```
+
+[IngestDocumentTool.ts neu](src/core/tools/vault/IngestDocumentTool.ts)
+-- `findDeadPageRefs(headerContent, outputBasename, pageCount)` neu.
+Scant die Kernaussagen-Section, parsed alle `[[BASENAME#Page N|↗]]`-
+Refs, meldet Dead-Refs bei zwei Failure-Modi:
+
+- Page-Number > pageCount (Page existiert nicht im Originaltext)
+- Basename matched nicht das Output-File (Ref zeigt auf falsches Note)
+
+[IngestDocumentTool.ts:execute](src/core/tools/vault/IngestDocumentTool.ts)
+-- Tool-Result um Dead-Refs-Section erweitert. Bei `deadRefs > 0` wird
+die Dead-Ref-Liste explizit aufgefuehrt mit konkretem Reason und der
+Anweisung "ENTFERNEN, nicht zusaetzliche Refs ergaenzen". Damit
+laeuft der Agent nicht mehr in das Doppel-Edit-Pattern.
 
 ## Regression test
 
-(zu fuellen nach Implementierung)
+[IngestDocumentTool.test.ts](src/core/tools/vault/__tests__/IngestDocumentTool.test.ts)
+-- Regression-Test verifiziert via red-green-Cycle am 2026-05-10:
+
+1. Test "zaehlt Marker auch wenn ein Block-Anchor folgt" ergaenzt fuer
+   den Karpathy-Pattern-Bullet `- ... [[X#Page 1|↗]] ^seg-a`.
+2. 6 neue Tests fuer `findDeadPageRefs`: Page > pageCount,
+   Basename-Mismatch, valide Refs, ausserhalb Section, Mehrfach-Dead,
+   Skip von Block-/URL-Anchor-Refs.
+3. `basenameOf`-Tests fuer Output-Path-Stem-Extraktion.
+
+Red-Green-Cycle: Stash der `IngestDocumentTool.ts`-Aenderung, alle 9
+neuen Tests rot. Stash pop, alle 17 Tests gruen. Backwards-Kompatibilitaet
+der 8 bestehenden Tests intakt.
