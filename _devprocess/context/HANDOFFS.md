@@ -1980,3 +1980,54 @@ FIX-19-28-02 ist im Backlog noch "Active / Building". Mit dem Lifecycle-Fix aus 
 ### Naechster Schritt
 
 Live-Test (Sebastian, manuell). Bei Erfolg: FIX-19-28-02 als Done markieren, ggf. weiter mit `/testing` (formaler Test-Pass) oder direkt Merge nach dev. Bei Misserfolg: Rueckkehr zu `/architecture` mit Mid-course-Trigger.
+
+---
+
+## EPIC-24 -- Agent-Loop Effizienz -- ARCH (2026-05-12)
+
+**Branch:** `feature/epic-24-agent-loop-effizienz` | **Issue:** #318 | **Phase-Tag:** `epic-24/arch-done` | **Quelle:** RESEARCH-36 (Diagnose + 5-Provider-Messlauf + 3-Wege-Vergleich Claude Code / EnBW Cowork), Nachfolger von EPIC-18.
+
+### Technischer Ansatz (warum so)
+
+Obsilo behaelt seinen eigenen ReAct-Loop -- kein Neubau, kein Umstieg auf ein Coding-Agent-SDK (Claude Agent SDK / pi-coding-agent). Begruendung: der Loop-Kern ist auf vergleichbarem Stand wie Claude Code / Cowork (teils robuster: Notfall-Condensing, toolErrors-Verbatim, Sanitization an allen Send-Sites); die Kostenprobleme liegen ausserhalb des Loop-Kerns (Caching-Disziplin, Compaction-Trigger, Tool-Output-Disziplin, Subagent-Kultur) und sind lokalisierte, additive Aenderungen. Ein Rip-and-Replace waere ein Mehrmonats-Projekt ohne fachlichen Mehrwert (RESEARCH-36 §7). Uebernommen werden die *Disziplinen* der Referenzen: sessionweit stabiler gecachter Praefix, Threshold-Compaction mit Recent-Keep, gebudgetete Subagent-Handoffs, eingebaute Cache-/Token-Telemetrie.
+
+### ADRs (1 neu, 3 Amendments -- bewusst keine neuen ADRs wo ein Amendment passt, Konsolidierungs-Pflicht)
+
+- **ADR-62 Amendment** (FEAT-24-01): Cache-Praefix-Stabilisierung -- Provider-seitiger Split des System-Prompts am "CACHE BREAKPOINT" (stabiler Block mit `cache_control`/`cachePoint`, volatiler Tail ohne), DateTime tagesgranular, eigener Marker auf dem `tools`-API-Feld, rollende History-Marker. Befund: die in ADR-62 entschiedene Section-Reihenfolge ist umgesetzt, aber wirkungslos auf dem Anthropic-Direkt-Pfad (1 Marker auf dem ganzen System-String -> Miss + 25% Write-Aufschlag). Auto-Caching-Provider greifen schon.
+- **ADR-63 Amendment** (FEAT-24-03): Externalizer auch im allgemeinen ReAct-Loop, Re-Read-Cap externalisierter tmp-Dateien + reichhaltigere kompakte Referenz, grosse reingepastete/@-mentionte User-Message-Inhalte kappen. Superseded FIX-18-02-01.
+- **ADR-12 Amendment** (FEAT-24-02): Microcompaction -- Tool-Result-Inhalte nach dem Turn, der sie genutzt hat, auf Skelette + Pointer eindampfen; additiv zur Keep-First-Last-Voll-Compaction (die bleibt als Notnagel bei ~70%). Constraints/Conventions bleiben im System-Prompt, nicht in der komprimierbaren History.
+- **ADR-113** (neu, FEAT-24-04): Subagent-Delegation fuer context-heavy self-contained Teilaufgaben -- model-getrieben (`new_task` prominent + Agent-Profile mit schlankem eigenem System-Prompt + Prompt-Leitplanke, kein harter Router), Per-Call-Token-Budget a la Cowork-Advisor.
+
+### Verworfene Alternativen (nicht ohne neuen Grund wieder aufmachen)
+
+- SDK-Umstieg (s.o.).
+- Harter Router fuer Subagent-Delegation ("alle Web-Calls -> Subagent") -- "Web vs. Vault" ist das falsche Kriterium; Heuristik wird brittle (ADR-113 Option 1).
+- ADR-62 Option 2 als globale Typ-Aenderung der System-Prompt-Rueckgabe (String -> Array durch alle Provider) -- der Split bleibt provider-intern.
+- Tool-Doppelung im System-Prompt aufloesen -- die Tool-Listung im System-Prompt-Text ist nur ~700 Tokens, kein Posten (RESEARCH-36 Befund F).
+- Caveman-/Output-Knappheits-Modus -- Output ist nicht das Problem (Befund G).
+- `read_file`/`read_document` externalisieren -- bleibt in `SKIP_EXTERNALIZATION` (ADR-63-Revision 2026-04-29); die Turn-uebergreifende Akkumulation loest Microcompaction, nicht Externalization.
+
+### Bekannte Risiken
+
+- **Microcompaction-Aggressivitaet:** zu aggressives Pruning kostet Ergebnisqualitaet. Mitigation: Skelett behaelt immer den `read_file path=...`-Pointer (Re-Read unterliegt dann dem Cap aus ADR-63-Amendment); konservativer Default (z.B. nur Tool-Results aelter als N Turns); Shadow-Mode / A-B-Test vor Release. Offen: Trigger-Punkte und Default-Schwelle -- im PLAN entscheiden.
+- **KV-Cache-Invalidierung durch Microcompaction:** Microcompaction veraendert die History rueckwirkend -> Cache-Miss ab der ersten geaenderten Message. Akzeptabel (an Turn-Grenzen, eingesparter Re-Send > Cache-Re-Build, stabiler System-Praefix unberuehrt). Alternative im PLAN: nur den aeltesten Teil prunen.
+- **Subagent-Profile sind neu** -- braucht eine kleine Profil-Registry; Subagent erbt heute Mode/Rules/Skills des Parents, mit Profilen muss das entkoppelt werden. Klein halten (1-2 Profile).
+- **Anthropic-Account-Abhaengigkeit (BUG-016):** Memory-/Context-Modell gehen am konfigurierten Provider vorbei direkt auf Anthropic; bei leerem Account fallen die Features aus (im Messlauf gesehen). Beruehrt den Caching-Fix nicht direkt, aber im Hinterkopf behalten.
+
+### Offene Punkte (an `/coding` / PLAN delegiert)
+
+- Genaue Trigger-Punkte und Schwellen fuer Microcompaction; ob nur alte Tool-Results oder alle.
+- Token-Schwelle fuer das User-Message-Capping (Richtwert ~12-16k, gesamt pro Message).
+- Profil-Definitionen fuer Subagents (1-2 zum Start; als Modul oder als bundled-skill-Verzeichnis analog `.claude/agents/`).
+- Reihenfolge innerhalb Welle 1: L (Microcompaction) und C (Externalizer/Caps) sind die groessten Hebel laut Messung; A (Anthropic-Caching-Fix) ist isoliert + klein, kann parallel.
+- `cached_tokens`-Wiring fuer die openai-Familie: gehoert zu IMP-18-01-02 (Status Active, noch nicht codiert) -- in Welle 1 mit-erledigen; mein Diagnose-Patch `logCacheStat.ts` (IMP-24-05-01, uncommitted im Working-Tree) ist nur der Log, nicht das Wiring.
+- iCloud-tmp-Cleanup `EPERM` robuster machen (FIX-24-03-02, klein).
+
+### Konsistenz-Check
+
+- `/consistency-check` Mode A gelaufen: 93 Findings, 0 durch EPIC-24 verursacht (0 Dead-Links, 0 Broken-Refs, 0 ADR-Abstraktionsverstoesse). 10 = EPIC-24-Skeletons ohne Detail-File (erwartet, kommen in RE/Coding). 83 = vorbestehende Hygiene-Schuld (3x duplicate FEAT-04-ID, ~13 orphan-ADR-Rows = Checker-Quirk bei 3-stelligen IDs, 67x status-drift detail-vs-backlog) -> Sammel-Eintrag DEBT-CC-2026-05-12 in der Graph-Health-Sektion, eigener Cleanup-Task.
+- Draft-PR: `gh pr create` scheiterte mit Permission-Fehler (`pssah4 does not have ... CreatePullRequest`) -- Branch ist gepusht, PR ggf. manuell anlegen: https://github.com/pssah4/obsilo-dev/pull/new/feature/epic-24-agent-loop-effizienz
+
+### Naechster Schritt
+
+`/coding` fuer EPIC-24 Welle 1 (P0): FEAT-24-02 (Microcompaction) + FEAT-24-03 (Externalizer im Hauptloop / Re-Read-Cap / User-Message-Cap) + FEAT-24-01 (Anthropic/Bedrock-Caching-Fix) + IMP-18-01-02 (Bedrock cachePoint, OpenAI cached_tokens-Wiring) + IMP-24-05-01 (logCacheStat committen). PLAN je Welle. Nach `/coding` jeweils `/testing` + `/security-audit`. ADRs sind PROPOSALS -- `/coding` entscheidet final gegen den realen Codebase-Stand.
