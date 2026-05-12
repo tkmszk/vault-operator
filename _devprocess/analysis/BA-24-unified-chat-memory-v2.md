@@ -387,7 +387,7 @@ UCM-Engine wird **gegen [MemoryBench](https://github.com/supermemoryai/memoryben
 - End-to-End-Verschluesselung (Memoir-Style)
 - Automatisches Profil-Routing (LLM erkennt: "diese Konversation ist Coding"), initial pro Client fest konfiguriert
 - Voice-Capture-Pipeline (OpenClaw + Telegram als Ingestion-Quelle), separater Workstream nach UCM-MVP
-- GUI / Dashboard fuer Memory-Browsing **wird in Standalone-Worker P1 erforderlich**: Da die meisten UCM-User kein Vault Operator haben (Vault Operator ist Nischenprodukt), braucht der Standalone-Worker zwingend ein eigenes UI (Web-Dashboard oder Electron-Wrapper). Plugin-Worker-User nutzen Obsilos History-Sidebar mit Global-Tab. Konkretes UI-Detail: Out-of-Scope fuer Memory-v2-Initiative, im Scope fuer separates UCM-Repo.
+- GUI / Dashboard fuer Memory-Browsing **wird in Standalone-Worker P1 erforderlich**: Da die meisten UCM-User kein Vault Operator haben (Vault Operator ist Nischenprodukt), braucht der Standalone-Worker zwingend ein eigenes UI (Web-Dashboard oder Electron-Wrapper). Plugin-Worker-User nutzen Vault Operators History-Sidebar mit Global-Tab. Konkretes UI-Detail: Out-of-Scope fuer Memory-v2-Initiative, im Scope fuer separates UCM-Repo.
 
 ### 7.3 Assumptions
 

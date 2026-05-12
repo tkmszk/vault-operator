@@ -13,7 +13,7 @@ IST EPIC-22
 EIN Skill-Package-Format analog zu Anthropics offener Skill-Spec (`agentskills.io`) plus Vault Operator-spezifischer Coordinator-Erweiterung
 DAS Skills als Ordner mit SKILL.md + optionalen scripts/references/assets/ Subfolders speichert, `.skill`-Zip-Distribution anbietet, und Sub-Skill-Koordination zulaesst
 IM GEGENSATZ ZUM Status quo wo Skills nur einzelne Markdown-Files sind, ohne Distribution und ohne Rollen-Orchestrierung
-UNSERE LOESUNG macht Vault Operator rueckwaerts-kompatibel zu bestehenden Single-File-Skills (v2.5.x), nimmt bestehende Anthropic-Skills-Zips an, und erweitert das Format um eine Coordinator-Rolle die in Claude-Land nicht existiert aber in Obsilos Agent-Loop sinnvoll ist.
+UNSERE LOESUNG macht Vault Operator rueckwaerts-kompatibel zu bestehenden Single-File-Skills (v2.5.x), nimmt bestehende Anthropic-Skills-Zips an, und erweitert das Format um eine Coordinator-Rolle die in Claude-Land nicht existiert aber in Vault Operators Agent-Loop sinnvoll ist.
 
 ## Business Outcomes (messbar)
 

@@ -172,7 +172,7 @@ export async function initI18n(lang: Language): Promise<void> {
 
 ```typescript
 // In settings.ts
-interface ObsiloSettings {
+interface VaultOperatorSettings {
   // ... bestehende Settings
   language: Language; // Default: 'en'
 }

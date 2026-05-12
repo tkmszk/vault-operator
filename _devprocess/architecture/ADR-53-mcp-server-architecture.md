@@ -37,7 +37,7 @@ MCP Server laeuft direkt im Electron Renderer.
 MCP Server laeuft als Node.js Child Process (spawn). Kommuniziert via IPC mit dem Plugin im Renderer. Der Child Process bedient stdio (MCP JSON-RPC) nach aussen und IPC (Requests) nach innen.
 
 ```
-Claude Desktop  ←stdio→  McpServerProcess  ←IPC→  ObsiloPlugin (Renderer)
+Claude Desktop  ←stdio→  McpServerProcess  ←IPC→  VaultOperatorPlugin (Renderer)
                           (child_process)           (alle Services)
 ```
 

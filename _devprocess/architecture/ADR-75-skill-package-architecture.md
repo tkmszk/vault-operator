@@ -35,7 +35,7 @@ Drei Luecken entstehen:
    `read_file`-on-demand-Flow fehlt.
 3. **Kein Coordinator-Pattern.** User wuenscht einen Skill der andere
    Skills im selben Ordner orchestriert. Das geht ueber die Anthropic-Spec
-   hinaus, passt aber zu Obsilos Agent-Loop (`new_task`, Mode-Switching).
+   hinaus, passt aber zu Vault Operators Agent-Loop (`new_task`, Mode-Switching).
 
 ## Decision Drivers
 

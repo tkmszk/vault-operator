@@ -10,7 +10,7 @@
 
 ### 1.1 Problem Statement
 
-Obsilos semantische Suche ist durch einen kritischen Skalierungsbug nicht nutzbar: Die vectra-Bibliothek speichert alle Vektoren in einer einzigen JSON-Datei (aktuell 507MB), die V8's String-Limit bei `JSON.stringify()` sprengt. Der Index wird bei jedem Neustart komplett neu aufgebaut und scheitert erneut -- eine Endlosschleife. Darueber hinaus liefert die bestehende Vektorsuche nur isolierte Text-Chunks ohne strukturelle Vernetzung: implizite Zusammenhaenge zwischen Notes bleiben unsichtbar.
+Vault Operators semantische Suche ist durch einen kritischen Skalierungsbug nicht nutzbar: Die vectra-Bibliothek speichert alle Vektoren in einer einzigen JSON-Datei (aktuell 507MB), die V8's String-Limit bei `JSON.stringify()` sprengt. Der Index wird bei jedem Neustart komplett neu aufgebaut und scheitert erneut -- eine Endlosschleife. Darueber hinaus liefert die bestehende Vektorsuche nur isolierte Text-Chunks ohne strukturelle Vernetzung: implizite Zusammenhaenge zwischen Notes bleiben unsichtbar.
 
 ### 1.2 Proposed Solution
 
@@ -162,7 +162,7 @@ Drei zusammenhaengende Probleme:
 
 ### 6.1 Business Goals
 
-- Obsilos Kern-Differenzierung (semantische Suche + vernetztes Denken) zuverlaessig und skalierbar machen
+- Vault Operators Kern-Differenzierung (semantische Suche + vernetztes Denken) zuverlaessig und skalierbar machen
 - Knowledge Layer als Showcase fuer fortgeschrittene RAG-Architektur (4-Stufen Hybrid-Retrieval)
 - Mobile-Readiness als Grundlage fuer breitere Nutzbarkeit
 

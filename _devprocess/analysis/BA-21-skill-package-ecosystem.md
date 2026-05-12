@@ -33,7 +33,7 @@ Drei Probleme fallen zusammen:
 3. **Coordinator-Pattern fehlt.** Der User wuenscht sich explizit einen
    Skill der andere Skills im selben Ordner orchestriert. Das geht ueber
    die Anthropic-Spec hinaus (dort gibt es das nicht formell), ist aber
-   in Obsilos Agent-Loop sinnvoll: ein Meta-Skill kann Sub-Tasks
+   in Vault Operators Agent-Loop sinnvoll: ein Meta-Skill kann Sub-Tasks
    delegieren, analog zu `new_task` aber mit feineren Rollen-Definitionen
    pro Sub-Skill.
 

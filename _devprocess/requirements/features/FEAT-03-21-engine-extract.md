@@ -114,7 +114,7 @@ Vault Operator selbst importiert die Engine post-extract aus dem internen Packag
 
 **CRITICAL ASR #2:** Adapter-Interface fuer Knowledge-DB ist klar definiert und ohne Vault-Spezifika.
 
-- **Why ASR:** UCM-Native braucht keinen Knowledge-Adapter, UCM-Mit-Vault Operator-Backend nutzt Obsilos Adapter
+- **Why ASR:** UCM-Native braucht keinen Knowledge-Adapter, UCM-Mit-Vault Operator-Backend nutzt Vault Operators Adapter
 - **Impact:** Interface-Definition, Adapter-Lifecycle
 - **Quality Attribute:** Modularity
 

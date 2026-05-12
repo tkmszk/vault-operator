@@ -133,9 +133,9 @@ Die URL-Aenderungen werden durch Redirect-Mappings abgefangen (getting-started.h
 
 **Doku-Skill-Strategie:**
 
-Ein uebergeordneter Skill (`obsilo-guide`) mit Keyword-Trigger-Sets pro Seite:
+Ein uebergeordneter Skill (`vault-operator-guide`) mit Keyword-Trigger-Sets pro Seite:
 ```yaml
-name: obsilo-guide
+name: vault-operator-guide
 description: Answers questions about Vault Operator usage, setup, and features
 keywords: [help, how to, setup, configure, getting started, ...]
 sections:
