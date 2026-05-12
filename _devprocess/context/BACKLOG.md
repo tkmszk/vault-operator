@@ -3,7 +3,7 @@
 > Single source of truth for state and the artifact relation graph.
 > Status fields live HERE, not in artifact frontmatter.
 
-Last update: 2026-05-10 by /release (v2.7.2: 4x FIX + 1x IMP released, AUDIT-017 SCA-bumps)
+Last update: 2026-05-12 by agent-loop-cost-refactoring (EPIC-24 Agent-Loop Effizienz angelegt: 6 FEAT + 5 FIX + 1 IMP skeletons; Quelle RESEARCH-36; Detail-Files folgen, Counts via /consistency-check zu verifizieren)
 
 ---
 
@@ -11,15 +11,32 @@ Last update: 2026-05-10 by /release (v2.7.2: 4x FIX + 1x IMP released, AUDIT-017
 
 | Status | Count | | Phase | Count | | Type | Count |
 |---|---|-|---|---|-|---|---|
-| Planned | 16 | Released | 358 | Epic | 23 |
-| Active | 25 | Building | 57 | Feature | 203 |
-| Done | 255 | Planned | 11 | Fix | 56 |
-| Accepted | 110 | Candidates | 0 | Improvement | 17 |
-| Draft | 12 |  |  | ADR | 112 |
+| Planned | 26 | Released | 358 | Epic | 24 |
+| Active | 26 | Building | 58 | Feature | 209 |
+| Done | 255 | Planned | 22 | Fix | 59 |
+| Accepted | 110 | Candidates | 0 | Improvement | 18 |
+| Draft | 12 |  |  | ADR | 113 |
 | Open | 5 |  |  | Plan | 15 |
-| Proposed | 2 |  |  |  |  |
+| Proposed | 3 |  |  |  |  |
 
-Total artifacts: 426
+Total artifacts: 438
+
+---
+
+## Graph-Health (letzter Check: 2026-05-12, Modus: A)
+
+| Invariante | Status | Count | Anmerkung |
+|---|---|---|---|
+| Dead links | ok | 0 | |
+| Broken Refs / spec references | ok | 0 | |
+| duplicate-backlog-id | fail | 3 | FEAT-04-01/02/04 doppelt (EPIC-04 vs EPIC-10 ID-Kollision) -- vorbestehend, vor EPIC-24 |
+| orphan-backlog-row (Detail-File fehlt) | fail | 23 | davon 10 = EPIC-24-Skeletons (FEAT-24-01..06, FIX-24-01-01/03-01/03-02, IMP-24-05-01) -- erwartet, Detail-Files folgen in /requirements-engineering bzw. /coding; 13 = vorbestehende 3-stellige ADR-Rows (Checker-Quirk bzw. ADR-100 fehlt) |
+| status-drift detail-vs-backlog | fail | 67 | vorbestehend -- Feature-Beschreibungen in den EPIC-*-Files sagen "Geplant"/"Not Started"/"Implementiert vX" waehrend BACKLOG "Done/Released" sagt. Nicht durch EPIC-24 verursacht. |
+| ADR abstraction violations | ok | 0 | |
+
+**Fazit:** EPIC-24-Additionen sind graph-clean (0 High, 0 Dead-Links, 0 Broken-Refs durch sie). Die 83 verbleibenden Findings sind vorbestehende Hygiene-Schuld, NICHT durch EPIC-24 verursacht, NICHT blockierend:
+
+- **DEBT-CC-2026-05-12** (Source: CONSISTENCY-CHECK, P3): Backlog-Graph-Hygiene-Pass faellig -- (a) 3x duplicate-backlog-id (FEAT-04-01/02/04, EPIC-04 vs EPIC-10 ID-Kollision -> EPIC-10-Features umnummerieren oder Aliase aufloesen), (b) ~13 orphan-backlog-row bei 3-stelligen ADR-IDs (Checker-Matching-Quirk pruefen; ADR-100-Datei vorhanden -> Checker; ggf. ADR-100 wirklich pruefen), (c) 67x status-drift detail-vs-backlog (Feature-Beschreibungstexte in den EPIC-*-Files vs. BACKLOG-Status synchronisieren). Eigener Cleanup-Task, nicht Teil von EPIC-24. Run-Datei: `.git/consistency-check.last-run.json`.
 
 ---
 
@@ -356,7 +373,7 @@ Phase: Building | Status: Active
 | FIX-18-03-03 | Fix | Externalise cleanup fails with EPERM on iCloud-synced vaults | Done | Released | FEAT-18-03, EPIC-18 | BUG |  |  |  | P2  Issue: https://github.com/pssah4/obsilo-dev/issues/93 |
 | FIX-18-03-04 | Fix | FastPath planner JSON parse fails -- recipe aborts mid-task | Done | Released | FEAT-18-03, EPIC-18 | BUG |  |  |  | P2  Issue: https://github.com/pssah4/obsilo-dev/issues/94 |
 | FIX-18-04-01 | Fix | Streaming Tool-Error verschluckt + edit_file-Schleife bei grossen Diffs | Done | Released | FEAT-18-04, EPIC-18 | BUG |  |  |  | P1  Issue: https://github.com/pssah4/obsilo-dev/issues/95 |
-| FIX-18-02-01 | Fix | 02-01: PDF tool_result mehrfach im Hauptkontext, Context Externalization (ADR-063) greift bei PDF-Attachments nicht | Open | Building | FEAT-18-02, EPIC-18, ADR-063 | BUG |  |  | 2026-05-08 | P1 Live-Test 2026-05-08, ~114k Tokens fuer ein PDF in 3 Messages parallel  Issue: https://github.com/pssah4/obsilo-dev/issues/62 |
+| FIX-18-02-01 | Fix | 02-01: PDF tool_result mehrfach im Hauptkontext, Context Externalization (ADR-63) greift bei PDF-Attachments nicht | Superseded | Building | FEAT-18-02, EPIC-18, ADR-63, FIX-24-03-01 | BUG |  |  | 2026-05-12 | P1 Live-Test 2026-05-08, ~114k Tokens fuer ein PDF in 3 Messages parallel. SUPERSEDED 2026-05-12 von FIX-24-03-01 (Externalizer im Hauptloop + Re-Read-Cap, allgemeiner) -- dort mitloesen.  Issue: https://github.com/pssah4/obsilo-dev/issues/62 |
 
 ### EPIC-19: Knowledge Maintenance
 
@@ -490,6 +507,26 @@ Phase: Building | Status: Active
 | IMP-23-01-01 | Improvement | IMP-23-01-01: Eval-Coverage Pass: MCP-Tool-Handlers + Vault-Tools + FrontmatterI | Planned | Building | FEAT-23-01, EPIC-23 | USER |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/309 |
 | IMP-23-04-05 | Improvement | IMP-23-04-05: relay /poll partitioniert pro Plugin-Session (AUDIT-016 L-4, defer | Planned | Building | FEAT-23-04, EPIC-23 | USER |  |  |  |   Issue: https://github.com/pssah4/obsilo-dev/issues/310 |
 
+### EPIC-24: Agent-Loop Effizienz
+
+Source: `_devprocess/requirements/epics/EPIC-24-agent-loop-effizienz.md`
+Issue: https://github.com/pssah4/obsilo-dev/issues/318
+Phase: Architecture | Status: Active
+Verwandt: RESEARCH-36 (Diagnose + 3-Wege-Vergleich Claude Code / EnBW Cowork), Nachfolger von EPIC-18 (Token-Kostenreduktion). UEBERLAPPUNG: Bedrock-cachePoint + OpenAI-cached_tokens decken bereits ADR-111 + IMP-18-01-02 (Active) ab -- NICHT hier duplizieren, IMP-18-01-02 aktivieren/zu Ende bringen. Caching-Praefix-Stabilisierung ist ein Amendment zu ADR-62. Externalizer-fuer-PDF-Attachments ist bereits FIX-18-02-01 (Open) -- FIX-24-03-01 ist die allgemeinere Variante (alle Tool-Results im Hauptloop + Re-Read-Cap).
+
+| ID | Type | Title | Status | Phase | Refs | Source | Commit | Claim | Last change | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|
+| FEAT-24-01 | Feature | Cache-Praefix-Stabilisierung (Anthropic): System-Prompt-Block-Array, DateTime tagesgranular, Memory/Active-Skills aus gecachtem Bereich, rollende History-Breakpoints | Planned | Planned | EPIC-24, ADR-62, ADR-111 | RESEARCH-36 |  |  | 2026-05-12 | P0 Welle 1; Amendment zu ADR-62. Bedrock-cachePoint + OpenAI-cached_tokens NICHT hier -> IMP-18-01-02 |
+| FEAT-24-02 | Feature | History-Komprimierung: Microcompaction der Tool-Results an Turn-Grenzen | Planned | Planned | EPIC-24 | RESEARCH-36 |  |  | 2026-05-12 | P0 Welle 1; dominanter Wachstumstreiber; ADR neu (oder Amendment zu ADR-12 context-condensing) |
+| FEAT-24-03 | Feature | Tool-Output- & Kontext-Disziplin: ADR-63-Externalizer im allgemeinen Hauptloop, Re-Read-Cap externalisierter tmp-Dateien, grosse Paste-/@-Mention-User-Messages kappen | Planned | Planned | EPIC-24, ADR-63 | RESEARCH-36 |  |  | 2026-05-12 | P0 Welle 1; Amendment zu ADR-63; verallgemeinert FIX-18-02-01 |
+| FEAT-24-04 | Feature | Subagent-Delegation fuer context-heavy Teilaufgaben (mit Per-Call-Token-Budget + Steering) | Planned | Planned | EPIC-24 | RESEARCH-36 |  |  | 2026-05-12 | P1 Welle 2; model-getrieben (new_task prominent + Profile + Prompt-Leitplanke), kein harter Router; ADR neu |
+| FEAT-24-05 | Feature | Sichtbarkeit: Sidebar-Kosten-/Token-/Cache-Hit-Anzeige | Planned | Planned | EPIC-24 | RESEARCH-36 |  |  | 2026-05-12 | P1 Welle 2; Cowork extractCacheStats als Vorlage; haengt von IMP-18-01-02 (cached_tokens-Wiring) ab |
+| FEAT-24-06 | Feature | Lazy-Loading Tool-Schemas + Active-Skills on-demand | Planned | Planned | EPIC-24 | RESEARCH-36 |  |  | 2026-05-12 | P2 Welle 3; Spike zuerst (tools-Feld-Groesse messen), dann Entscheidung |
+| FIX-24-01-01 | Fix | 01-01: anthropic.ts cache_control sitzt auf dem ganzen System-Prompt-String (inkl. volatilem DateTime/Memory/ActiveSkills/Recipe/VaultContext-Tail) -> Cache-Miss + 25% Write-Aufschlag, teurer als ohne Caching | Planned | Planned | FEAT-24-01, EPIC-24, ADR-62 | BUG |  |  | 2026-05-12 | P0  belegt 2026-05-12 (5-Provider-Messlauf); Implementierungs-Bug von ADR-62 ("DateTime last" allein reicht nicht) |
+| FIX-24-03-01 | Fix | 03-01: ResultExternalizer schliesst read_file aus + Agent liest die externalisierte tmp-Datei sofort zurueck -> No-Op (4/5 Messlauf-Tests); kompakte Referenz zu duenn + kein Re-Read-Cap; verallgemeinert FIX-18-02-01 | Planned | Planned | FEAT-24-03, EPIC-24, ADR-63 | BUG |  |  | 2026-05-12 | P1 |
+| FIX-24-03-02 | Fix | 03-02: tmp-Cleanup des ResultExternalizers schlaegt auf iCloud-Pfad mit EPERM fehl (non-fatal, tmp-Files bleiben liegen) | Planned | Planned | FEAT-24-03, EPIC-24 | BUG |  |  | 2026-05-12 | P2 |
+| IMP-24-05-01 | Improvement | 05-01: Per-API-Call Cache-Stat-Diagnose-Log (src/api/logCacheStat.ts) in alle Provider verdrahtet (ausser chatgpt-oauth) -- aktuell uncommitted | Planned | Planned | FEAT-24-05, EPIC-24, IMP-18-01-02 | USER |  |  | 2026-05-12 | Diagnose-Vorlaeufer von IMP-18-01-02 (deckt nur das Log, NICHT das cached_tokens-Wiring in usage-Chunk + Cost-Calc -- das bleibt IMP-18-01-02). In Welle-1-Code ueberfuehren oder als chore(diagnostics) committen. |
+
 ## Cross-cutting (ADRs, Plans, no Epic)
 
 | ID | Type | Title | Status | Phase | Refs | Source | Commit | Claim | Last change | Notes |
@@ -516,9 +553,10 @@ Phase: Building | Status: Active
 | ADR-109 | ADR | Vault-zu-Memory-Bruecke via Single-Listener-Pattern | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-11 | ADR | Multi-Provider API Architecture (Adapter Pattern) | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-110 | ADR | Living-Document-Semantik + Cross-Interface-Thread-Klammer | Accepted | Released |  | ARCH |  |  |  |  |
-| ADR-111 | ADR | Provider Capability-Flag und Bedrock cachePoint (Erweiterung zu ADR-62) | Proposed | Building | IMP-18-01-01, IMP-18-01-02, FEAT-18-01, ADR-62 | ARCH |  | 2026-05-09 | 2026-05-09 |  |
+| ADR-111 | ADR | Provider Capability-Flag und Bedrock cachePoint (Erweiterung zu ADR-62) | Proposed | Building | IMP-18-01-01, IMP-18-01-02, FEAT-18-01, ADR-62, FEAT-24-01 | ARCH |  | 2026-05-12 | 2026-05-12 | Code-Abgleich 2026-05-12: `supportsPromptCache`-Flag-Teil implementiert (IMP-18-01-01, released v2.7.2, src/api/capabilities.ts). Bedrock-cachePoint-Teil offen (IMP-18-01-02, noch nicht codiert). Praefix-Split-Teil neu in FEAT-24-01 (Amendment). |
 | ADR-112 | ADR | Attachment-Lifecycle im Sidebar (Snapshot vs API-Split, Push-Sync zum Tool-Layer) | Proposed | Building | FIX-19-28-05, FEAT-19-28, FEAT-19-31, EPIC-19 | ARCH |  | 2026-05-10 | 2026-05-10 |  |
-| ADR-12 | ADR | Context Condensing Strategy (Keep-First-Last) | Accepted | Released |  | ARCH |  |  |  |  |
+| ADR-113 | ADR | Subagent-Delegation fuer context-heavy Teilaufgaben (model-getrieben, Per-Call-Token-Budget) | Proposed | Building | FEAT-24-04, EPIC-24, ADR-01, ADR-12, ADR-62, ADR-63 | ARCH |  | 2026-05-12 | 2026-05-12 | EPIC-24 Welle 2; RESEARCH-36 §8 Hebel E |
+| ADR-12 | ADR | Context Condensing Strategy (Keep-First-Last) + Microcompaction (Amendment 2026-05-12) | Accepted | Released | FEAT-24-02, EPIC-24 | ARCH |  |  | 2026-05-12 | Amendment 2026-05-12 (EPIC-24/FEAT-24-02): Microcompaction der Tool-Results an Turn-Grenzen, additiv zur Keep-First-Last-Voll-Compaction |
 | ADR-13 | ADR | 3-Tier Memory Architecture (Chat -> Session -> Long-Term) | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-14 | ADR | VaultDNA — Automatische Plugin-Erkennung als Skills | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-15 | ADR | Hybrid Search mit Semantic + BM25 + RRF Fusion | Accepted | Released |  | ARCH |  |  |  |  |
@@ -568,8 +606,8 @@ Phase: Building | Status: Active
 | ADR-59 | ADR | Memory Decay Prevention (Aktive Qualitaetssicherung) | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-60 | ADR | Session-Summary Zuverlaessigkeit und Observability | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-61 | ADR | Fast Path Execution -- Recipe-gesteuertes Batching | Accepted | Released |  | ARCH |  |  |  |  |
-| ADR-62 | ADR | KV-Cache-Optimized Prompt Structure & Provider-Agnostic Caching | Accepted | Released |  | ARCH |  |  |  |  |
-| ADR-63 | ADR | Context Externalization -- Dateisystem als erweiterter Kontext | Accepted | Released |  | ARCH |  |  |  |  |
+| ADR-62 | ADR | KV-Cache-Optimized Prompt Structure & Provider-Agnostic Caching + Cache-Praefix-Stabilisierung (Amendment 2026-05-12) | Accepted | Released | FEAT-24-01, EPIC-24, ADR-111 | ARCH |  |  | 2026-05-12 | Amendment 2026-05-12 (EPIC-24/FEAT-24-01): Provider-seitiger Split am "CACHE BREAKPOINT", DateTime tagesgranular, tools-Feld-Marker, rollende History-Marker -- die Section-Reihenfolge allein reichte nicht (5-Provider-Messlauf) |
+| ADR-63 | ADR | Context Externalization -- Dateisystem als erweiterter Kontext + Externalizer im Hauptloop/Re-Read-Cap (Amendment 2026-05-12) | Accepted | Released | FEAT-24-03, FIX-24-03-01, EPIC-24 | ARCH |  |  | 2026-05-12 | Amendment 2026-05-12 (EPIC-24/FEAT-24-03): Externalizer auch im allgemeinen Hauptloop, Re-Read-Cap externalisierter tmp-Dateien, grosse Paste-/@-Mention-User-Messages kappen; superseded FIX-18-02-01 |
 | ADR-64 | ADR | Google Gemini als eigenstaendiger Provider | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-65 | ADR | Ontologie-Schema und Befuellung | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-66 | ADR | Ingest-Strategie (Schema-Erkennung und Entitaets-Zuordnung) | Accepted | Released |  | ARCH |  |  |  |  |
