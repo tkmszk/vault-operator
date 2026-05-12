@@ -152,7 +152,7 @@ UPDATE schema_meta SET version = 10;
 
 **Security:**
 - Frontmatter-Write nur mit User-Approval (Setting-gated, Default off).
-- Web-Search via BYOK, keine Queries ueber Obsilo-Gateway.
+- Web-Search via BYOK, keine Queries ueber Vault Operator-Gateway.
 - ingest_triage_log enthaelt nur source_uri und Decision, kein Inhalt-Excerpt.
 
 ## Bundling: 5 PLAN-Dokumente fuer Coding-Phase
