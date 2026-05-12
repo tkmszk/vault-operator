@@ -1980,3 +1980,107 @@ FIX-19-28-02 ist im Backlog noch "Active / Building". Mit dem Lifecycle-Fix aus 
 ### Naechster Schritt
 
 Live-Test (Sebastian, manuell). Bei Erfolg: FIX-19-28-02 als Done markieren, ggf. weiter mit `/testing` (formaler Test-Pass) oder direkt Merge nach dev. Bei Misserfolg: Rueckkehr zu `/architecture` mit Mid-course-Trigger.
+
+---
+
+## EPIC-24 -- Agent-Loop Effizienz -- ARCH (2026-05-12)
+
+**Branch:** `feature/epic-24-agent-loop-effizienz` | **Issue:** #318 | **Phase-Tag:** `epic-24/arch-done` | **Quelle:** RESEARCH-36 (Diagnose + 5-Provider-Messlauf + 3-Wege-Vergleich Claude Code / EnBW Cowork), Nachfolger von EPIC-18.
+
+### Technischer Ansatz (warum so)
+
+Obsilo behaelt seinen eigenen ReAct-Loop -- kein Neubau, kein Umstieg auf ein Coding-Agent-SDK (Claude Agent SDK / pi-coding-agent). Begruendung: der Loop-Kern ist auf vergleichbarem Stand wie Claude Code / Cowork (teils robuster: Notfall-Condensing, toolErrors-Verbatim, Sanitization an allen Send-Sites); die Kostenprobleme liegen ausserhalb des Loop-Kerns (Caching-Disziplin, Compaction-Trigger, Tool-Output-Disziplin, Subagent-Kultur) und sind lokalisierte, additive Aenderungen. Ein Rip-and-Replace waere ein Mehrmonats-Projekt ohne fachlichen Mehrwert (RESEARCH-36 §7). Uebernommen werden die *Disziplinen* der Referenzen: sessionweit stabiler gecachter Praefix, Threshold-Compaction mit Recent-Keep, gebudgetete Subagent-Handoffs, eingebaute Cache-/Token-Telemetrie.
+
+### ADRs (1 neu, 3 Amendments -- bewusst keine neuen ADRs wo ein Amendment passt, Konsolidierungs-Pflicht)
+
+- **ADR-62 Amendment** (FEAT-24-01): Cache-Praefix-Stabilisierung -- Provider-seitiger Split des System-Prompts am "CACHE BREAKPOINT" (stabiler Block mit `cache_control`/`cachePoint`, volatiler Tail ohne), DateTime tagesgranular, eigener Marker auf dem `tools`-API-Feld, rollende History-Marker. Befund: die in ADR-62 entschiedene Section-Reihenfolge ist umgesetzt, aber wirkungslos auf dem Anthropic-Direkt-Pfad (1 Marker auf dem ganzen System-String -> Miss + 25% Write-Aufschlag). Auto-Caching-Provider greifen schon.
+- **ADR-63 Amendment** (FEAT-24-03): Externalizer auch im allgemeinen ReAct-Loop, Re-Read-Cap externalisierter tmp-Dateien + reichhaltigere kompakte Referenz, grosse reingepastete/@-mentionte User-Message-Inhalte kappen. Superseded FIX-18-02-01.
+- **ADR-12 Amendment** (FEAT-24-02): Microcompaction -- Tool-Result-Inhalte nach dem Turn, der sie genutzt hat, auf Skelette + Pointer eindampfen; additiv zur Keep-First-Last-Voll-Compaction (die bleibt als Notnagel bei ~70%). Constraints/Conventions bleiben im System-Prompt, nicht in der komprimierbaren History.
+- **ADR-113** (neu, FEAT-24-04): Subagent-Delegation fuer context-heavy self-contained Teilaufgaben -- model-getrieben (`new_task` prominent + Agent-Profile mit schlankem eigenem System-Prompt + Prompt-Leitplanke, kein harter Router), Per-Call-Token-Budget a la Cowork-Advisor.
+
+### Verworfene Alternativen (nicht ohne neuen Grund wieder aufmachen)
+
+- SDK-Umstieg (s.o.).
+- Harter Router fuer Subagent-Delegation ("alle Web-Calls -> Subagent") -- "Web vs. Vault" ist das falsche Kriterium; Heuristik wird brittle (ADR-113 Option 1).
+- ADR-62 Option 2 als globale Typ-Aenderung der System-Prompt-Rueckgabe (String -> Array durch alle Provider) -- der Split bleibt provider-intern.
+- Tool-Doppelung im System-Prompt aufloesen -- die Tool-Listung im System-Prompt-Text ist nur ~700 Tokens, kein Posten (RESEARCH-36 Befund F).
+- Caveman-/Output-Knappheits-Modus -- Output ist nicht das Problem (Befund G).
+- `read_file`/`read_document` externalisieren -- bleibt in `SKIP_EXTERNALIZATION` (ADR-63-Revision 2026-04-29); die Turn-uebergreifende Akkumulation loest Microcompaction, nicht Externalization.
+
+### Bekannte Risiken
+
+- **Microcompaction-Aggressivitaet:** zu aggressives Pruning kostet Ergebnisqualitaet. Mitigation: Skelett behaelt immer den `read_file path=...`-Pointer (Re-Read unterliegt dann dem Cap aus ADR-63-Amendment); konservativer Default (z.B. nur Tool-Results aelter als N Turns); Shadow-Mode / A-B-Test vor Release. Offen: Trigger-Punkte und Default-Schwelle -- im PLAN entscheiden.
+- **KV-Cache-Invalidierung durch Microcompaction:** Microcompaction veraendert die History rueckwirkend -> Cache-Miss ab der ersten geaenderten Message. Akzeptabel (an Turn-Grenzen, eingesparter Re-Send > Cache-Re-Build, stabiler System-Praefix unberuehrt). Alternative im PLAN: nur den aeltesten Teil prunen.
+- **Subagent-Profile sind neu** -- braucht eine kleine Profil-Registry; Subagent erbt heute Mode/Rules/Skills des Parents, mit Profilen muss das entkoppelt werden. Klein halten (1-2 Profile).
+- **Anthropic-Account-Abhaengigkeit (BUG-016):** Memory-/Context-Modell gehen am konfigurierten Provider vorbei direkt auf Anthropic; bei leerem Account fallen die Features aus (im Messlauf gesehen). Beruehrt den Caching-Fix nicht direkt, aber im Hinterkopf behalten.
+
+### Offene Punkte (an `/coding` / PLAN delegiert)
+
+- Genaue Trigger-Punkte und Schwellen fuer Microcompaction; ob nur alte Tool-Results oder alle.
+- Token-Schwelle fuer das User-Message-Capping (Richtwert ~12-16k, gesamt pro Message).
+- Profil-Definitionen fuer Subagents (1-2 zum Start; als Modul oder als bundled-skill-Verzeichnis analog `.claude/agents/`).
+- Reihenfolge innerhalb Welle 1: L (Microcompaction) und C (Externalizer/Caps) sind die groessten Hebel laut Messung; A (Anthropic-Caching-Fix) ist isoliert + klein, kann parallel.
+- `cached_tokens`-Wiring fuer die openai-Familie: gehoert zu IMP-18-01-02 (Status Active, noch nicht codiert) -- in Welle 1 mit-erledigen; mein Diagnose-Patch `logCacheStat.ts` (IMP-24-05-01, uncommitted im Working-Tree) ist nur der Log, nicht das Wiring.
+- iCloud-tmp-Cleanup `EPERM` robuster machen (FIX-24-03-02, klein).
+
+### Konsistenz-Check
+
+- `/consistency-check` Mode A gelaufen: 93 Findings, 0 durch EPIC-24 verursacht (0 Dead-Links, 0 Broken-Refs, 0 ADR-Abstraktionsverstoesse). 10 = EPIC-24-Skeletons ohne Detail-File (erwartet, kommen in RE/Coding). 83 = vorbestehende Hygiene-Schuld (3x duplicate FEAT-04-ID, ~13 orphan-ADR-Rows = Checker-Quirk bei 3-stelligen IDs, 67x status-drift detail-vs-backlog) -> Sammel-Eintrag DEBT-CC-2026-05-12 in der Graph-Health-Sektion, eigener Cleanup-Task.
+- Draft-PR: `gh pr create` scheiterte mit Permission-Fehler (`pssah4 does not have ... CreatePullRequest`) -- Branch ist gepusht, PR ggf. manuell anlegen: https://github.com/pssah4/obsilo-dev/pull/new/feature/epic-24-agent-loop-effizienz
+
+### Naechster Schritt
+
+`/coding` fuer EPIC-24 Welle 1 (P0): FEAT-24-02 (Microcompaction) + FEAT-24-03 (Externalizer im Hauptloop / Re-Read-Cap / User-Message-Cap) + FEAT-24-01 (Anthropic/Bedrock-Caching-Fix) + IMP-18-01-02 (Bedrock cachePoint, OpenAI cached_tokens-Wiring) + IMP-24-05-01 (logCacheStat committen). PLAN je Welle. Nach `/coding` jeweils `/testing` + `/security-audit`. ADRs sind PROPOSALS -- `/coding` entscheidet final gegen den realen Codebase-Stand.
+
+### Refinement-Pass 2026-05-12 (Review-Ergebnis: Hebel-Abdeckung vervollstaendigt)
+
+Review-Frage Sebastians: ist die Hebel-Liste A-L aus RESEARCH-36 vollstaendig in ADRs abgebildet? Befund: A/C/D/E/L waren erfasst (ADR-62/63/12-Amendments + ADR-113), aber F/G/H und das B-Teilstueck (Active-Skills) waren nur als "(neue FEAT bei Bedarf)"-Notizen geparkt. Nachgezogen:
+
+- **ADR-114** (neu) -- Autonomie-Governance: kumulatives Token-/Kosten-Budget pro Task mit Pause+Rueckfrage, Steering-Hook zwischen Iterationen, weiches Exploration-Limit. Das Subtask-Per-Call-Budget bleibt in ADR-113. -> FEAT-24-08, P2/Welle 3.
+- **ADR-115** (neu) -- Internes Hilfs-Modell-Routing: ein optionaler "Hilfs-Modell"-Slot in den Settings fuer die Agent-internen LLM-Calls (Condensing, Fast-Path-Planner/Presenter, plan_presentation, Recipe-Planner, ggf. Skill-Klassifikator); nicht gesetzt -> Haupt-Modell. -> FEAT-24-07, P2/Welle 3.
+- **ADR-116** (neu) -- Active Skills: Klassifikator-Inject raus, model-getriebenes On-demand-Laden (nur Skill-Verzeichnis im stabilen System-Prompt, Body als Tool-Result + Microcompaction). Spart den per-Message-Klassifikator-Roundtrip + macht den System-Prompt cache-stabil (ergaenzt ADR-62-Amendment). -> FEAT-24-09, P1/Welle 2.
+- **ADR-63-Amendment** ergaenzt um Punkt 5 (harte Per-Tool-Output-Caps als zweite Verteidigungslinie, Claude-Code-Vorbild).
+- **ADR-12-Amendment** ergaenzt um Rolling-Summary alter Turn-Bloecke (zweite Stufe ueber Tool-Result-Pruning hinaus, frueher als der 70%-Notnagel).
+- arc42 Par.9 um ADR-114/115/116; BACKLOG um die drei ADR-Rows + FEAT-24-07/08/09; Dashboard-Counts.
+
+**Bewusst out-of-scope (Entscheidung Sebastian 2026-05-12):** expliziter Plan-Modus (read-only Exploration -> reviewter Plan -> Kontext-Reset -> Implementierung, a la Claude Code). Begruendung: Obsilos typischer Workload (Q&A, Notiz-Edit, leichte Recherche) triggert einen Plan-Modus selten; grosser Hebel fuer Coding-Agenten, kleiner fuer Obsilo. In EPIC-24 Out-of-Scope und in RESEARCH-36 (Hebel F, §4.4) vermerkt. Wiedervorlage falls sich das mit der Nutzung aendert.
+
+**Lazy-Loading Tool-Schemas (Hebel B, Tool-Schema-Teil) -- Reconsideration 2026-05-12 (Sebastian: unsicher, vor allem MCP):** Code-Check ergab, dass MCP-Tools beim Server-Connect als regulaere Tools registriert werden (`ToolRegistry.registerMcpTool`), d.h. ihre vollen Schemas landen bei *jedem* API-Call im `tools`-Feld -- ohne Deferral (FEATURE-1600 deckt nur Built-ins). Bei zwei bis drei verbundenen MCP-Servern (je oft 10-30 Tools mit teils verbosen Schemas) dominiert der MCP-Anteil das `tools`-Feld potenziell deutlich, ist instabil (Server connect/disconnect, Tool-Listen-Aenderungen invalidieren den `tools`-Cache) und per Cold-Call/Cache-Write teuer. -> **doch ein realer Hebel; ADR-117 (neu), FEAT-24-06 von Welle 4 auf Welle 2 hochgestuft.** Entscheidung: MCP-Tools defaultseitig deferred (per-Server-Katalog im stabilen System-Prompt statt voller Schemas; volles Schema on-demand via `find_tool`/`enable_mcp_tool`, gleicher `activateDeferredTool`-Pfad wie deferred Built-ins; Opt-out pro Server). Built-in-Default-Satz weiter slimmen ist der kleinere, separate Teil (~10-20k Tokens, FEATURE-1600 deckt die schweren schon, nach Caching-Fix grossteils gecacht). Vor /coding: eine `tools`-Feld-Token-Zeile in `logInputBreakdown`, um den realen Umfang *mit verbundenen MCP-Servern* zu messen und die finale Prio zu schaerfen. Hinweis: fuer FEATURE-1600 (Deferred Tool Loading) gibt es keinen eigenen ADR -- ADR-117 ist der erste, der das Lazy-Loading-Konzept dokumentiert (FEATURE-1600-Spec bleibt die Quelle der Built-in-Mechanik).
+
+Damit ist die Hebel-Liste A-L vollstaendig in Architektur abgebildet, ausser dem bewusst Out-of-Scope-Teil (F Plan-Modus, J Output-Knappheit, K Retrieval-Tuning, Hooks, Multi-Agent-Coordinator).
+
+---
+
+## EPIC-24 Welle 1 -- /testing (2026-05-12)
+
+Implementierung (PLAN-18, Commits `c61ecb3`..`917aff1` + Test-Pass) auf `feature/epic-24-agent-loop-effizienz`.
+
+### Testlage
+- `npm test`: 1378 -> 1405 gruen (+27 ueber alle Welle-1-Commits + den /testing-Gap-Pass; 0 Failures). Build + Deploy nach jedem Schritt gruen.
+- Coverage-Tooling ist im Projekt nicht installiert (`@vitest/coverage-v8` fehlt, kein `coverage`-npm-Script) -- es gibt keinen Coverage-Gate; gemessen wird ueber Test-Anzahl + gezielte Gap-Tests. Kein neues Coverage-Tooling eingefuehrt (Projekt-Konvention respektiert).
+- /testing-Gap-Pass: zwei Stellen ohne Unit-Test nachgezogen -- (a) der ToolExecutionPipeline-Per-Tool-Output-Cap wurde in `capOversizedToolOutput` (exportiert) extrahiert + 7 Tests; (b) `markLastBlock`/`markRollingHistoryBreakpoints` aus `anthropic.ts` exportiert + 9 Tests (Stringkonvertierung, tool_result-Marker, Bild-Block-Fallback, kurze vs. lange History, STABLE_BACKOFF=6).
+
+### Bewusst NICHT unit-getestet (Begruendung)
+- **Cache-Hit-Rate / Token-Reduktion (SC der FEAT-24-01/02/03, alle `[AWAITING RE]`):** das sind Laufzeit-/Integrationsmetriken gegen echte Provider, kein Unit-Verhalten. Verifikation = manueller Messlauf im Vault: `[CacheStat:anthropic]` hitRate > 50 % ab Call 2 (statt `cacheCreate`-Reload), `[CacheStat:bedrock]` `cacheRead > 0`, `[Cost] cacheR > 0` bei OpenAI/Copilot, `[InputBreakdown]` zeigt einen 4-Datei-Read-Turn ~48k -> Folge-Turn unter ~20k. Steht aus (keine echten Provider-Credentials in dieser Session).
+- **Provider-Wiring End-to-End** (Anthropic 2-Block-systemParam, Bedrock `cachePoint`-Bloecke, openai-Familie `cached_tokens` -> usage-Chunk): braucht SDK-Mocking eines ganzen Streams; die *Logik-Bausteine* darunter (`splitSystemPromptAtCacheBreakpoint`, `markRollingHistoryBreakpoints`, `capabilities.getCacheCapability`) sind einzeln getestet. End-to-End-Bestaetigung = der Messlauf oben.
+- **ADR-111 R-1 (Bedrock cachePoint regional/Modell-abhaengig) + R-2 (Kilo-Gateway `cache_control`-Passthrough):** nur live verifizierbar; bei `cacheReadInputTokens: 0` ueber 3 Iterationen -> Modell-Pattern in `src/api/capabilities.ts` auf `false` setzen.
+
+### Fuer /security-audit
+- Neue tmp-Datei-Lese-/Cap-Pfade in `ResultExternalizer` (`isExternalizedPath`, `formatReReadCap`) -- Path-Praefix-Match gegen `this.tmpDir`; pruefen, dass kein Traversal/Spoofing den Re-Read-Cap umgeht (z.B. `../`-Pfade, die trotzdem auf eine tmp-Datei zeigen).
+- `AttachmentHandler` externalisiert grosse Anhaenge jetzt NICHT (kein Externalizer im Sidebar-Kontext), kappt sie nur -- externe/gepastete Dateien verlieren den abgeschnittenen Teil ersatzlos; das ist by design, aber im Audit als "Datenverlust ohne Warnung an den User?" gegenchecken (es gibt einen Notice-Hinweis im gekappten Text).
+- `microcompactToolResults` mutiert die History rueckwirkend -- pruefen, dass das Skelett keine sensiblen Daten *neu* exponiert (es kuerzt nur) und das Pairing nie bricht (Tests decken das ab).
+
+### Naechster Schritt
+`/security-audit` fuer EPIC-24 Welle 1. Danach (separat, vor Release): der manuelle Cache-/Token-Messlauf gegen echte Provider als Abnahme der `[AWAITING RE]`-SC.
+
+---
+
+## EPIC-24 Welle 1 -- /security-audit (2026-05-12)
+
+Bericht: `_devprocess/analysis/AUDIT-018-epic-24-welle-1-2026-05-12.md` (Per-Item-Audit, Branch `feature/epic-24-agent-loop-effizienz`, Commits `c61ecb3`..`4ccfe98`).
+
+- **Gesamtrisiko: Low.** 0 Critical, 0 High, 0 Medium Code-Findings. 2 Low/Info (CACHE_BREAKPOINT_MARKER-Kollisionsrisiko bei custom-Modi -> nur Cache-Degradation, kein Sicherheitsimpact; Zero-Width-Space-Platzhalter in `markLastBlock` -> Stil). Beide Confirmed/akzeptiert.
+- **SCA:** keine neuen Runtime-Dependencies durch Welle 1. 1 vorbestehender Moderate (`mermaid` Gantt-/classDef-Advisories, transitiv, nach AUDIT-017 publiziert) -> als `DEBT-SCA-2026-05-12` (Typ Security, Source SEC, P2) in der Graph-Health-Sektion erfasst, Fix via `npm audit fix` im Dependency-Housekeeping-Pass. NICHT durch EPIC-24 verursacht.
+- **Positiv:** Re-Read-Cap faellt sicher aus (kuerzt im Zweifel mehr, nie weniger); `microcompactToolResults` kuerzt nur, exponiert nichts neu, Pairing bleibt invariant; `capOversizedToolOutput` ist eine reine getestete Bodenplatte; AttachmentHandler-Gesamtbudget verhindert Kontextfenster-Sprengung durch Riesen-Mentions, mit sichtbarem Hinweis im gekappten Text; bestehende Path-Traversal-Saeuberung des Externalizers (`safeName`-Regex) intakt. Kein neuer `fetch`/`require`/`console.log`, keine neuen Secrets, keine Race-Conditions.
+- **Release-Empfehlung (Welle-1-Code): Green.** Vor Public-Release noch noetig: manueller Provider-Messlauf zur Abnahme der `[AWAITING RE]`-SC (Cache-Hit-Rate, Token-Reduktion) -- Funktions-, keine Sicherheitsfrage.
+- **Architektonische Folgepunkte:** keine -- additive Aenderungen im bestehenden Loop, kein Vertrauensgrenzen-Redesign.

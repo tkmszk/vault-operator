@@ -3,7 +3,7 @@
 > Single source of truth for state and the artifact relation graph.
 > Status fields live HERE, not in artifact frontmatter.
 
-Last update: 2026-05-10 by /release (v2.7.2: 4x FIX + 1x IMP released, AUDIT-017 SCA-bumps)
+Last update: 2026-05-12 by agent-loop-cost-refactoring (EPIC-24 Agent-Loop Effizienz angelegt: 6 FEAT + 5 FIX + 1 IMP skeletons; Quelle RESEARCH-36; Detail-Files folgen, Counts via /consistency-check zu verifizieren)
 
 ---
 
@@ -11,15 +11,31 @@ Last update: 2026-05-10 by /release (v2.7.2: 4x FIX + 1x IMP released, AUDIT-017
 
 | Status | Count | | Phase | Count | | Type | Count |
 |---|---|-|---|---|-|---|---|
-| Planned | 16 | Released | 358 | Epic | 23 |
-| Active | 25 | Building | 57 | Feature | 203 |
-| Done | 255 | Planned | 11 | Fix | 56 |
-| Accepted | 110 | Candidates | 0 | Improvement | 17 |
-| Draft | 12 |  |  | ADR | 112 |
+| Planned | 29 | Released | 358 | Epic | 24 |
+| Active | 26 | Building | 62 | Feature | 212 |
+| Done | 255 | Planned | 25 | Fix | 59 |
+| Accepted | 110 | Candidates | 0 | Improvement | 18 |
+| Draft | 12 |  |  | ADR | 117 |
 | Open | 5 |  |  | Plan | 15 |
-| Proposed | 2 |  |  |  |  |
+| Proposed | 7 |  |  |  |  |
 
-Total artifacts: 426
+Total artifacts: 445
+
+---
+
+## Graph-Health (letzter Check: 2026-05-12, Modus: A -- nach EPIC-24-Stubs + Checker-Fix)
+
+**Kein einziges Finding durch EPIC-24 verursacht.** Verlauf: 101 (erster Run nach ARCH-Refinement) -> 88 (nach Stubs) -> **70** (nach Checker-Regex-Fix).
+
+| Invariante | Status | Count | Anmerkung |
+|---|---|---|---|
+| Dead links / Broken Refs / ADR abstraction | ok | 0 | |
+| orphan-backlog-row | ok | 0 | gefixt: 13 EPIC-24-Detail-File-Stubs angelegt (FEAT-24-01..09, FIX-24-01-01/03-01/03-02, IMP-24-05-01); 18 ADR-Rows mit 3-stelliger ID waren ein Checker-Bug (`ADR-\d{2}`-Regex) -- behoben in `$DIA_PLUGIN_ROOT/tools/consistency-check.py` + `.git/hooks-data/consistency-check.py` (2-3-stellige IDs); **muss upstream zum DIA-Plugin** (sonst verloren bei Plugin-Update) |
+| duplicate-backlog-id | fail | 3 | **vorbestehend** -- FEAT-04-01/02/04 doppelt im EPIC-04-Backlog-Abschnitt (Office-Features create_docx/create_xlsx + "Agent Prompt & Skill Update" kollidieren mit MCP/Web/i18n; Altlast aus der EPIC-NNN->EPIC-NN-Migration). Fix = Renumbering released Features (FEAT-04-00/01/02 Office -> FEAT-10-XX, ggf. FEAT-04-04) -- braucht das DIA `apply-renumber`-Tooling + eigenen PR (kaskadiert: Detail-Files, FIX/IMP-IDs, GH-Issue-Links, ADR-104-Ref). NICHT ad-hoc fixen. |
+| status-drift detail-vs-backlog | fail | 67 | **vorbestehend** -- historische EPIC-*-Files (EPIC-04..22) haben in ihren `## Features`-Tabellen Status-Spalten ("Geplant"/"Not Started"/"Implementiert vX"/"Ersetzt durch X"/...), die nicht zum BACKLOG-Status passen. Korrekter Fix per N-15: Status-Spalte aus den historischen EPIC-Tabellen entfernen (neuere EPICs haben sie nicht) bzw. an den BACKLOG angleichen -- mechanischer Pass ueber ~14 Files. Nicht durch EPIC-24 verursacht. |
+
+- **DEBT-CC-2026-05-12** (Source: CONSISTENCY-CHECK, P3): Backlog-Graph-Hygiene-Pass, getrennt von EPIC-24 -- (a) 3x duplicate-backlog-id FEAT-04-01/02/04: Renumbering via `/dia-migration` / `apply-renumber`, eigener PR; (b) 67x status-drift detail-vs-backlog: Status-Spalten aus den historischen EPIC-*-`## Features`-Tabellen entfernen oder synchronisieren; (c) Checker-Regex-Fix (2-3-stellige IDs) lokal bereits angewandt -> upstream zum DIA-Plugin melden. Run-Datei: `.git/consistency-check.last-run.json`.
+- **DEBT-SCA-2026-05-12** (Typ: Security, Source: SEC, P2): `npm audit` meldet 1 Moderate fuer `mermaid` (transitiv): GHSA-6m6c-36f7-fhxh (Gantt Infinite-Loop-DoS) + drei classDef/Config CSS-/HTML-Injection-Advisories. Vorbestehend (nach AUDIT-017 publiziert), NICHT durch EPIC-24 verursacht. Fix: `npm audit fix` bzw. Overrides-Bump im naechsten Dependency-Housekeeping-Pass. Reale Exponierung niedrig (lokales Plugin, Nutzer rendert eigene Diagramme). Evidence: `node_modules/mermaid`. Ref: AUDIT-018 SCA-M-1.
 
 ---
 
@@ -350,13 +366,13 @@ Phase: Building | Status: Active
 | FEAT-18-03 | Feature | Cross-Platform TMP-Pfade fuer Context Externalization | Done | Released | EPIC-18 | BA |  |  |  |   Issue: https://github.com/pssah4/vault-operator-dev/issues/285 |
 | FEAT-18-04 | Feature | Cost-Aware Agent Heuristics | Done | Released | EPIC-18 | BA |  |  |  |   Issue: https://github.com/pssah4/vault-operator-dev/issues/286 |
 | IMP-18-01-01 | Improvement | Prompt Cache Settings UI: Default-on + provider-agnostische Toggle-Visibility | Done | Released | FEAT-18-01, EPIC-18, ADR-62, ADR-111, PLAN-16 | BA-12 |  |  | 2026-05-10 | P1 Released v2.7.2. Issue #313 Phase 1 (Capability-Tabelle src/api/capabilities.ts, Default-on in modelToLLMProvider, datengetriebene UI-Visibility, Tooltip)  Issue: https://github.com/pssah4/vault-operator-dev/issues/313 |
-| IMP-18-01-02 | Improvement | Prompt Caching Provider-Coverage: Bedrock cachePoints + OpenAI cached_tokens + Kilo Gateway/OpenRouter Passthrough | Active | Planned | FEAT-18-01, EPIC-18, ADR-62, ADR-111 | BA-12 |  | 2026-05-09 | 2026-05-09 | P1 Issue #313 Phase 2 (Provider-Implementierungen). Bedrock setzt cachePoint-Marker, OpenAI trackt cached_tokens in Usage, Kilo Gateway/OpenRouter reichen cache_control durch  Issue: https://github.com/pssah4/vault-operator-dev/issues/313 |
+| IMP-18-01-02 | Improvement | Prompt Caching Provider-Coverage: Bedrock cachePoints + OpenAI cached_tokens + Kilo Gateway/OpenRouter Passthrough | Done | Building | FEAT-18-01, EPIC-18, ADR-62, ADR-111, PLAN-18 | BA-12 |  | 2026-05-09 | 2026-05-12 | P1 Issue #313 Phase 2. Codiert in PLAN-18 Task 5: bedrock.ts setzt cachePoint nach stabilem System-Prefix + nach tools + nach letzter User-Message (gated durch capabilities cacheStyle); openai/github-copilot/kilo-gateway reichen prompt_tokens_details.cached_tokens als cacheReadTokens in den usage-Chunk (inputTokens = non-cached, Anthropic-Konvention) -> Cost-Calc bucht den gecachten Prefix zum Read-Tarif. Live-Verifikation (cacheReadInputTokens > 0 auf Bedrock) steht aus -> Teil von /testing. Issue: https://github.com/pssah4/vault-operator-dev/issues/313 |
 | FIX-18-03-01 | Fix | TMP-Files nicht lesbar auf Windows (Pfad-Trennzeichen) | Done | Released | FEAT-18-03, EPIC-18 | BUG |  |  |  | P1  Issue: https://github.com/pssah4/vault-operator-dev/issues/91 |
 | FIX-18-03-02 | Fix | read_file cannot open externalised tool results under tmp/ | Done | Released | FEAT-18-03, EPIC-18 | BUG |  |  |  | P1  Issue: https://github.com/pssah4/vault-operator-dev/issues/92 |
 | FIX-18-03-03 | Fix | Externalise cleanup fails with EPERM on iCloud-synced vaults | Done | Released | FEAT-18-03, EPIC-18 | BUG |  |  |  | P2  Issue: https://github.com/pssah4/vault-operator-dev/issues/93 |
 | FIX-18-03-04 | Fix | FastPath planner JSON parse fails -- recipe aborts mid-task | Done | Released | FEAT-18-03, EPIC-18 | BUG |  |  |  | P2  Issue: https://github.com/pssah4/vault-operator-dev/issues/94 |
 | FIX-18-04-01 | Fix | Streaming Tool-Error verschluckt + edit_file-Schleife bei grossen Diffs | Done | Released | FEAT-18-04, EPIC-18 | BUG |  |  |  | P1  Issue: https://github.com/pssah4/vault-operator-dev/issues/95 |
-| FIX-18-02-01 | Fix | 02-01: PDF tool_result mehrfach im Hauptkontext, Context Externalization (ADR-063) greift bei PDF-Attachments nicht | Open | Building | FEAT-18-02, EPIC-18, ADR-063 | BUG |  |  | 2026-05-08 | P1 Live-Test 2026-05-08, ~114k Tokens fuer ein PDF in 3 Messages parallel  Issue: https://github.com/pssah4/vault-operator-dev/issues/62 |
+| FIX-18-02-01 | Fix | 02-01: PDF tool_result mehrfach im Hauptkontext, Context Externalization (ADR-63) greift bei PDF-Attachments nicht | Superseded | Building | FEAT-18-02, EPIC-18, ADR-63, FIX-24-03-01 | BUG |  |  | 2026-05-12 | P1 Live-Test 2026-05-08, ~114k Tokens fuer ein PDF in 3 Messages parallel. SUPERSEDED 2026-05-12 von FIX-24-03-01 (Externalizer im Hauptloop + Re-Read-Cap, allgemeiner) -- dort mitloesen.  Issue: https://github.com/pssah4/vault-operator-dev/issues/62 |
 
 ### EPIC-19: Knowledge Maintenance
 
@@ -490,6 +506,29 @@ Phase: Building | Status: Active
 | IMP-23-01-01 | Improvement | IMP-23-01-01: Eval-Coverage Pass: MCP-Tool-Handlers + Vault-Tools + FrontmatterI | Planned | Building | FEAT-23-01, EPIC-23 | USER |  |  |  |   Issue: https://github.com/pssah4/vault-operator-dev/issues/309 |
 | IMP-23-04-05 | Improvement | IMP-23-04-05: relay /poll partitioniert pro Plugin-Session (AUDIT-016 L-4, defer | Planned | Building | FEAT-23-04, EPIC-23 | USER |  |  |  |   Issue: https://github.com/pssah4/vault-operator-dev/issues/310 |
 
+### EPIC-24: Agent-Loop Effizienz
+
+Source: `_devprocess/requirements/epics/EPIC-24-agent-loop-effizienz.md`
+Issue: https://github.com/pssah4/vault-operator-dev/issues/318
+Phase: Architecture | Status: Active
+Verwandt: RESEARCH-36 (Diagnose + 3-Wege-Vergleich Claude Code / EnBW Cowork), Nachfolger von EPIC-18 (Token-Kostenreduktion). UEBERLAPPUNG: Bedrock-cachePoint + OpenAI-cached_tokens decken bereits ADR-111 + IMP-18-01-02 (Active) ab -- NICHT hier duplizieren, IMP-18-01-02 aktivieren/zu Ende bringen. Caching-Praefix-Stabilisierung ist ein Amendment zu ADR-62. Externalizer-fuer-PDF-Attachments ist bereits FIX-18-02-01 (Open) -- FIX-24-03-01 ist die allgemeinere Variante (alle Tool-Results im Hauptloop + Re-Read-Cap).
+
+| ID | Type | Title | Status | Phase | Refs | Source | Commit | Claim | Last change | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|
+| FEAT-24-01 | Feature | Cache-Praefix-Stabilisierung (Anthropic): System-Prompt-Block-Array, DateTime tagesgranular, Memory/Active-Skills aus gecachtem Bereich, rollende History-Breakpoints | Done | Building | EPIC-24, ADR-62, ADR-111, PLAN-18 | RESEARCH-36 |  |  | 2026-05-12 | P0 Welle 1; systemPrompt.CACHE_BREAKPOINT_MARKER + splitSystemPromptAtCacheBreakpoint; anthropic.ts: 2-Block-System-Param + cache_control auf letztem tools-Eintrag + 2 rollende History-Marker; dateTime tagesgranular (includeCurrentTimeInContext default false, steuert nur noch Time-of-Day). Bedrock-cachePoint + cached_tokens -> IMP-18-01-02 (Task 5). +5 Tests. |
+| FEAT-24-02 | Feature | History-Komprimierung: Microcompaction der Tool-Results an Turn-Grenzen | Done | Building | EPIC-24, ADR-12, PLAN-18 | RESEARCH-36 |  |  | 2026-05-12 | P0 Welle 1; src/core/context/MicroCompactor.ts + AgentTask.microcompact()/maybeRollingSummary(); settings microcompactionEnabled/rollingSummaryThreshold; ADR-12-Amendment. 6 neue Tests. |
+| FEAT-24-03 | Feature | Tool-Output- & Kontext-Disziplin: ADR-63-Externalizer im allgemeinen Hauptloop, Re-Read-Cap externalisierter tmp-Dateien, grosse Paste-/@-Mention-User-Messages kappen | Done | Building | EPIC-24, ADR-63, PLAN-18 | RESEARCH-36 |  |  | 2026-05-12 | P0 Welle 1; ResultExternalizer Re-Read-Cap + reichere Refs, ToolExecutionPipeline HARD_OUTPUT_CAP (60k), AttachmentHandler TOTAL_ATTACHMENT_CHAR_BUDGET (64k), toolDecisionGuidelines-Leitplanke. ADR-63-Amendment; verallgemeinert FIX-18-02-01. +6 Tests. |
+| FEAT-24-04 | Feature | Subagent-Delegation fuer context-heavy Teilaufgaben (mit Per-Call-Token-Budget + Steering) | Planned | Planned | EPIC-24 | RESEARCH-36 |  |  | 2026-05-12 | P1 Welle 2; model-getrieben (new_task prominent + Profile + Prompt-Leitplanke), kein harter Router; ADR neu |
+| FEAT-24-05 | Feature | Sichtbarkeit: Sidebar-Kosten-/Token-/Cache-Hit-Anzeige | Planned | Planned | EPIC-24 | RESEARCH-36 |  |  | 2026-05-12 | P1 Welle 2; Cowork extractCacheStats als Vorlage; haengt von IMP-18-01-02 (cached_tokens-Wiring) ab |
+| FEAT-24-06 | Feature | Lazy-Loading der Tool-Schemas: Built-in (FEATURE-1600 erweitern) + MCP-Tools deferred (per-Server-Katalog im stabilen Prompt statt voller Schemas, Schema on-demand via find_tool) | Planned | Planned | EPIC-24, ADR-117, FEATURE-1600 | RESEARCH-36 |  |  | 2026-05-12 | P1 Welle 2; ADR-117; MCP-Anteil ist der eigentliche Hebel (volle MCP-Schemas heute bei jedem Call, kein Deferral, instabil bei Server-Aenderungen); hochgestuft 2026-05-12. Built-in-Spike: ~10-20k Tokens, FEATURE-1600 deckt die schweren schon. Vor /coding: tools-Feld-Token-Log in logInputBreakdown |
+| FEAT-24-07 | Feature | Internes Hilfs-Modell-Routing fuer Agent-interne LLM-Calls (Condensing, Fast-Path-Planner/Presenter, plan_presentation, Recipe-Planner, ggf. Skill-Klassifikator) | Planned | Planned | EPIC-24, ADR-115, ADR-11 | RESEARCH-36 |  |  | 2026-05-12 | P2 Welle 3; ADR-115 |
+| FEAT-24-08 | Feature | Autonomie-Governance: Token-/Kosten-Budget pro Task mit Pause+Rueckfrage, Steering-Hook zwischen Iterationen, weiches Exploration-Limit | Planned | Planned | EPIC-24, ADR-114, ADR-113 | RESEARCH-36 |  |  | 2026-05-12 | P2 Welle 3; ADR-114 (Subtask-Per-Call-Budget bleibt in ADR-113) |
+| FEAT-24-09 | Feature | Active Skills: model-getriebenes On-demand-Laden statt Klassifikator-Inject | Planned | Planned | EPIC-24, ADR-116, ADR-62, ADR-09 | RESEARCH-36 |  |  | 2026-05-12 | P1 Welle 2; ADR-116; spart Klassifikator-Roundtrip + macht System-Prompt cache-stabil (ergaenzt ADR-62-Amendment) |
+| FIX-24-01-01 | Fix | 01-01: anthropic.ts cache_control sitzt auf dem ganzen System-Prompt-String (inkl. volatilem DateTime/Memory/ActiveSkills/Recipe/VaultContext-Tail) -> Cache-Miss + 25% Write-Aufschlag, teurer als ohne Caching | Done | Building | FEAT-24-01, EPIC-24, ADR-62, PLAN-18 | BUG |  |  | 2026-05-12 | P0 Gefixt via FEAT-24-01: System-Prompt am CACHE_BREAKPOINT_MARKER gesplittet, cache_control nur auf dem stabilen Prefix; DateTime tagesgranular. |
+| FIX-24-03-01 | Fix | 03-01: ResultExternalizer schliesst read_file aus + Agent liest die externalisierte tmp-Datei sofort zurueck -> No-Op (4/5 Messlauf-Tests); kompakte Referenz zu duenn + kein Re-Read-Cap; verallgemeinert FIX-18-02-01 | Done | Building | FEAT-24-03, EPIC-24, ADR-63, PLAN-18 | BUG |  |  | 2026-05-12 | P1 ResultExternalizer.isExternalizedPath + formatReReadCap (Re-Read einer eigenen tmp-Datei -> 2k-Head-Cap); reichere format*Ref (mehr Headings/Preview/Title). |
+| FIX-24-03-02 | Fix | 03-02: tmp-Cleanup des ResultExternalizers schlaegt auf iCloud-Pfad mit EPERM fehl (non-fatal, tmp-Files bleiben liegen) | Done | Building | FEAT-24-03, EPIC-24, PLAN-18 | BUG |  |  | 2026-05-12 | P2 Bereits durch BUG-023 (removeWithRetry + cleanupOrphaned) abgedeckt; Kommentar-Referenz ergaenzt. Kein Verhaltenswechsel noetig. |
+| IMP-24-05-01 | Improvement | 05-01: Per-API-Call Cache-Stat-Diagnose-Log (src/api/logCacheStat.ts) in alle Provider verdrahtet (ausser chatgpt-oauth) | Done | Building | FEAT-24-05, EPIC-24, IMP-18-01-02, PLAN-18 | USER |  |  | 2026-05-12 | Committed 4a5023a (PLAN-18 Task 1, zusammen mit dem 2026-05-11 max_tokens-Auto/Truncation-Recovery-Bugfix als chore-Baseline). Deckt nur das Log, NICHT das cached_tokens-Wiring in usage-Chunk + Cost-Calc -- das ist IMP-18-01-02 (PLAN-18 Task 5). |
+
 ## Cross-cutting (ADRs, Plans, no Epic)
 
 | ID | Type | Title | Status | Phase | Refs | Source | Commit | Claim | Last change | Notes |
@@ -516,9 +555,14 @@ Phase: Building | Status: Active
 | ADR-109 | ADR | Vault-zu-Memory-Bruecke via Single-Listener-Pattern | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-11 | ADR | Multi-Provider API Architecture (Adapter Pattern) | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-110 | ADR | Living-Document-Semantik + Cross-Interface-Thread-Klammer | Accepted | Released |  | ARCH |  |  |  |  |
-| ADR-111 | ADR | Provider Capability-Flag und Bedrock cachePoint (Erweiterung zu ADR-62) | Proposed | Building | IMP-18-01-01, IMP-18-01-02, FEAT-18-01, ADR-62 | ARCH |  | 2026-05-09 | 2026-05-09 |  |
+| ADR-111 | ADR | Provider Capability-Flag und Bedrock cachePoint (Erweiterung zu ADR-62) | Accepted | Building | IMP-18-01-01, IMP-18-01-02, FEAT-18-01, ADR-62, FEAT-24-01, PLAN-18 | ARCH |  | 2026-05-12 | 2026-05-12 | supportsPromptCache-Flag (IMP-18-01-01, released v2.7.2). Bedrock-cachePoint + cached_tokens-Wiring codiert in PLAN-18 Task 5 (IMP-18-01-02). Praefix-Split in FEAT-24-01 (ADR-62-Amendment). Live-Verifikation (R-1 Bedrock-Region/Modell) -> /testing. |
 | ADR-112 | ADR | Attachment-Lifecycle im Sidebar (Snapshot vs API-Split, Push-Sync zum Tool-Layer) | Proposed | Building | FIX-19-28-05, FEAT-19-28, FEAT-19-31, EPIC-19 | ARCH |  | 2026-05-10 | 2026-05-10 |  |
-| ADR-12 | ADR | Context Condensing Strategy (Keep-First-Last) | Accepted | Released |  | ARCH |  |  |  |  |
+| ADR-113 | ADR | Subagent-Delegation fuer context-heavy Teilaufgaben (model-getrieben, Per-Call-Token-Budget) | Proposed | Building | FEAT-24-04, EPIC-24, ADR-01, ADR-12, ADR-62, ADR-63 | ARCH |  | 2026-05-12 | 2026-05-12 | EPIC-24 Welle 2; RESEARCH-36 §8 Hebel E |
+| ADR-114 | ADR | Autonomie-Governance -- Token-/Kosten-Budget pro Task, Steering-Hook, Exploration-Limits | Proposed | Building | FEAT-24-08, EPIC-24, ADR-01, ADR-06, ADR-12, ADR-113 | ARCH |  | 2026-05-12 | 2026-05-12 | EPIC-24 Welle 3; RESEARCH-36 §8 Hebel G |
+| ADR-115 | ADR | Internes Hilfs-Modell-Routing fuer Agent-interne LLM-Calls | Proposed | Building | FEAT-24-07, EPIC-24, ADR-11, ADR-12, ADR-17, ADR-61 | ARCH |  | 2026-05-12 | 2026-05-12 | EPIC-24 Welle 3; RESEARCH-36 §8 Hebel H |
+| ADR-116 | ADR | Active Skills -- model-getriebenes On-demand-Laden statt Klassifikator-Inject | Proposed | Building | FEAT-24-09, EPIC-24, ADR-09, ADR-62, ADR-08 | ARCH |  | 2026-05-12 | 2026-05-12 | EPIC-24 Welle 2; RESEARCH-36 §8 Hebel B-Teil + §3 |
+| ADR-117 | ADR | Lazy-Loading von Tool-Schemas -- Built-in und MCP (per-Server-Katalog, Schema on-demand via find_tool, FEATURE-1600-Pattern auf MCP ausgeweitet) | Proposed | Building | FEAT-24-06, EPIC-24, ADR-08, ADR-11, ADR-53, ADR-62, ADR-116 | ARCH |  | 2026-05-12 | 2026-05-12 | EPIC-24 Welle 2; RESEARCH-36 §8 Hebel B; MCP-Anteil ist der eigentliche Hebel |
+| ADR-12 | ADR | Context Condensing Strategy (Keep-First-Last) + Microcompaction & Rolling-Summary (Amendment 2026-05-12) | Accepted | Released | FEAT-24-02, EPIC-24 | ARCH |  |  | 2026-05-12 | Amendment 2026-05-12 (EPIC-24/FEAT-24-02): Microcompaction der Tool-Results an Turn-Grenzen + Rolling-Summary alter Turn-Bloecke, additiv zur Keep-First-Last-Voll-Compaction |
 | ADR-13 | ADR | 3-Tier Memory Architecture (Chat -> Session -> Long-Term) | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-14 | ADR | VaultDNA — Automatische Plugin-Erkennung als Skills | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-15 | ADR | Hybrid Search mit Semantic + BM25 + RRF Fusion | Accepted | Released |  | ARCH |  |  |  |  |
@@ -568,8 +612,8 @@ Phase: Building | Status: Active
 | ADR-59 | ADR | Memory Decay Prevention (Aktive Qualitaetssicherung) | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-60 | ADR | Session-Summary Zuverlaessigkeit und Observability | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-61 | ADR | Fast Path Execution -- Recipe-gesteuertes Batching | Accepted | Released |  | ARCH |  |  |  |  |
-| ADR-62 | ADR | KV-Cache-Optimized Prompt Structure & Provider-Agnostic Caching | Accepted | Released |  | ARCH |  |  |  |  |
-| ADR-63 | ADR | Context Externalization -- Dateisystem als erweiterter Kontext | Accepted | Released |  | ARCH |  |  |  |  |
+| ADR-62 | ADR | KV-Cache-Optimized Prompt Structure & Provider-Agnostic Caching + Cache-Praefix-Stabilisierung (Amendment 2026-05-12) | Accepted | Released | FEAT-24-01, EPIC-24, ADR-111 | ARCH |  |  | 2026-05-12 | Amendment 2026-05-12 (EPIC-24/FEAT-24-01): Provider-seitiger Split am "CACHE BREAKPOINT", DateTime tagesgranular, tools-Feld-Marker, rollende History-Marker -- die Section-Reihenfolge allein reichte nicht (5-Provider-Messlauf) |
+| ADR-63 | ADR | Context Externalization -- Dateisystem als erweiterter Kontext + Externalizer im Hauptloop/Re-Read-Cap (Amendment 2026-05-12) | Accepted | Released | FEAT-24-03, FIX-24-03-01, EPIC-24 | ARCH |  |  | 2026-05-12 | Amendment 2026-05-12 (EPIC-24/FEAT-24-03): Externalizer auch im allgemeinen Hauptloop, Re-Read-Cap externalisierter tmp-Dateien, grosse Paste-/@-Mention-User-Messages kappen; superseded FIX-18-02-01 |
 | ADR-64 | ADR | Google Gemini als eigenstaendiger Provider | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-65 | ADR | Ontologie-Schema und Befuellung | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-66 | ADR | Ingest-Strategie (Schema-Erkennung und Entitaets-Zuordnung) | Accepted | Released |  | ARCH |  |  |  |  |
@@ -621,4 +665,5 @@ Phase: Building | Status: Active
 | PLAN-15 | Plan | FIX-19-28-01 Source-Position-Marker im Ingest-Output | Done | Building | FIX-19-28-01, FEAT-19-28, FEAT-19-29, ADR-103 | ARCH |  |  | 2026-05-07 | Issue#11 Implemented |
 | PLAN-16 | Plan | IMP-18-01-01 Prompt Cache Settings UI | Done | Building | IMP-18-01-01, FEAT-18-01, ADR-62, ADR-111 | ARCH |  |  | 2026-05-10 | Implemented 2026-05-10. 33 Tests, 1341 total green |
 | PLAN-17 | Plan | FIX-19-28-05 Attachment-Lifecycle im Sidebar | Done | Building | FIX-19-28-05, FEAT-19-28, FEAT-19-31, ADR-112, EPIC-19 | ARCH |  |  | 2026-05-10 | Implemented 2026-05-10. 5 neue Tests, 1346 total green, build + deploy ok |
+| PLAN-18 | Plan | EPIC-24 Welle 1: Cache-Praefix-Stabilisierung, Microcompaction, Tool-Output-Disziplin, Bedrock cachePoint | Done | Building | EPIC-24, FEAT-24-01, FEAT-24-02, FEAT-24-03, FIX-24-01-01, FIX-24-03-01, FIX-24-03-02, IMP-24-05-01, IMP-18-01-02, ADR-62, ADR-63, ADR-12, ADR-111 | ARCH |  |  | 2026-05-12 | P0 Welle 1 von EPIC-24; 5 Tasks (IMP-24-05-01 Diagnose-Commit, FEAT-24-02 Microcompaction, FEAT-24-03 Externalizer-im-Hauptloop, FEAT-24-01 Cache-Split, IMP-18-01-02 Bedrock cachePoint). Coverage-Gate vor Status=Active. |
 
