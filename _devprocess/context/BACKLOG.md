@@ -23,20 +23,20 @@ Total artifacts: 445
 
 ---
 
-## Graph-Health (letzter Check: 2026-05-12, Modus: A)
+## Graph-Health (letzter Check: 2026-05-12 Re-Run nach ARCH-Refinement, Modus: A)
+
+101 Findings. **Kein einziges durch EPIC-24 als echtes Graph-Problem verursacht** (0 Dead-Links, 0 Broken-Refs, 0 ADR-Abstraktionsverstoesse).
 
 | Invariante | Status | Count | Anmerkung |
 |---|---|---|---|
 | Dead links | ok | 0 | |
 | Broken Refs / spec references | ok | 0 | |
-| duplicate-backlog-id | fail | 3 | FEAT-04-01/02/04 doppelt (EPIC-04 vs EPIC-10 ID-Kollision) -- vorbestehend, vor EPIC-24 |
-| orphan-backlog-row (Detail-File fehlt) | fail | ~26 | davon 13 = EPIC-24-Skeletons (FEAT-24-01..09, FIX-24-01-01/03-01/03-02, IMP-24-05-01) -- erwartet, Detail-Files folgen in /requirements-engineering bzw. /coding; 13 = vorbestehende 3-stellige ADR-Rows (Checker-Quirk bzw. ADR-100 fehlt). Stand: nach dem Refinement-Pass 2026-05-12, ein Re-Run von consistency-check Mode A waere faellig vor /coding. |
-| status-drift detail-vs-backlog | fail | 67 | vorbestehend -- Feature-Beschreibungen in den EPIC-*-Files sagen "Geplant"/"Not Started"/"Implementiert vX" waehrend BACKLOG "Done/Released" sagt. Nicht durch EPIC-24 verursacht. |
 | ADR abstraction violations | ok | 0 | |
+| duplicate-backlog-id | fail | 3 | FEAT-04-01/02/04 doppelt (EPIC-04 vs EPIC-10 ID-Kollision) -- vorbestehend |
+| orphan-backlog-row (Detail-File fehlt) | fail | 31 | davon 13 = EPIC-24-Skeletons (FEAT-24-01..09, FIX-24-01-01/03-01/03-02, IMP-24-05-01) -- erwartet, Detail-Files folgen in /requirements-engineering bzw. /coding; ~18 = ADR-Rows mit 3-stelliger ID (Checker-Matching-Quirk: ADR-114/115/116/117 + ADR-100..112 HABEN Dateien, der Checker matcht 3-stellige IDs nicht; einzig ADR-100 ggf. wirklich pruefen) |
+| status-drift detail-vs-backlog | fail | 67 | vorbestehend -- Feature-Beschreibungen in den EPIC-*-Files ("Geplant"/"Not Started"/"Implementiert vX") vs. BACKLOG "Done/Released". Nicht durch EPIC-24 verursacht. |
 
-**Fazit:** EPIC-24-Additionen sind graph-clean (0 High, 0 Dead-Links, 0 Broken-Refs durch sie). Die 83 verbleibenden Findings sind vorbestehende Hygiene-Schuld, NICHT durch EPIC-24 verursacht, NICHT blockierend:
-
-- **DEBT-CC-2026-05-12** (Source: CONSISTENCY-CHECK, P3): Backlog-Graph-Hygiene-Pass faellig -- (a) 3x duplicate-backlog-id (FEAT-04-01/02/04, EPIC-04 vs EPIC-10 ID-Kollision -> EPIC-10-Features umnummerieren oder Aliase aufloesen), (b) ~13 orphan-backlog-row bei 3-stelligen ADR-IDs (Checker-Matching-Quirk pruefen; ADR-100-Datei vorhanden -> Checker; ggf. ADR-100 wirklich pruefen), (c) 67x status-drift detail-vs-backlog (Feature-Beschreibungstexte in den EPIC-*-Files vs. BACKLOG-Status synchronisieren). Eigener Cleanup-Task, nicht Teil von EPIC-24. Run-Datei: `.git/consistency-check.last-run.json`.
+- **DEBT-CC-2026-05-12** (Source: CONSISTENCY-CHECK, P3): Backlog-Graph-Hygiene-Pass faellig -- (a) 3x duplicate-backlog-id (FEAT-04-01/02/04, EPIC-04 vs EPIC-10 ID-Kollision -> EPIC-10-Features umnummerieren oder Aliase aufloesen); (b) Checker-Matching-Quirk bei 3-stelligen ADR-IDs (`consistency-check.py` matcht `ADR-1xx`-Rows nicht auf `ADR-1xx-*.md` -> Checker fixen oder ADR-Dateinamen pruefen; ADR-100 ggf. wirklich fehlend); (c) 67x status-drift detail-vs-backlog (Feature-Beschreibungstexte in den EPIC-*-Files vs. BACKLOG-Status synchronisieren). Eigener Cleanup-Task, nicht Teil von EPIC-24. Run-Datei: `.git/consistency-check.last-run.json`.
 
 ---
 
