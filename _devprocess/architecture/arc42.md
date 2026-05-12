@@ -959,6 +959,9 @@ Siehe einzelne ADRs in `_devprocess/architecture/`:
 | [ADR-111](ADR-111-provider-capability-flag-und-bedrock-cachepoint.md) | Provider Capability-Flag und Bedrock cachePoint (Erweiterung zu ADR-62) |
 | [ADR-112](ADR-112-attachment-lifecycle-im-sidebar.md) | Attachment-Lifecycle im Sidebar (Snapshot vs API-Split, Push-Sync zum Tool-Layer) |
 | [ADR-113](ADR-113-subagent-delegation.md) | Subagent-Delegation fuer context-heavy Teilaufgaben (model-getrieben, Per-Call-Token-Budget, EPIC-24) |
+| [ADR-114](ADR-114-autonomie-governance.md) | Autonomie-Governance: Token-/Kosten-Budget pro Task, Steering-Hook, Exploration-Limits (EPIC-24) |
+| [ADR-115](ADR-115-helper-model-routing.md) | Internes Hilfs-Modell-Routing fuer Agent-interne LLM-Calls (EPIC-24) |
+| [ADR-116](ADR-116-active-skills-on-demand.md) | Active Skills: model-getriebenes On-demand-Laden statt Klassifikator-Inject (EPIC-24) |
 
 ---
 

@@ -2031,3 +2031,20 @@ Obsilo behaelt seinen eigenen ReAct-Loop -- kein Neubau, kein Umstieg auf ein Co
 ### Naechster Schritt
 
 `/coding` fuer EPIC-24 Welle 1 (P0): FEAT-24-02 (Microcompaction) + FEAT-24-03 (Externalizer im Hauptloop / Re-Read-Cap / User-Message-Cap) + FEAT-24-01 (Anthropic/Bedrock-Caching-Fix) + IMP-18-01-02 (Bedrock cachePoint, OpenAI cached_tokens-Wiring) + IMP-24-05-01 (logCacheStat committen). PLAN je Welle. Nach `/coding` jeweils `/testing` + `/security-audit`. ADRs sind PROPOSALS -- `/coding` entscheidet final gegen den realen Codebase-Stand.
+
+### Refinement-Pass 2026-05-12 (Review-Ergebnis: Hebel-Abdeckung vervollstaendigt)
+
+Review-Frage Sebastians: ist die Hebel-Liste A-L aus RESEARCH-36 vollstaendig in ADRs abgebildet? Befund: A/C/D/E/L waren erfasst (ADR-62/63/12-Amendments + ADR-113), aber F/G/H und das B-Teilstueck (Active-Skills) waren nur als "(neue FEAT bei Bedarf)"-Notizen geparkt. Nachgezogen:
+
+- **ADR-114** (neu) -- Autonomie-Governance: kumulatives Token-/Kosten-Budget pro Task mit Pause+Rueckfrage, Steering-Hook zwischen Iterationen, weiches Exploration-Limit. Das Subtask-Per-Call-Budget bleibt in ADR-113. -> FEAT-24-08, P2/Welle 3.
+- **ADR-115** (neu) -- Internes Hilfs-Modell-Routing: ein optionaler "Hilfs-Modell"-Slot in den Settings fuer die Agent-internen LLM-Calls (Condensing, Fast-Path-Planner/Presenter, plan_presentation, Recipe-Planner, ggf. Skill-Klassifikator); nicht gesetzt -> Haupt-Modell. -> FEAT-24-07, P2/Welle 3.
+- **ADR-116** (neu) -- Active Skills: Klassifikator-Inject raus, model-getriebenes On-demand-Laden (nur Skill-Verzeichnis im stabilen System-Prompt, Body als Tool-Result + Microcompaction). Spart den per-Message-Klassifikator-Roundtrip + macht den System-Prompt cache-stabil (ergaenzt ADR-62-Amendment). -> FEAT-24-09, P1/Welle 2.
+- **ADR-63-Amendment** ergaenzt um Punkt 5 (harte Per-Tool-Output-Caps als zweite Verteidigungslinie, Claude-Code-Vorbild).
+- **ADR-12-Amendment** ergaenzt um Rolling-Summary alter Turn-Bloecke (zweite Stufe ueber Tool-Result-Pruning hinaus, frueher als der 70%-Notnagel).
+- arc42 Par.9 um ADR-114/115/116; BACKLOG um die drei ADR-Rows + FEAT-24-07/08/09; Dashboard-Counts.
+
+**Bewusst out-of-scope (Entscheidung Sebastian 2026-05-12):** expliziter Plan-Modus (read-only Exploration -> reviewter Plan -> Kontext-Reset -> Implementierung, a la Claude Code). Begruendung: Obsilos typischer Workload (Q&A, Notiz-Edit, leichte Recherche) triggert einen Plan-Modus selten; grosser Hebel fuer Coding-Agenten, kleiner fuer Obsilo. In EPIC-24 Out-of-Scope und in RESEARCH-36 (Hebel F, §4.4) vermerkt. Wiedervorlage falls sich das mit der Nutzung aendert.
+
+**Lazy-Loading Tool-Schemas (Hebel B, Tool-Schema-Teil):** Spike 2026-05-12 (code-seitig) ergab ~10-20k Tokens fuer die ~35 Default-Mode-Tools; FEATURE-1600 lazy-loadet die schweren spezialisierten Tools (office/base/eval) bereits; nach dem Caching-Fix (ADR-62-Amendment, eigener Marker aufs `tools`-Feld) sind die Tokens grossteils gecacht. -> kein grosser Hebel, kein eigener ADR; bleibt FEAT-24-06, P2/Welle 4. (Optional eine `tools`-Feld-Token-Zeile in `logInputBreakdown` fuer den exakten Wert.)
+
+Damit ist die Hebel-Liste A-L vollstaendig in Architektur abgebildet, ausser dem bewusst Out-of-Scope-Teil (F Plan-Modus, J Output-Knappheit, K Retrieval-Tuning, Hooks, Multi-Agent-Coordinator).

@@ -11,15 +11,15 @@ Last update: 2026-05-12 by agent-loop-cost-refactoring (EPIC-24 Agent-Loop Effiz
 
 | Status | Count | | Phase | Count | | Type | Count |
 |---|---|-|---|---|-|---|---|
-| Planned | 26 | Released | 358 | Epic | 24 |
-| Active | 26 | Building | 58 | Feature | 209 |
-| Done | 255 | Planned | 22 | Fix | 59 |
+| Planned | 29 | Released | 358 | Epic | 24 |
+| Active | 26 | Building | 61 | Feature | 212 |
+| Done | 255 | Planned | 25 | Fix | 59 |
 | Accepted | 110 | Candidates | 0 | Improvement | 18 |
-| Draft | 12 |  |  | ADR | 113 |
+| Draft | 12 |  |  | ADR | 116 |
 | Open | 5 |  |  | Plan | 15 |
-| Proposed | 3 |  |  |  |  |
+| Proposed | 6 |  |  |  |  |
 
-Total artifacts: 438
+Total artifacts: 444
 
 ---
 
@@ -30,7 +30,7 @@ Total artifacts: 438
 | Dead links | ok | 0 | |
 | Broken Refs / spec references | ok | 0 | |
 | duplicate-backlog-id | fail | 3 | FEAT-04-01/02/04 doppelt (EPIC-04 vs EPIC-10 ID-Kollision) -- vorbestehend, vor EPIC-24 |
-| orphan-backlog-row (Detail-File fehlt) | fail | 23 | davon 10 = EPIC-24-Skeletons (FEAT-24-01..06, FIX-24-01-01/03-01/03-02, IMP-24-05-01) -- erwartet, Detail-Files folgen in /requirements-engineering bzw. /coding; 13 = vorbestehende 3-stellige ADR-Rows (Checker-Quirk bzw. ADR-100 fehlt) |
+| orphan-backlog-row (Detail-File fehlt) | fail | ~26 | davon 13 = EPIC-24-Skeletons (FEAT-24-01..09, FIX-24-01-01/03-01/03-02, IMP-24-05-01) -- erwartet, Detail-Files folgen in /requirements-engineering bzw. /coding; 13 = vorbestehende 3-stellige ADR-Rows (Checker-Quirk bzw. ADR-100 fehlt). Stand: nach dem Refinement-Pass 2026-05-12, ein Re-Run von consistency-check Mode A waere faellig vor /coding. |
 | status-drift detail-vs-backlog | fail | 67 | vorbestehend -- Feature-Beschreibungen in den EPIC-*-Files sagen "Geplant"/"Not Started"/"Implementiert vX" waehrend BACKLOG "Done/Released" sagt. Nicht durch EPIC-24 verursacht. |
 | ADR abstraction violations | ok | 0 | |
 
@@ -521,7 +521,10 @@ Verwandt: RESEARCH-36 (Diagnose + 3-Wege-Vergleich Claude Code / EnBW Cowork), N
 | FEAT-24-03 | Feature | Tool-Output- & Kontext-Disziplin: ADR-63-Externalizer im allgemeinen Hauptloop, Re-Read-Cap externalisierter tmp-Dateien, grosse Paste-/@-Mention-User-Messages kappen | Planned | Planned | EPIC-24, ADR-63 | RESEARCH-36 |  |  | 2026-05-12 | P0 Welle 1; Amendment zu ADR-63; verallgemeinert FIX-18-02-01 |
 | FEAT-24-04 | Feature | Subagent-Delegation fuer context-heavy Teilaufgaben (mit Per-Call-Token-Budget + Steering) | Planned | Planned | EPIC-24 | RESEARCH-36 |  |  | 2026-05-12 | P1 Welle 2; model-getrieben (new_task prominent + Profile + Prompt-Leitplanke), kein harter Router; ADR neu |
 | FEAT-24-05 | Feature | Sichtbarkeit: Sidebar-Kosten-/Token-/Cache-Hit-Anzeige | Planned | Planned | EPIC-24 | RESEARCH-36 |  |  | 2026-05-12 | P1 Welle 2; Cowork extractCacheStats als Vorlage; haengt von IMP-18-01-02 (cached_tokens-Wiring) ab |
-| FEAT-24-06 | Feature | Lazy-Loading Tool-Schemas + Active-Skills on-demand | Planned | Planned | EPIC-24 | RESEARCH-36 |  |  | 2026-05-12 | P2 Welle 3; Spike zuerst (tools-Feld-Groesse messen), dann Entscheidung |
+| FEAT-24-06 | Feature | Lazy-Loading der Tool-Schemas (`tools`-API-Feld) weiter slimmen | Planned | Planned | EPIC-24 | RESEARCH-36 |  |  | 2026-05-12 | P2/Welle 4; Spike 2026-05-12: ~10-20k Tokens fuer ~35 Default-Tools, FEATURE-1600 deckt die schweren Tools schon, nach Caching-Fix grossteils gecacht -> kein grosser Hebel; kein eigener ADR |
+| FEAT-24-07 | Feature | Internes Hilfs-Modell-Routing fuer Agent-interne LLM-Calls (Condensing, Fast-Path-Planner/Presenter, plan_presentation, Recipe-Planner, ggf. Skill-Klassifikator) | Planned | Planned | EPIC-24, ADR-115, ADR-11 | RESEARCH-36 |  |  | 2026-05-12 | P2 Welle 3; ADR-115 |
+| FEAT-24-08 | Feature | Autonomie-Governance: Token-/Kosten-Budget pro Task mit Pause+Rueckfrage, Steering-Hook zwischen Iterationen, weiches Exploration-Limit | Planned | Planned | EPIC-24, ADR-114, ADR-113 | RESEARCH-36 |  |  | 2026-05-12 | P2 Welle 3; ADR-114 (Subtask-Per-Call-Budget bleibt in ADR-113) |
+| FEAT-24-09 | Feature | Active Skills: model-getriebenes On-demand-Laden statt Klassifikator-Inject | Planned | Planned | EPIC-24, ADR-116, ADR-62, ADR-09 | RESEARCH-36 |  |  | 2026-05-12 | P1 Welle 2; ADR-116; spart Klassifikator-Roundtrip + macht System-Prompt cache-stabil (ergaenzt ADR-62-Amendment) |
 | FIX-24-01-01 | Fix | 01-01: anthropic.ts cache_control sitzt auf dem ganzen System-Prompt-String (inkl. volatilem DateTime/Memory/ActiveSkills/Recipe/VaultContext-Tail) -> Cache-Miss + 25% Write-Aufschlag, teurer als ohne Caching | Planned | Planned | FEAT-24-01, EPIC-24, ADR-62 | BUG |  |  | 2026-05-12 | P0  belegt 2026-05-12 (5-Provider-Messlauf); Implementierungs-Bug von ADR-62 ("DateTime last" allein reicht nicht) |
 | FIX-24-03-01 | Fix | 03-01: ResultExternalizer schliesst read_file aus + Agent liest die externalisierte tmp-Datei sofort zurueck -> No-Op (4/5 Messlauf-Tests); kompakte Referenz zu duenn + kein Re-Read-Cap; verallgemeinert FIX-18-02-01 | Planned | Planned | FEAT-24-03, EPIC-24, ADR-63 | BUG |  |  | 2026-05-12 | P1 |
 | FIX-24-03-02 | Fix | 03-02: tmp-Cleanup des ResultExternalizers schlaegt auf iCloud-Pfad mit EPERM fehl (non-fatal, tmp-Files bleiben liegen) | Planned | Planned | FEAT-24-03, EPIC-24 | BUG |  |  | 2026-05-12 | P2 |
@@ -556,7 +559,10 @@ Verwandt: RESEARCH-36 (Diagnose + 3-Wege-Vergleich Claude Code / EnBW Cowork), N
 | ADR-111 | ADR | Provider Capability-Flag und Bedrock cachePoint (Erweiterung zu ADR-62) | Proposed | Building | IMP-18-01-01, IMP-18-01-02, FEAT-18-01, ADR-62, FEAT-24-01 | ARCH |  | 2026-05-12 | 2026-05-12 | Code-Abgleich 2026-05-12: `supportsPromptCache`-Flag-Teil implementiert (IMP-18-01-01, released v2.7.2, src/api/capabilities.ts). Bedrock-cachePoint-Teil offen (IMP-18-01-02, noch nicht codiert). Praefix-Split-Teil neu in FEAT-24-01 (Amendment). |
 | ADR-112 | ADR | Attachment-Lifecycle im Sidebar (Snapshot vs API-Split, Push-Sync zum Tool-Layer) | Proposed | Building | FIX-19-28-05, FEAT-19-28, FEAT-19-31, EPIC-19 | ARCH |  | 2026-05-10 | 2026-05-10 |  |
 | ADR-113 | ADR | Subagent-Delegation fuer context-heavy Teilaufgaben (model-getrieben, Per-Call-Token-Budget) | Proposed | Building | FEAT-24-04, EPIC-24, ADR-01, ADR-12, ADR-62, ADR-63 | ARCH |  | 2026-05-12 | 2026-05-12 | EPIC-24 Welle 2; RESEARCH-36 §8 Hebel E |
-| ADR-12 | ADR | Context Condensing Strategy (Keep-First-Last) + Microcompaction (Amendment 2026-05-12) | Accepted | Released | FEAT-24-02, EPIC-24 | ARCH |  |  | 2026-05-12 | Amendment 2026-05-12 (EPIC-24/FEAT-24-02): Microcompaction der Tool-Results an Turn-Grenzen, additiv zur Keep-First-Last-Voll-Compaction |
+| ADR-114 | ADR | Autonomie-Governance -- Token-/Kosten-Budget pro Task, Steering-Hook, Exploration-Limits | Proposed | Building | FEAT-24-08, EPIC-24, ADR-01, ADR-06, ADR-12, ADR-113 | ARCH |  | 2026-05-12 | 2026-05-12 | EPIC-24 Welle 3; RESEARCH-36 §8 Hebel G |
+| ADR-115 | ADR | Internes Hilfs-Modell-Routing fuer Agent-interne LLM-Calls | Proposed | Building | FEAT-24-07, EPIC-24, ADR-11, ADR-12, ADR-17, ADR-61 | ARCH |  | 2026-05-12 | 2026-05-12 | EPIC-24 Welle 3; RESEARCH-36 §8 Hebel H |
+| ADR-116 | ADR | Active Skills -- model-getriebenes On-demand-Laden statt Klassifikator-Inject | Proposed | Building | FEAT-24-09, EPIC-24, ADR-09, ADR-62, ADR-08 | ARCH |  | 2026-05-12 | 2026-05-12 | EPIC-24 Welle 2; RESEARCH-36 §8 Hebel B-Teil + §3 |
+| ADR-12 | ADR | Context Condensing Strategy (Keep-First-Last) + Microcompaction & Rolling-Summary (Amendment 2026-05-12) | Accepted | Released | FEAT-24-02, EPIC-24 | ARCH |  |  | 2026-05-12 | Amendment 2026-05-12 (EPIC-24/FEAT-24-02): Microcompaction der Tool-Results an Turn-Grenzen + Rolling-Summary alter Turn-Bloecke, additiv zur Keep-First-Last-Voll-Compaction |
 | ADR-13 | ADR | 3-Tier Memory Architecture (Chat -> Session -> Long-Term) | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-14 | ADR | VaultDNA — Automatische Plugin-Erkennung als Skills | Accepted | Released |  | ARCH |  |  |  |  |
 | ADR-15 | ADR | Hybrid Search mit Semantic + BM25 + RRF Fusion | Accepted | Released |  | ARCH |  |  |  |  |

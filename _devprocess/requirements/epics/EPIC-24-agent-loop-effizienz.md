@@ -60,19 +60,19 @@ manuell Kontext-Hygiene betreiben muss?
 
 ### P1 (Welle 2 -- "Loop strukturell verschlanken")
 
-| ID | Title | Wert |
-|----|-------|------|
-| FEAT-24-04 | Subagent-Delegation fuer context-heavy Teilaufgaben (mit Per-Call-Token-Budget) | Recherche/Exploration bleibt aus dem Hauptkontext |
-| FEAT-24-05 | Sichtbarkeit: Sidebar-Kosten-/Token-/Cache-Hit-Anzeige | Verhaltenseffekt + Diagnose |
+| ID | Title | Wert | ADR |
+|----|-------|------|-----|
+| FEAT-24-04 | Subagent-Delegation fuer context-heavy Teilaufgaben (mit Per-Call-Token-Budget) | Recherche/Exploration bleibt aus dem Hauptkontext | ADR-113 |
+| FEAT-24-05 | Sichtbarkeit: Sidebar-Kosten-/Token-/Cache-Hit-Anzeige | Verhaltenseffekt + Diagnose | (UI, kein ADR) |
+| FEAT-24-09 | Active Skills: model-getriebenes On-demand-Laden statt Klassifikator-Inject | spart den Klassifikator-Roundtrip, macht den System-Prompt cache-stabil | ADR-116 |
 
-### P2 (Welle 3 -- "Governance + Routing + Lazy-Loading", teils Spike-first)
+### P2 (Welle 3 -- "Governance + Routing")
 
-| ID | Title | Trigger / Hinweis |
-|----|-------|-------------------|
-| FEAT-24-06 | Lazy-Loading Tool-Schemas + Active-Skills on-demand | Spike zuerst (`tools`-Feld-Groesse messen) |
-| (in FEAT-24-04) | Token-/Kosten-Budget pro Task + Steering-Hook | -- |
-| (neue FEAT bei Bedarf) | Internes Hilfs-Modell-Routing (Condensing/Read-Planner/...) | nur wenn Hilfs-Calls signifikanten Anteil haben |
-| (neue FEAT bei Bedarf) | Expliziter Plan-Modus (read-only -> reviewter Plan -> Kontext-Reset) | eigene Architektur-Entscheidung |
+| ID | Title | ADR / Hinweis |
+|----|-------|---------------|
+| FEAT-24-07 | Internes Hilfs-Modell-Routing fuer Agent-interne LLM-Calls (Condensing, Fast-Path-Planner/Presenter, plan_presentation, Recipe-Planner, ggf. Skill-Klassifikator) | ADR-115 |
+| FEAT-24-08 | Autonomie-Governance: Token-/Kosten-Budget pro Task mit Pause+Rueckfrage, Steering-Hook zwischen Iterationen, Exploration-Limit | ADR-114 (das Subtask-Per-Call-Budget bleibt in ADR-113) |
+| FEAT-24-06 | Lazy-Loading der Tool-Schemas (`tools`-API-Feld) weiter slimmen | niedrige Prio; Spike-Ergebnis 2026-05-12: ~10-20k Tokens fuer die ~35 Default-Tools, FEATURE-1600 deckt die schweren spezialisierten Tools schon ab, nach dem Caching-Fix (ADR-62-Amendment, tools-Marker) grossteils gecacht -> kein grosser Hebel, ggf. Welle 4 |
 
 ## Out-of-Scope (Epic)
 
@@ -86,6 +86,11 @@ manuell Kontext-Hygiene betreiben muss?
   Roadmap, nicht hierher (s. RESEARCH-36 §9 Frage 9).
 - Caveman-/Output-Knappheits-Modus -- Output ist nicht das Problem (RESEARCH-36
   Befund G).
+- Expliziter Plan-Modus (read-only Exploration -> reviewter Plan -> Kontext-Reset
+  -> Implementierung, a la Claude Code) -- bewusst verworfen (Entscheidung Sebastian
+  2026-05-12): Obsilos typischer Workload (Q&A, Notiz-Edit, leichte Recherche)
+  triggert einen Plan-Modus selten; der Hebel waere fuer Coding-Agenten gross, fuer
+  Obsilo klein. Falls sich das mit der Nutzung aendert: Wiedervorlage.
 
 ## Critical Hypotheses (Leading Indicators)
 
@@ -101,9 +106,12 @@ manuell Kontext-Hygiene betreiben muss?
 
 - Alle P0-Features (FEAT-24-01..03) auf Done und released.
 - OUT-01 bis OUT-03 messbar erfuellt (via `[InputBreakdown]`/`[CacheStat]`/`[Cost]`).
-- ADRs vorhanden und referenziert: Caching-Architektur (erweitert ADR-62),
-  Microcompaction/History-Pruning (neu), Externalization-im-Hauptloop (erweitert
-  ADR-63), Subagent-Delegation+Budget (neu).
+- ADRs vorhanden und referenziert: ADR-62-Amendment (Cache-Praefix-Stabilisierung),
+  ADR-12-Amendment (Microcompaction + Rolling-Summary), ADR-63-Amendment
+  (Externalization-im-Hauptloop + Re-Read-Cap + Per-Tool-Caps), ADR-113
+  (Subagent-Delegation+Budget), ADR-114 (Autonomie-Governance), ADR-115
+  (Hilfs-Modell-Routing), ADR-116 (Active-Skills on-demand). Plus IMP-18-01-02
+  (Bedrock cachePoint + OpenAI cached_tokens-Wiring, vorbestehend, Status Active).
 - Diagnose-Logging (`src/api/logCacheStat.ts`) committed bzw. in den Welle-1-Code
   ueberfuehrt.
 - `/testing` + `/security-audit` nach jedem `/coding`-Durchlauf durchlaufen.

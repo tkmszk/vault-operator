@@ -276,7 +276,7 @@ nicht selbst, sondern betten ein SDK ein. Quellen und Belastbarkeit:
 | Memory-Dateien (CLAUDE.md-Stil) | ja, statisch | ja (Folder-Prompt-Snapshot bei Session-Start, statisch) | ja (`memory/`) + zusaetzlich **dynamisches "Memory v2" im System-Prompt** | nur Obsilo injiziert per-Turn -> Cache-Konflikt (Abschnitt 3, offene Frage 2) |
 | Verbrauch sichtbar | `/context`, `/cost`, Cost-Tracker | `cacheHitRate` + Token-Usage in UI, OTel-Spans | nur Post-hoc-Log (`acaf53a`) | Obsilo hinkt nach (Hebel I) |
 | Observability-Instrumentierung | ja | **ja, OpenTelemetry** (Tool-Spans, Token/Permission/Skill-Events) | nein | Cowork ist hier am weitesten -- Vorbild fuer Hebel I |
-| Plan/Implement-Trennung | Plan-Mode (read-only -> `ExitPlanMode`) | nein | kein explizites Aequivalent | Obsilo-Luecke (Hebel F) |
+| Plan/Implement-Trennung | Plan-Mode (read-only -> `ExitPlanMode`) | nein | kein explizites Aequivalent | bewusst out-of-scope fuer Obsilo (Entscheidung 2026-05-12, s. §4.4) -- Workload triggert es selten |
 
 ---
 
@@ -403,7 +403,7 @@ B. Lazy-Loading von Tool-Schemas und Skill-Inhalten
 C. Tool-Output-Filterung + harte Output-Budgets pro Tool-Call (besonders web_fetch/web_search/read_file/Edit-Diffs)
 D. Gesteuertes Compacting an natuerlichen Uebergaengen
 E. Subagent-Isolation als Default fuer Recherche-/Explorationsteilaufgaben (mit Token-Budget/Call)
-F. Analyse/Implementierung trennen, Kontext-Reset zwischen Phasen
+F. ~~Analyse/Implementierung trennen, Kontext-Reset zwischen Phasen (Plan-Modus)~~ -- **out-of-scope** (Entscheidung Sebastian 2026-05-12): Obsilos Workload (Q&A, Notiz-Edit, leichte Recherche) triggert einen Plan-Modus selten; grosser Hebel fuer Coding-Agenten, kleiner fuer Obsilo. Wiedervorlage falls sich das aendert.
 G. Autonomie-Governance: Iterations-Cap, Token-Budget pro Task, Steering-Hook
 H. Model Routing: billiges Modell fuer Recherche/Extraktion/Summaries/Condensing, teures fuer finalen Plan-Review
 I. Verbrauch sichtbar machen: Per-Turn-Token-/Kosten-Anzeige + Cache-Hit-Rate in der Sidebar (Input/Output getrennt, kumulativ); mittelfristig OTel-Spans wie Cowork
@@ -452,7 +452,7 @@ Stand Code (`src/core/AgentTask.ts`, `src/core/FastPathExecutor.ts`, `src/core/p
 | B Lazy-Loading Tool-Schemas (`tools`-Feld) + Active-Skills on-demand | mittel (~30k/Iter., aber gecacht günstig wenn A umgesetzt) | hoch (Tool-Registry-Refactor) bzw. mittel (Active-Skills-Umstellung) | Plugin-Skills haben Verzeichnis-Konzept | **P2** |
 | G Token-/Kosten-Budget pro Task + Steering | mittel (Runaway-Schutz, nicht Durchschnitt) | niedrig-mittel | `maxIterations` da | **P2** |
 | H Internes Model-Routing für Hilfs-Calls | mittel | mittel (zweites Modell konfigurierbar) | Multi-Provider-Infra da | **P2** |
-| F Analyse/Implementierung trennen mit Kontext-Reset | mittel | mittel | kein explizites Äquivalent (Claude Codes Plan-Mode als Vorbild) | **P2** |
+| F Analyse/Implementierung trennen mit Kontext-Reset (Plan-Modus) | -- | -- | -- | **out-of-scope** (Entscheidung 2026-05-12, s. §4.4) |
 | J Output-Knappheit via Prompt | niedrig (Output ist nicht das Problem) | niedrig | -- | **P3** |
 
 ---
@@ -556,12 +556,12 @@ Diagnose-Phase abgeschlossen (5-Provider-Messlauf 2026-05-12, Diagnose-Log `logC
   vom Klassifikator-Inject auf model-getriebenes On-demand-Laden umstellen (Skill-Tool lädt SKILL.md
   als Tool-Result — spart den Klassifikator-Call, macht den Präfix stabiler). Erst Spike, dann
   Entscheidung ob voller Refactor.
-- **G:** Kumulatives Token-/Kosten-Budget pro Task mit Pause + Rückfrage; Steering-Hook zwischen
-  Iterationen.
-- **H:** Optionales "Hilfs-Modell" in den Settings (billiges Modell für Condensing, Read-Planner,
-  Presenter, plan_presentation, Recipe-Planner).
-- **F:** expliziter Plan-Modus (read-only Exploration → reviewter Plan → Kontext-Reset →
-  Implementierung), analog Claude Codes Plan-Mode (eigene Architektur-Entscheidung, evtl. eigenes BA).
+- **G** (ADR-114, FEAT-24-08): Autonomie-Governance -- kumulatives Token-/Kosten-Budget pro Task mit
+  Pause + Rückfrage; Steering-Hook zwischen Iterationen; weiches Exploration-Limit.
+- **H** (ADR-115, FEAT-24-07): optionales "Hilfs-Modell" in den Settings (billiges Modell für die
+  Agent-internen LLM-Calls: Condensing, Fast-Path-Planner/Presenter, plan_presentation, Recipe-Planner,
+  ggf. Skill-Klassifikator -- letzterer entfällt mit ADR-116).
+- **F** (Plan-Modus): **out-of-scope** -- Entscheidung 2026-05-12, s. §4.4.
 - Kleiner Bug nebenbei: iCloud-tmp-Cleanup `EPERM` robuster machen.
 - (Optional, niedrig) ein schlanker Hook-ähnlicher Erweiterungspunkt — nur wenn ein konkreter
   Use Case auftaucht.
