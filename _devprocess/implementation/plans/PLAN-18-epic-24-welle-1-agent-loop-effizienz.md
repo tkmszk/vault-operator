@@ -274,5 +274,46 @@ aufgeloest. Sonst alle Amendments deckungsgleich mit dem Code-Stand. Status blei
 
 ## Implementation Notes
 
-Wird beim Erreichen von Status Done/Superseded ausgefuellt (Per-Task-SHAs, Abweichungen, Test-Delta,
-Cycle-Time, ARCHITECTURE.map/JSDoc-Updates).
+Ausgefuehrt 2026-05-12 (Status Done). Per-Task-Commits auf `feature/epic-24-agent-loop-effizienz`:
+
+- Task 1 (IMP-24-05-01): `4a5023a` -- die uncommitteten Diagnose-Patches + der 2026-05-11
+  max_tokens-Auto/Truncation-Recovery-Bugfix als eine `chore`-Baseline committed (liessen sich nicht
+  per-Hunk trennen, beide vor-bestehend, beide bereits deployt). Kein neuer Code.
+- Task 2 (FEAT-24-02): `bd33928` -- `src/core/context/MicroCompactor.ts` (neu) + `AgentTask.microcompact()`
+  am Turn-Ende + `AgentTask.maybeRollingSummary()` (gentler/frueher als das 70%-Voll-Condensing) +
+  Settings `microcompactionEnabled`/`rollingSummaryThreshold`. ARCHITECTURE.map: `microcompaction`-Row +
+  `context-condensing`-Row auf `AgentTask.condenseHistory` korrigiert (stale `ContextCondenser.ts`-Ref).
+- Task 3 (FEAT-24-03 + FIX-24-03-01 + FIX-24-03-02): `6a62cec` -- ResultExternalizer Re-Read-Cap
+  (`isExternalizedPath` + `formatReReadCap`) + reichere `format*Ref` + ToolExecutionPipeline
+  `HARD_OUTPUT_CAP_CHARS=60000` + AttachmentHandler `TOTAL_ATTACHMENT_CHAR_BUDGET=64000` (per-Compose-Turn,
+  auch fuer externe/gepastete Dateien) + `toolDecisionGuidelines`-Leitplanke. FIX-24-03-02 war bereits
+  durch BUG-023 (`removeWithRetry`/`cleanupOrphaned`) abgedeckt -- nur Kommentar-Referenz.
+- Task 4 (FEAT-24-01 + FIX-24-01-01): `31b4bef` -- `CACHE_BREAKPOINT_MARKER` + `splitSystemPromptAtCacheBreakpoint`
+  in `systemPrompt.ts`; `anthropic.ts` 2-Block-System-Param + `cache_control` auf letztem `tools`-Eintrag +
+  2 rollende History-Marker (`markRollingHistoryBreakpoints`); `dateTime.ts` tagesgranular als Default,
+  `includeCurrentTimeInContext` default -> false (steuert nur noch die Time-of-Day-Zeile), i18n-Label angepasst.
+  ARCHITECTURE.map: `kv-cache-prompt`-Row.
+- Task 5 (IMP-18-01-02): `22270ec` -- `bedrock.ts` `cachePoint`-Bloecke (nach stabilem System-Prefix, nach
+  `tools`, nach letzter User-Message; gated durch `capabilities.getCacheCapability(...).cacheStyle === 'bedrock-cachepoint'`);
+  `openai.ts`/`github-copilot.ts`/`kilo-gateway.ts`: `prompt_tokens_details.cached_tokens` als `cacheReadTokens`
+  in den `usage`-Chunk, `inputTokens` = non-cached (Anthropic-Konvention) -> `computeCost` bucht den
+  gecachten Prefix zum Read-Tarif statt Vollpreis.
+
+**Abweichungen vom PLAN:** (a) Reconciliation-Befund 2026-05-12 -- der "CACHE BREAKPOINT" war nur ein
+Code-Kommentar, nicht im gerenderten String; geloest wie geplant per echtem `CACHE_BREAKPOINT_MARKER`
+(METRICS.md-Drift-Row). (b) Task 1 wurde als ein kombinierter Baseline-Commit gemacht statt zwei getrennten,
+weil sich die beiden vor-bestehenden Aenderungssaetze (2026-05-11-Bugfix + Diagnose) in denselben Dateien
+ueberlappten und ohne interaktives `git add -p` nicht sauber trennbar waren. (c) Kilo Gateway nutzt
+OpenAI-Format (nicht Anthropic), daher dort kein `cache_control`-Marker -- profitiert automatisch vom
+stabileren Prefix; nur das `cached_tokens`-Wiring wurde ergaenzt. (d) Plan-Coverage-Gate: alle SC sind
+`[AWAITING RE]` -- die Richtwerte sind in "Verification (Plan done)" gemappt, keine SC deferred.
+
+**Test-Delta:** 1378 -> 1392 gruen (+14: MicroCompactor 6, ResultExternalizer Re-Read/Default-Ref 2,
+AttachmentHandler-Budget 6 -- die systemPrompt-Marker-Tests ersetzten den alten "no DateTime"-Test, netto 0
+dort, 2 neue Marker/Split-Tests; Summe stimmt mit +14). Build gruen, Deploy nach jedem Task.
+
+**Offen (-> /testing):** Live-Messlauf gegen echte Provider (`[CacheStat:*]` Anthropic hitRate > 50% ab Call 2,
+Bedrock `cacheRead > 0`, OpenAI `[Cost] cacheR > 0`); Microcompaction-Wirkung im `[InputBreakdown]` (4-Datei-Turn
+-> Folge-Turn unter ~20k); ADR-111 R-1 (Bedrock-Region/Modell) + R-2 (Kilo-Gateway-Passthrough).
+
+**Cycle time:** first commit `c61ecb3` -> last commit `22270ec`, eine Session.
