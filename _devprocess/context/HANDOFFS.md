@@ -2366,3 +2366,88 @@ Aus dem /coding-Handoff uebernommen + ergaenzt:
 `/security-audit` fuer FEAT-24-06 / ADR-118. Danach Merge nach `dev` via
 `bash scripts/merge-to-dev.sh feature/feat-24-06-lazy-loading-tool-schemas`.
 Live-Messlauf-Abnahme von SC-6 bleibt offen bis zur naechsten Vault-Session.
+
+---
+
+## FEAT-24-06 -- /security-audit (2026-05-13)
+
+triage: FEAT-24-06
+triage_kind: feature
+epic: EPIC-24
+feature: FEAT-24-06
+
+Branch: `feature/feat-24-06-lazy-loading-tool-schemas`. Audit-Report:
+[AUDIT-020-feat-24-06-2026-05-13.md](../analysis/AUDIT-020-feat-24-06-2026-05-13.md).
+
+### Verdikt
+
+**Overall risk: Low. Release recommendation: Green.**
+
+- **0 Critical, 0 High, 0 Medium.**
+- **4 Info-Findings**: F-1 TOOL_METADATA-Drift (deferred zu IMP-24-06-01),
+  F-2 Renderer-Cap als optionale Defense-in-Depth (accepted), F-3 Whitelist-
+  Duplikation (accepted), F-4 Suffix-Quote-Robustheit (accepted).
+
+### Hauptaudit-Vektoren (alle clean oder akzeptiert)
+
+- **Path-Traversal in ReadMcpToolTool:** existiert nicht. `server` und
+  `name` sind String-Lookup-Keys in `mcpClient.getConnection(server)` und
+  `conn.tools.find(t => t.name === name)`. Kein Pfad geht je an
+  `readFile`.
+- **Resource-Consumption ueber Schema-Summary-Renderer:** durch
+  `HARD_TOOL_OUTPUT_CAP_CHARS = 60_000` in `ToolExecutionPipeline`
+  (FEAT-24-03 / PLAN-18) am Pipeline-Ausgang gekappt. Ein boesartiger
+  MCP-Server kann den Kontext nicht sprengen. Eigener Renderer-Cap waere
+  reine Defense-in-Depth, kein Muss.
+- **Suffix-Quote-Robustheit:** Server-/Tool-Namen aus User-Settings sind
+  kebab-case ohne Quotes. Kosmetisch, kein Sicherheitsvektor.
+- **Whitelist-Duplikation:** identische Logik in `UseMcpToolTool` und
+  `ReadMcpToolTool`. Code-Smell, kein Privilegien-Eskalations-Pfad.
+
+### Hidden-bug-Pattern-Befund (F-1)
+
+Der statische Drift-Audit ergab **16 weitere Tools** in der ToolName-Union
+ohne `TOOL_METADATA`-Eintrag (`_memory_atomize`, `_memory_single_call`,
+`anti_echo_search`, `configure_model`, `create_canvas`, `ingest_deep`,
+`ingest_triage`, `list_memory_source_notes`, `mark_for_memory`,
+`mark_note_as_memory_source`, `read_agent_logs`, `recall_memory`,
+`search_history`, `switch_mode`, `unmark_note_as_memory_source`,
+`update_soul`) plus 1 Spiegelfall (`check_presentation_quality` in
+`TOOL_METADATA` aber nicht in Union). Kein direkter Sicherheitsimpact
+heute, aber Drift-Risiko fuer zukuenftige Deferred-Pässe: wenn eines
+dieser Tools deferred wird, ist es ueber `find_tool` nicht entdeckbar
+(`if (!meta) continue;` in `FindToolTool.execute`).
+
+Deferred als **IMP-24-06-01** (P3, Source SEC, Ready). Detail-File:
+`_devprocess/requirements/improvements/IMP-24-06-01-toolmetadata-union-drift.md`.
+
+### Positivbefunde
+
+- **Klare Vertrauensgrenze** in `ReadMcpToolTool` (String-Lookup, kein
+  Pfad). Analog zum read_skill-Pattern.
+- **Whitelist + Connection-Status-Check fail-closed.**
+- **Defense-in-Depth durch Pipeline-Cap** (HARD_TOOL_OUTPUT_CAP_CHARS 60k).
+- **Konsistenz zum ADR-116-Pattern**: Verzeichnis stabil, Detail on-demand;
+  read_skill (FEAT-24-09) und read_mcp_tool (FEAT-24-06) folgen demselben
+  Muster.
+- **Cache-stabiler Cut:** `capMcpDescription` kuerzt deterministisch bei
+  200 chars (mit `trimEnd()`); der gecachte Praefix bleibt stable.
+- **Reduzierte tools-Feld-Surface:** `inspect_self` + `update_settings`
+  sind jetzt deferred -- ihre Schemas verschwinden aus jedem API-Call.
+- **Tests-Verankerung:** SC-3 + SC-4 als Regression-Assertions in
+  `deferredToolLoading.test.ts` festgezurrt.
+- **SCA-Baseline unveraendert** gegenueber AUDIT-019 (keine neuen
+  Dependencies; `mermaid` Moderate bleibt vorbestehend, DEBT-SCA-2026-05-12).
+
+### Architektonische Folgepunkte
+
+- IMP-24-06-01: TOOL_METADATA-Drift-Cleanup als eigenes V-Model-Item.
+- Mittelfristig: TypeScript-Type oder Vitest-Assertion fuer
+  Union/Metadata-Konsistenz (im IMP-24-06-01 mit-erwaegen, nicht
+  zwingend Teil davon).
+
+### Naechster Schritt
+
+Merge nach `dev` via `bash scripts/merge-to-dev.sh feature/feat-24-06-lazy-loading-tool-schemas`
+(User-Trigger; keine autonome shared-state-Aktion). Live-Messlauf-Abnahme
+von SC-6 in einer naechsten Vault-Session.
