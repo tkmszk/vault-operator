@@ -104,4 +104,34 @@ Tool-Registrierungs-Surface. Eigenes V-Model-Item (PLAN -> /coding ->
 
 ## Status
 
-Ready (Backlog), P3.
+Done 2026-05-13 (commit folgt im phase-end auf `chore/imp-24-06-01-toolmetadata-drift`).
+
+**Implementierter Scope:**
+
+- Legacy entfernt:
+  - `create_canvas` aus `ToolName`-Union (kein Tool-File, kein Caller).
+  - `check_presentation_quality` aus `TOOL_METADATA` + `DEFERRED_TOOL_NAMES`
+    + `TOOL_GROUPS` in `ToolExecutionPipeline.ts` (kein Tool-File mehr).
+- 13 `TOOL_METADATA`-Eintraege ergaenzt fuer Tools mit echten BaseTool-
+  Klassen: `anti_echo_search`, `configure_model`, `ingest_deep`,
+  `ingest_triage`, `list_memory_source_notes`, `mark_for_memory`,
+  `mark_note_as_memory_source`, `read_agent_logs`, `recall_memory`,
+  `search_history`, `switch_mode`, `unmark_note_as_memory_source`,
+  `update_soul`. Pro Eintrag: `group`, `label`, `icon`, `signature`,
+  `description`, optional `whenToUse` + `commonMistakes`.
+- `_memory_atomize` / `_memory_single_call`: bleiben in `ToolName`-Union
+  (sind LLM-internal constraint-tool-Schemas, im MemoryAtomizer /
+  SingleCallExtractor lokal definiert; kein BaseTool, kein TOOL_METADATA-
+  Eintrag noetig). Konvention dokumentiert: `_`-Prefix = LLM-internal,
+  nicht in der Registry.
+- Drift-Wiederkehr-Schutz: neuer Vitest-Test
+  `src/core/tools/__tests__/toolMetadataConsistency.test.ts` mit 3
+  Invarianten:
+  1. Union-Member -> TOOL_METADATA-Entry (Underscore-Allowlist).
+  2. TOOL_METADATA-Key -> Union-Member (kein orphan).
+  3. DEFERRED_TOOL_NAMES -> TOOL_METADATA-Entry (sonst kann find_tool
+     den deferred-Tool nicht ranken).
+
+**Verifikation:** 1467 Tests gruen (+3 vs 1464 dev nach IMP-24-09-01-Merge).
+`npm run lint` 0 errors. `npx tsc -noEmit -skipLibCheck` clean.
+`npm run build` gruen.
