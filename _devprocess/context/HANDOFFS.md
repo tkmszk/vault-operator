@@ -2849,3 +2849,54 @@ Keine. Kein Mid-course-Trigger waehrend Implementation.
 `/testing` (Gap-Test + Coverage-Check), danach `/security-audit`, danach
 Merge nach `dev` ueber `scripts/merge-to-dev.sh feature/feat-24-07-helper-model-routing`.
 **Mit FEAT-24-07-Merge ist EPIC-24 (alle 5 ausgewaehlten Items) inhaltlich abgeschlossen.**
+
+---
+
+## FEAT-24-07 -- /testing -> /security-audit (2026-05-13)
+
+triage: FEAT-24-07
+triage_kind: feature
+epic: EPIC-24
+feature: FEAT-24-07
+
+Branch: `feature/feat-24-07-helper-model-routing` (Commit b5c4575).
+
+### Testlage
+
+- `npm test`: **1464 gruen**, 150 Test-Files, 0 Failures (+4 vs dev-Baseline 1460). Die +4 Tests in `helper-api.test.ts` decken SC-1+SC-2 direkt; SC-3..SC-6 (Call-Site-Routing) sind durch das unveraenderte Test-Verhalten bei leerem `helperModelKey` indirekt belegt (kein Behavior-Change). SC-7 (Bestehende Funktionalitaet unveraendert) ist durch das gleichgrosse Baseline-Bestehen abgedeckt.
+- `npx tsc -noEmit -skipLibCheck`: clean.
+- `npm run lint`: 0 errors, 664 vorbestehende warnings.
+- `/consistency-check` mode A: 89 findings -- **0 echte durch FEAT-24-07**. Der eine neue Finding (orphan-backlog-row fuer ADR-115) faellt unter den DIA-Checker-Regex-Bug fuer 3-stellige ADR-IDs (gleiches Pattern wie ADR-113/114/116/117/118).
+
+### SC-Mapping
+
+| SC | Status | Evidence |
+|---|---|---|
+| SC-1 `helperModelKey` + `getHelperModel` | gruen | Setting + Method analog `memoryModelKey`/`getMemoryModel` (vorbestehendes getestetes Pattern) |
+| SC-2 `getHelperApi(plugin, fallback)` fail-closed | gruen | 4 Tests in `helper-api.test.ts`: no-config-fallback, helper-built, build-throws-fallback, contract-only |
+| SC-3 condenseHistory geroutet | gruen | Code-Diff zeigt `getHelperApi(this.toolRegistry.plugin, this.api)` vor dem createMessage in `AgentTask.ts:1463`. Unveraendertes Bestehen aller bestehenden Condensing-Tests bei leerem `helperModelKey` |
+| SC-4 FastPathExecutor geroutet | gruen | Code-Diff: neue `getInternalApi()`-Methode + `pipeline.getPlugin()`-accessor. Unveraendertes Bestehen aller FastPath-Tests |
+| SC-5 plan_presentation geroutet | gruen | Code-Diff: `getHelperApi(plugin, mainApi)` in `PlanPresentationTool.callPlanningLLM` |
+| SC-6 RecipePromotion helper-first-memory-fallback | gruen | Code-Diff im RecipePromotion-callback in `main.ts`: chain helper -> memory -> null mit `console.warn`-on-helper-fail |
+| SC-7 Bestehende Funktionalitaet unveraendert | gruen | 1460 vorbestehende Tests gruen + 4 neue gruen, keine Regression |
+| SC-8 Live-Messlauf | `[AWAITING RE]` | Konfigurierter Hilfs-Modell + Vault-Session: `[Cost]`-Log zeigt Hilfs-Modell beim Condensing; leerer Slot -> kein Verhaltenswechsel. Nicht autonom pruefbar. |
+
+### Bewusst NICHT unit-getestet (Begruendung)
+
+- **SC-8 Hilfs-Modell-Routing Live:** Laufzeit-Telemetrie gegen echte Provider. Die Bausteine darunter (`getHelperApi`, `getHelperModel`, Call-Site-Insertion) sind durch helper-api.test.ts + Code-Review verankert.
+- **Audit-Vektoren (Settings corruption, log-spam bei kaputtem Setting, accessor-Read-only):** sind /security-audit-Fragen, keine funktionalen Regression-Gaps. Strukturell auf der sicheren Seite (fail-closed, no-new-input-surface, accessor delegated to existing private field).
+- **End-to-End Provider-Calls mit echtem Helper-Modell-Stream:** identisch zur Memory-Atomizer-Architektur (vorbestehend, durch Memory-v2-Implementation getestet). Kein neues Provider-Wiring; nur Routing.
+
+### Fuer /security-audit
+
+Aus dem /coding-Handoff uebernommen + verifiziert via Tests:
+
+- **`getHelperApi`-Fail-closed:** Build-Fehler -> `console.warn` + fallback. Test verifiziert das (`buildApiHandlerForModel`-mock throws -> fallback returned).
+- **`pipeline.getPlugin()`-accessor:** read-only return des bestehenden privaten Felds; keine neue Mutation-Surface, keine User-Eingabe ueber diesen Pfad.
+- **RecipePromotion-callback chain:** `console.warn` bei helper-build-fail koennte log-spammy werden bei konsistent kaputtem Setting. Mitigation: warn ist nicht-fatal; chain faellt sauber auf Memory-Modell zurueck; bei kaputtem Setting bekommt User Warn-Log einmal pro Promotion-Aufruf (selten).
+- **`getHelperModel`-Contract:** der vierte Test verifiziert dass `getHelperApi` nicht direkt in `settings.helperModelKey` peekt sondern nur `getHelperModel()` aufruft. Damit lebt die enabled/activeModels-Validierung an einer Stelle.
+- **Out-of-scope-Pfade dokumentiert:** Memory-Atomizer (`memoryModelKey`), ChatLinking-Titling (`titlingModelKey`), classifyText (main.ts), hard-limit-recovery, ReAct-Hauptloop -- diese behalten ihre heutigen Pfade vollstaendig.
+
+### Naechster Schritt
+
+`/security-audit` fuer FEAT-24-07 / ADR-115. Danach Merge nach `dev` via `bash scripts/merge-to-dev.sh feature/feat-24-07-helper-model-routing`. **Mit FEAT-24-07-Merge ist EPIC-24 (alle 5 ausgewaehlten Items) inhaltlich abgeschlossen.** Live-Messlauf-Abnahme von SC-8 bleibt offen bis zur naechsten Vault-Session.
