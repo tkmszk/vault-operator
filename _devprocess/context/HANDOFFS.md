@@ -2652,3 +2652,83 @@ Aus dem /coding-Handoff uebernommen + verifiziert via Tests:
 ### Naechster Schritt
 
 `/security-audit` fuer FEAT-24-04. Danach Merge nach `dev` via `bash scripts/merge-to-dev.sh feature/feat-24-04-subagent-delegation`. Live-Messlauf-Abnahme von SC-6 bleibt offen bis zur naechsten Vault-Session.
+
+---
+
+## FEAT-24-04 -- /security-audit (2026-05-13)
+
+triage: FEAT-24-04
+triage_kind: feature
+epic: EPIC-24
+feature: FEAT-24-04
+
+Branch: `feature/feat-24-04-subagent-delegation`. Audit-Report:
+[AUDIT-021-feat-24-04-2026-05-13.md](../analysis/AUDIT-021-feat-24-04-2026-05-13.md).
+
+### Verdikt
+
+**Overall risk: Low. Release recommendation: Green.**
+
+- **0 Critical, 0 High, 0 Medium.**
+- **3 Info-Notes** (Pre-Emptive only, keine BACKLOG-Eintraege noetig):
+  F-1 user-eingebbare Profile waeren ein Injection-Vektor (heute Code-
+  konstant, kein Risiko), F-2 Token-Budget-Schaetzung chars/4 ist grob
+  aber als Defense-in-Depth-Bodenplatte ausreichend, F-3 mode-Override
+  beim Profile-Spawn ist by-design und in der Tool-Description
+  dokumentiert.
+
+### Hauptaudit-Vektoren (alle clean oder mehrfach mitigiert)
+
+- **Path-Traversal in spawnSubtask:** existiert nicht. Profile-Lookup
+  ueber Konstanten-Map, kein Filesystem-Surface.
+- **Resource Consumption via Subtask-Message-Bombe:** zwei unabhaengige
+  Verteidigungslinien -- Per-Call-Budget vor dem Spawn UND Pipeline-
+  HARD_TOOL_OUTPUT_CAP_CHARS (60k) am Tool-Result-Ausgang.
+- **Prompt Injection via Subagent-Inhalte:** roleDefinition Code-
+  konstant; `message` ist normale User-Message-Trust-Boundary;
+  Subagent-Antwort identisch zu jedem anderen Tool-Result. Keine neue
+  Surface.
+- **Privilege Escalation via Profile-Allowlist:** Order-of-Filters in
+  rebuildPromptCache (Profile-Allowlist FIRST, dann Deferred, dann
+  Activated-Injection mit `baseTools.find`) garantiert dass kein Tool
+  ausserhalb der Allowlist im Subagent-Schema auftaucht -- auch nicht
+  ueber `find_tool`-Aktivierung.
+- **MCP-Isolation des research-Subagent:** doppelt-gesichert. `mcpClient: undefined`
+  im Profile-Spawn UND `use_mcp_tool`/`read_mcp_tool` NICHT in der
+  research-Allowlist.
+- **Subagent-Nesting:** dreifach gesichert (maxSubtaskDepth + `new_task`
+  nicht in Allowlist + Profile-roleDefinition-Prompt-Leitplanke).
+- **Settings-Default-Migration:** Optional-Chaining + Konstanten-
+  Fallback `DEFAULT_SUBTASK_TOKEN_BUDGET = 8000` macht alte data.json-
+  Stand sauber.
+
+### Positivbefunde
+
+- **Vertrauensgrenze enger als Tier-4** beim Profile-Spawn (kein MCP,
+  keine Rules, keine Skills, eingeschraenkte Tool-Allowlist).
+- **Per-Call-Budget greift unconditional** vor jedem Spawn (Tier-4 +
+  Profile).
+- **Profile-Allowlist gewinnt strukturell** gegen alle anderen Tool-
+  Mechaniken (Order-of-Filters).
+- **Profile-roleDefinition enthaelt explizite Negativ-Anweisungen** als
+  Prompt-Leitplanke (no writes, no mode-switching, no nesting,
+  attempt_completion required).
+- **Regression-Schutz** via `subagent-profiles.test.ts`: write/edit/
+  use_mcp_tool/new_task duerfen nie in der research-Allowlist auftauchen.
+- **Konsistenz zu ADR-090:** non-profile-Pfad voll unveraendert; der
+  Profile-Pfad ergaenzt, ersetzt nicht.
+- **SCA-Baseline unveraendert** gegenueber AUDIT-020.
+
+### Architektonische Folgepunkte
+
+Keiner kritisch. F-1 (user-eingebbare Profile als zukuenftiger Injection-
+Vektor) ist ein Pre-Emptive Note fuer kuenftige Erweiterungen, kein
+heutiges Item. Mittelfristig sinnvoll: weitere Profile (`summarise`,
+`code-review`) addieren, sobald der Live-Messlauf zeigt dass `research`
+real genutzt wird.
+
+### Naechster Schritt
+
+Merge nach `dev` via `bash scripts/merge-to-dev.sh feature/feat-24-04-subagent-delegation`
+(User-Trigger; keine autonome shared-state-Aktion). Live-Messlauf-
+Abnahme von SC-6 in einer naechsten Vault-Session.
