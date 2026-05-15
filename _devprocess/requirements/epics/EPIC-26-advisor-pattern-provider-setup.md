@@ -14,7 +14,7 @@ github-issue: 319
 
 Vault-Operator-Nutzer betreiben dialogische Strategie-, Recherche- und Note-Writing-Sessions, die heute strukturell auf dem teuersten verfügbaren Modell laufen (Opus 4.6 als Hauptloop). Ein 8-Turn-Strategie-Chat kostet 15 bis 25 EUR, obwohl die meisten Turns reine Text-Generierung sind und kein Reasoning auf Flagship-Niveau brauchen. Der TaskRouter aus v2.10 ist binär (simple, complex) und kennt keine Zwischenstufe. Parallel pflegt der User pro Modell ~20 Felder manuell und muss bei jedem Provider-Release nachpflegen.
 
-EPIC-26 stellt den Hauptloop auf das mid-Tier-Modell um (typisch Sonnet), das Plugin ruft auf Modell-Initiative ein `consult_flagship`-Tool wenn schwierige Synthese nötig wird. Pair und Tier-Mapping kommen aus einem Auto-Discovery-Service, der die `/v1/models`-Endpunkte der Provider abruft und Modelle per Pattern + Capability in fast/mid/flagship klassifiziert. Das Settings-UI wechselt von Modell-zentriert auf Provider-zentriert, der User wählt nur Provider plus Auth, der Klassifikator füllt die Tier-Slots. Im Chat erscheint ein "Auto"-Default mit den Provider-Modellen als Override-Optionen pro Turn.
+EPIC-26 stellt den Hauptloop auf das mid-Tier-Modell um (typisch Sonnet oder Enstsprechung der anderen Provider), das Plugin ruft auf Modell-Initiative ein `consult_flagship`-Tool wenn schwierige Synthese nötig wird. Pair und Tier-Mapping kommen aus einem Auto-Discovery-Service, der die `/v1/models`-Endpunkte der Provider abruft und Modelle per Pattern + Capability in fast/mid/flagship klassifiziert. Das Settings-UI wechselt von Modell-zentriert auf Provider-zentriert, der User wählt nur Provider plus Auth, der Klassifikator füllt die Tier-Slots. Im Chat erscheint ein "Auto"-Default mit den Provider-Modellen als Override-Optionen pro Turn.
 
 Damit reduzieren wir die Kosten pro chat-style Session um 70 bis 75 %, das Setup auf ≤1 Min pro Provider und schliessen den Pflege-Drift bei neuen Modell-Releases. Der ReAct-Loop-Kern bleibt unverändert, EPIC-24-Mechaniken (Cache-Marker, Microcompaction, MCP-Listing-Cap) werden nicht angetastet.
 
@@ -46,7 +46,7 @@ Wie können wir den Hauptloop des Plugins auf einem schlankeren Modell betreiben
 |----|-------|------|
 | FEAT-26-03 | Provider-only Settings UI | Setup-Vereinfachung auf Provider-Auth statt 20 Felder pro Modell |
 | FEAT-26-04 | Migration und Backwards-Compat | Auto-Migrate bestehender `activeModels[]` mit Notification-Modal |
-| FEAT-26-05 | Chat-Model-Dropdown-Refactor (Auto + Provider-Modelle als Override pro Turn) | User-Kontrolle bei intelligentem Default |
+| FEAT-26-05 | Chat-Model-Dropdown-Refactor (Auto + Provider-Modelle als Override pro Turn) plus Mode-Switcher-Removal aus Chat-Header | User-Kontrolle bei intelligentem Default, plus Entfernung des nie genutzten Mode-UIs |
 
 ### Welle 3: Nice-to-have (P2)
 
@@ -80,6 +80,7 @@ Wie können wir den Hauptloop des Plugins auf einem schlankeren Modell betreiben
 - Auto-Pricing-Lookup über OpenRouter als Fallback für unbekannte Modelle
 - Hard-Cost-Budget mit User-Pause (FEAT-24-08 bleibt separat planned)
 - Streamable-HTTP-MCP (nach EPIC-14 verschoben)
+- **Komplettes Entfernen des Mode-Backend-Systems** (ModeService, currentMode-Setting, modeModelKeys, switch_mode-Tool, Plugin-Skill-Mode-Filter). FEAT-26-05 entfernt nur den UI-Switcher aus dem Chat-Header. Backend-Cleanup als separate Tech-Debt-Initiative, wenn überhaupt nötig.
 
 ## Constraints
 

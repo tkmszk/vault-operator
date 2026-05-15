@@ -38,6 +38,8 @@ User pflegen heute pro Modell ~20 Felder manuell. Wenn das UI nur Provider-Auth-
 
 1. Settings-Tab heisst "Providers" statt "Models" und listet alle unterstützten Provider als kompakte Blöcke.
 2. Pro Provider-Block sehe ich: Enable-Toggle, Auth-Eingabe (API-Key-Feld oder OAuth-Sign-In-Button je nach Provider-Type), Discovered-Modell-Count, Refresh-Button mit Zeitstempel, drei Tier-Slots mit Auto-Wahl und Override-Dropdown.
+2.1. In jedem Tier-Slot ist das aktuell ausgewählte Modell direkt sichtbar (z.B. "Flagship → Claude Opus 4.7"), nicht nur ein generisches "Auto"-Label. Wenn das Modell automatisch klassifiziert wurde, erscheint ein dezenter "auto-detected"-Hinweis neben dem Modellnamen. Bei manuellem Override entfällt der "auto-detected"-Hinweis, ein "manually set"-Hinweis erscheint stattdessen.
+2.2. Das Dropdown im Tier-Slot listet alle Modelle des Providers, sortiert: zuerst das auto-detected Modell für diesen Tier, dann weitere geeignete Modelle des Tiers, danach Modelle anderer Tiers (als grauer Block mit Hinweis "different tier"). Per Klick wechselt der User auf ein anderes Modell, die Auswahl wird sofort persistiert und im Slot angezeigt.
 3. Ein "Active Provider"-Selector oben im Tab zeigt genau einen Provider als aktiv markiert. Wechsel ist mit einem Klick möglich.
 4. Bei Custom-Endpoints (Ollama, LMStudio) sehe ich ein BaseURL-Feld zusätzlich. Tier-Slots sind manuell zu setzen, kein Auto-Pattern.
 5. Bedrock-Provider zeigt Region-Dropdown und Auth-Modus-Switch (api-key vs access-key/secret-key).

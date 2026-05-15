@@ -10,11 +10,15 @@ plan-refs: []
 depends-on: [FEAT-26-01, FEAT-26-02, FEAT-26-03]
 ---
 
-# FEAT-26-05: Chat-Model-Dropdown-Refactor
+# FEAT-26-05: Chat-Model-Dropdown-Refactor (plus Mode-Switcher-Removal)
 
 ## Description
 
-Das heutige Chat-Header-Dropdown listet alle Modelle aller konfigurierten Provider flach. Nach EPIC-26 wird es ersetzt durch ein Dropdown mit "Auto" als Default plus den Modellen des aktiven Providers als Override-Optionen.
+Der Chat-Header wird in zwei Aspekten umgebaut:
+
+**1. Model-Dropdown:** Das heutige Chat-Header-Dropdown listet alle Modelle aller konfigurierten Provider flach. Nach EPIC-26 wird es ersetzt durch ein Dropdown mit "Auto" als Default plus den Modellen des aktiven Providers als Override-Optionen.
+
+**2. Mode-Switcher-Removal:** Das heutige Mode-Dropdown ("Agent" vs "Ask" vs ggf. Custom-Modes) im Chat-Header wird entfernt. Begründung: das Mode-System wurde produktiv nie genutzt (siehe Memory `feedback_modes_unused.md`), Mode-Filterung wird durch Skills überholt. **Scope der Entfernung ist minimal-invasiv:** nur das UI-Element fällt weg, das Backend-Mode-System (ModeService, currentMode-Setting, TOOL_GROUP_MAP, switch_mode-Tool) bleibt unverändert. Der Chat läuft hardcoded auf Agent-Mode (currentMode-Setting wird nicht mehr durch UI geändert).
 
 Verhalten:
 - **"Auto" (Default):** Advisor-Pattern ist aktiv. Hauptloop läuft auf mid-Tier, `consult_flagship`-Tool ist registriert.
@@ -36,6 +40,7 @@ Heute wählt der User pro Chat aus 10+ Modellen über Provider hinweg. Diese Wah
 - **US-05-02 (P1 Sebastian):** Als Power-User möchte ich nur die Modelle des aktiven Providers im Dropdown sehen, damit ich nicht versehentlich Cross-Provider-Cost erzeuge.
 - **US-05-03 (P2 Knowledge-Worker):** Als Standard-User möchte ich, dass "Auto" als Default funktioniert und das Plugin selbst entscheidet, damit ich keine Modell-Wahl treffen muss.
 - **US-05-04 (P1 Sebastian):** Als Power-User möchte ich, dass mein bisheriger Conversation-Kontext beim Modellwechsel erhalten bleibt, damit ich nicht den Chat neustarten muss.
+- **US-05-05 (P1 Sebastian, P2 Knowledge-Worker):** Als User möchte ich keinen Mode-Switcher im Chat-Header sehen, weil das Mode-Konzept (Agent/Ask) für mich keinen Mehrwert hatte und die Auswahl verwirrte. Der Chat soll direkt nutzbar sein, ohne Mode-Vorab-Entscheidung.
 
 ## Success Criteria
 
@@ -47,6 +52,8 @@ Heute wählt der User pro Chat aus 10+ Modellen über Provider hinweg. Diese Wah
 6. Beim Provider-Wechsel im Settings-Tab wird das Chat-Dropdown automatisch aktualisiert mit den Modellen des neuen aktiven Providers. "Auto" bleibt selektiert.
 7. Wenn ein einzelner Tier-Slot leer ist (z.B. kein flagship), zeigt der Dropdown im Auto-Modus einen Hinweis ("Advisor pattern disabled, flagship slot empty").
 8. Die heutigen Modelle des Plugins aus anderen Providern sind im Chat-Dropdown nicht sichtbar (Single-Active-Provider-Disziplin).
+9. Der bisherige Mode-Switcher ("Agent"/"Ask"-Dropdown) ist im Chat-Header nicht mehr sichtbar. Der Chat läuft hardcoded auf Agent-Mode, ohne dass der User eine Mode-Entscheidung trifft.
+10. Die Backend-Mode-Mechanik (ModeService, switch_mode-Tool, currentMode-Setting) bleibt funktional. Der Agent kann via `switch_mode`-Tool theoretisch noch Modes wechseln (Tool bleibt registriert), aber in der Praxis ohne UI-Trigger irrelevant.
 
 ## Technical NFRs
 
@@ -71,8 +78,10 @@ Heute wählt der User pro Chat aus 10+ Modellen über Provider hinweg. Diese Wah
 - [ ] Reactive-Update bei Provider-Wechsel in Settings
 - [ ] Empty-Tier-Slot-Indikator ("Advisor pattern disabled")
 - [ ] Cost-Log-Erweiterung um `mode`-Field
-- [ ] Tests: Auto-Modus, Override-Modus, Modellwechsel-im-Chat, Provider-Wechsel-im-Settings, Empty-Flagship-Slot
-- [ ] Live-Messlauf [AWAITING RE]: Mode-Wechsel im laufenden Chat, Kontext-Konsistenz, Cost-Anzeige korrekt
+- [ ] **Mode-Switcher (Agent/Ask-Dropdown) aus dem Chat-Header entfernt**
+- [ ] currentMode-Setting bleibt im Backend, aber UI-Trigger entfällt. Default: Agent-Mode
+- [ ] Tests: Auto-Modus, Override-Modus, Modellwechsel-im-Chat, Provider-Wechsel-im-Settings, Empty-Flagship-Slot, Chat-Header ohne Mode-Switcher
+- [ ] Live-Messlauf [AWAITING RE]: Modell-Wechsel im laufenden Chat, Kontext-Konsistenz, Cost-Anzeige korrekt, kein Mode-Switcher sichtbar
 
 ## Validation (Critical Hypothesis H-06)
 
@@ -84,3 +93,5 @@ H-06 sagt: User akzeptiert Single-Active-Provider als Standard-Modus, Override-D
 - Per-Message-Override (User wählt für jede einzelne Message ein anderes Modell)
 - Modell-Wechsel mitten in einem Tool-Use-Loop (innerhalb eines Turns ist das Modell stabil)
 - Custom-Default-Anzeige außer "Auto" (Plugin-Wide-Setting)
+- **Komplettes Entfernen des Mode-Backend-Systems** (separate Tech-Debt-Cleanup, nicht in EPIC-26). ModeService, currentMode-Setting, modeModelKeys, switch_mode-Tool, Plugin-Skill-Mode-Filter bleiben unangetastet
+- Mode-Section aus dem System-Prompt entfernen (~1160 Tokens, gehört in eine spätere Optimierungs-Welle wenn Mode-Konzept dokumentiert obsolet ist)
