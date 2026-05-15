@@ -2952,3 +2952,63 @@ Keine kritischen. F-1 (Cache spaeter falls Provider-Konstruktor teuer wird) und 
 
 Merge nach `dev` via `bash scripts/merge-to-dev.sh feature/feat-24-07-helper-model-routing`
 (User-Trigger). Live-Messlauf-Abnahme von SC-8 in einer naechsten Vault-Session. **Mit dem Merge ist EPIC-24 (Welle 1 + 2 + 3, alle 5 ausgewaehlten Items inkl. FEAT-24-05) inhaltlich abgeschlossen** -- offen bleiben nur die `[AWAITING RE]`-Live-Messlaeufe der 5 FEATs und die Folge-IMPs IMP-24-06-01 (TOOL_METADATA-Drift) und IMP-24-09-01 (Dead Code SkillsManager.getRelevantSkills).
+
+---
+
+## EPIC-26 -- /business-analysis (2026-05-15)
+
+triage: EPIC-26
+triage_kind: epic
+epic: EPIC-26
+
+Branch: `feature/cost-reduction-wave-2` (Sammelbranch für EPIC-26..29). BA-Dokument:
+[BA-27-advisor-pattern-provider-setup.md](../analysis/BA-27-advisor-pattern-provider-setup.md). GitHub-Issue: [#319](https://github.com/pssah4/vault-operator-dev/issues/319).
+
+### Scope
+
+MVP. Advisor-Pattern als Loop-Default + Provider-only Setup mit Auto-Discovery + Chat-Model-Dropdown-Refactor. EPIC-27 (ursprünglich separat) wurde am 2026-05-15 in EPIC-26 absorbiert.
+
+### Personas
+
+- **P1: Sebastian (Power-User, Plugin-Maintainer)** -- primaere Persona, treibt Strategie-Chats, Cost-Reduktion ist sein Treiber
+- **P2: Knowledge-Worker [SPEKULATIV]** -- nicht durch Interviews validiert, dient als Design-Ziel fuer Setup-Vereinfachung, in Beta-Phase validieren
+- **P3: Enterprise-User** -- zukuenftig, via Synergy zu EPIC-28 (Privacy)
+
+### How-Might-We
+
+Wie koennen wir den Hauptloop von Vault Operator auf einem schlankeren Modell laufen lassen, ohne Qualitaetsverlust fuer Strategie-/Recherche-Text, mit on-demand-Eskalation auf das staerkere Modell wenn der Agent steckt, und gleichzeitig das Setup so vereinfachen, dass User nur Provider + Auth wae hlen statt 20 Felder pro Modell pflegen?
+
+### Critical Hypotheses (an RE/Coding zur Validation)
+
+- **H-01:** Sonnet 4.6 liefert fuer Strategie-/Argumentations-Chats subjektiv vergleichbare Qualitaet wie Opus 4.6. **Validation: in Beta-Phase, kein Vorab-Test.** Rollback-Plan: Default-Tier-Setting flipbar mid -> flagship.
+- **H-02:** Pattern-basierter Tier-Klassifikator deckt >90 % der aktuell verfuegbaren Provider-Modelle ab.
+- **H-03:** Eskalations-Rate liegt zwischen 5-15 % der Auto-Chats (Tool-Use-Counter-Telemetrie).
+- **H-04:** Setup pro neuem Provider auf ≤1 Min senkbar.
+- **H-05:** Auto-Migration alter `activeModels[]`-Configs laeuft fuer >95 % der User-Setups fehlerfrei.
+- **H-06:** User akzeptiert Single-Active-Provider als Standard-Modus.
+
+### Assumptions (offene Punkte fuer RE/Architecture)
+
+- A-1: Sonnet-Qualitaet ausreichend fuer text-lastige Tasks (siehe H-01)
+- A-2: Klassifikator-Pattern decken neue Modelle ab; Edge-Cases via User-Override
+- A-3: Single-Active-Provider-Modell ist UX-akzeptiert
+- A-4: Migration bestehender activeModels[] ohne Datenverlust
+- A-5: Advisor-Mechanik (Reminder + Autonomie) erzeugt sinnvolle Eskalations-Frequenz
+
+### Open Questions
+
+- **OAuth-Flow** fuer Copilot/ChatGPT-Sub im neuen Provider-Setup (Sign-In-Button-Layout)
+- **Refresh-Trigger** (manuell only oder auch zeitlich auto)
+- **helperModelKey-Semantik** (bleibt explizit oder wird Alias fuer fast-Tier?)
+- **Subtask-Verhalten** (research-Profile heute auf helper, im neuen System auf welches Tier?)
+- **Notification-Modal-Inhalt** bei Migration
+- **Bedrock Cross-Region-Inference-Profile** im Provider-Mode
+
+### Was RE jetzt tut
+
+- EPIC-26 Hypothesis Statement aus dem Issue uebernehmen
+- 6 Features definieren: FEAT-26-01 Advisor-Engine, FEAT-26-02 Tier-Klassifikator+Discovery, FEAT-26-03 Provider-Settings-UI, FEAT-26-04 Migration, FEAT-26-05 Chat-Dropdown, FEAT-26-06 Prompt-Slim
+- Success Criteria pro Feature (operational testbar)
+- User Stories aus den JTBDs ableiten (JTBD-1 bis JTBD-6 in BA Sektion 4.4)
+- Prioritaeten setzen (P0/P1/P2)
+
