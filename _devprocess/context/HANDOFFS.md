@@ -3138,3 +3138,47 @@ plan-context-epic26.md ist konsistent mit ADR-120, ADR-121, ADR-122, ADR-123, AD
 4. PLAN-Items pro Welle erstellen (PLAN-24 Advisor-Engine + Klassifikator, PLAN-25 Provider-UI + Migration, PLAN-26 Chat-Dropdown + Prompt-Slim)
 5. Implementation pro Welle, Tests gruen halten, build + deploy
 6. Live-Messlauf gegen Sebastians Setup vor Public-Release
+
+---
+
+## EPIC-26 -- /coding (Phase 1+2+3a, 2026-05-15)
+
+triage: EPIC-26 / PLAN-24
+triage_kind: plan
+epic: EPIC-26
+
+Branch: `feature/cost-reduction-wave-2` (Sammelbranch). Artefakte:
+- PLAN-24: [PLAN-24-epic-26-welle-1-engine.md](../implementation/plans/PLAN-24-epic-26-welle-1-engine.md) -- 12 Tasks fuer FEAT-26-01 + FEAT-26-02 Backend
+- BACKLOG: PLAN-24-Row in Cross-cutting-Sektion
+
+### Critical Review (Phase 2)
+
+**ADR-Drift:** keiner. ADR-120, ADR-121, ADR-122, ADR-123 und ADR-115-Amendment passen zur Codebase. Bestehende Patterns (`spawnSubtask`, `getHelperApi`, `fetchProviderModels`, `_globalStorageMigrated`-Migration-Pattern, `subagent-profiles.ts`) sind wiederverwendbar.
+
+**Findings (alle Implementation-Details, kein ADR-Update):**
+
+- **F-1:** `SubagentProfile`-Interface muss um `tierOverride?: 'fast' | 'mid' | 'flagship'` und `maxOutputTokens?: number` erweitert werden. Erforderlich fuer Advisor-Profile (3000-Cap, flagship-Tier) und Research-Tier-Update (fast-Tier, Amendment ADR-115).
+- **F-2:** `[Cost]`-Log braucht `mode`-Field (`auto` | `override(<id>)` | `advisor(<id>)` | `subagent(<id>)`). Provider-Adapter muessen das Field durchreichen.
+- **F-3:** `defaultMainModelTier` Top-Level-Setting (Default `'mid'`), flipbar als Rollback-Schalter fuer H-01.
+
+Alle drei Findings sind im PLAN-24 als Sub-Tasks (Task 5, 10, 1) festgehalten.
+
+### Phase 3a Status
+
+**PLAN-24 persistiert mit Status Draft** (Backlog-Row). Implementierung startet in einer separaten /coding-Session. Keine Code-Aenderung in dieser Session.
+
+### Open Items fuer die Implementations-Session
+
+- Vor Start: Bestaetigung dass `feature/cost-reduction-wave-2` der richtige Branch ist oder sub-Branch `feature/epic-26-welle-1` als Alternative
+- Cleanup-Schritt aus PLAN-25/26 (Welle 2/3) folgt nach Welle-1-Abschluss in separaten Plans
+- Live-Messlauf gegen Sebastians produktives Setup ist Pflicht vor Public-Release (R-3-Mitigation Migration-Verlust)
+
+### Was die naechste /coding-Session tut
+
+1. Branch-Check
+2. PLAN-24 laden + Coverage-Gate re-confirm (sollte gruen sein)
+3. Status PLAN-24 von Draft auf Active flippen (Backlog-Row)
+4. Tasks 1-4 als Foundation-Block (sequentielle Dependency)
+5. Tasks 5-12 als Feature-Block (Profile-Interface, Advisor-Tool, Cost-Log, Default-Tier)
+6. Pro Task: Code + Tests + Build + Deploy + Backlog-Update
+7. Am Ende: Status PLAN-24 auf Done, Implementation-Notes-Section gefuellt, Phase-Tag epic-26/code-done
