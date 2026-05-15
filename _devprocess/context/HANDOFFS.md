@@ -3073,3 +3073,68 @@ Success Criteria der FEATs sind primaer user-facing formuliert. Technische Begri
 - arc42 Snapshot aktualisieren (Section "Modell-Routing", "Provider-Settings", "Migrations-Strategie")
 - plan-context.md erstellen, damit /coding die Implementierung starten kann
 - Architecture-Refinement-Dialog im architect-handoff-epic26.md (Append-only)
+
+---
+
+## EPIC-26 -- /architecture (2026-05-15)
+
+triage: EPIC-26
+triage_kind: epic
+epic: EPIC-26
+
+Branch: `feature/cost-reduction-wave-2` (Sammelbranch). Artefakte:
+- ADRs (4 neu + 1 Amendment):
+  - [ADR-120](../architecture/ADR-120-advisor-pattern-loop-default.md) Advisor-Pattern als Loop-Default
+  - [ADR-121](../architecture/ADR-121-tier-classifier-strategy.md) Tier-Klassifikator-Strategie
+  - [ADR-122](../architecture/ADR-122-provider-only-settings-schema.md) Provider-only Settings-Schema
+  - [ADR-123](../architecture/ADR-123-settings-schema-migration.md) Settings-Schema-Migration
+  - [ADR-115](../architecture/ADR-115-helper-model-routing.md) Amendment 2026-05-15 (Hauptloop-Default-Tier, Tier-Semantik, Subtask-Tier-Inheritance)
+- arc42: Sektion 5.10 (Modell-Routing-Building-Block) + Sektion 8.15 (Modell-Routing-und-Provider-Setup-Querschnittskonzept)
+- plan-context: [plan-context-epic26.md](../requirements/handoff/plan-context-epic26.md) mit Schema, Performance-Targets, 8 Open Items fuer /coding
+- ARCHITECTURE.map: 4 neue Wayfinder-Rows (modell-routing, provider-config, settings-migration, advisor-tool)
+- BACKLOG: 4 neue ADR-Rows + Last-update-Marker
+
+### Tech-Stack-Justification
+
+Keine neuen externen Dependencies. EPIC-26 erweitert den bestehenden Stack durch zwei neue Service-Klassen (`ModelTierClassifier`, `ModelDiscoveryService`) und ein neues Settings-Schema-Konzept. Bestehende Mechaniken bleiben unveraendert: ReAct-Loop, Multi-Provider-Adapter aus ADR-11, Subagent-Mechanik aus ADR-113, Cache-Strategie aus ADR-62. OAuth-Flows (Copilot, ChatGPT-OAuth) und Bedrock-Credentials (SigV4 + api-key) sind unangetastet.
+
+### Rejected Alternatives
+
+- **3-Klassen-TaskRouter:** verstaerkt das bestehende Mode-Fehlwahl-Risiko, Cost-Hebel waere klassifikations-abhaengig. Verworfen zugunsten des Advisor-Patterns (ADR-120 Option 1).
+- **Hard-Forward-Eskalation bei consecutiveMistakes:** reaktiv, greift erst nach Fehlern, widerspricht User-Wunsch "Loop optimieren statt unterbrechen". Verworfen zugunsten modell-getriebener Eskalation mit Prompt-Reminder (ADR-120 Option 2).
+- **Capability-First-Klassifikator:** Capability-Daten nicht immer verfuegbar, Schwellenwerte heuristisch und alterungsanfaellig. Verworfen zugunsten Pattern-First mit Capability-Fallback (ADR-121 Option 1).
+- **Schema-Hard-Cut bei Migration:** irreversible Migrations-Fehler. Verworfen zugunsten Schemas-parallel mit Legacy-Backup (ADR-122 Option 1).
+- **Migration-Wizard mit Step-by-Step-Bestaetigung:** hohe Friction. Verworfen zugunsten Auto-Migration mit Single-Modal-Notification (ADR-123 Option 2).
+
+### Known Risks
+
+- **R-1 (BA-27):** Sonnet liefert bei Strategie-Chats spuerbar schlechtere Qualitaet als Opus. Validation H-01 in Beta-Phase, Rollback via `defaultMainModelTier`-Flip moeglich (Setting flipt mid -> flagship).
+- **R-2:** Tier-Klassifikator klassifiziert ein neues Modell falsch. Mitigation: User-Override pro Slot, Outlier-Log in `console.debug`.
+- **R-3:** Migration zerstoert User-Setup. Mitigation: atomic Settings-Save, 30/90-Tage-Backup, Restore-Action. Test gegen Sebastians eigenes Multi-Provider-Setup ist Voraussetzung fuer Release.
+- **R-4:** Eskalations-Frequenz outside des erwarteten 5-15 %-Bereichs. Mitigation: Telemetrie-Counter, Prompt-Reminder-Tuning, Per-Task-Limit-Anpassung. Validation H-03 in Beta.
+
+### Open Items (deferred to /coding)
+
+Die folgenden 8 Punkte stehen explizit offen und werden im /coding-Pivot durch Codebase-Recon entschieden. Vollstaendig dokumentiert in `plan-context-epic26.md`:
+
+1. Subtask-Tier-Inheritance Edge Cases (Recursive-Subtask, Profile-Conflict)
+2. `helperModelKey`-Resolution-Reihenfolge gegen fast-Tier-Mapping
+3. OAuth-Provider-Listing-Schema-Adapter (Copilot, ChatGPT-OAuth)
+4. Bedrock Cross-Region-Profile-Normalisierung im Klassifikator-Pfad
+5. Refresh-Trigger ueber Manual-Only hinaus (Settings-Open, Stale-Send)
+6. Notification-Modal-Detail-Inhalt
+7. Cost-Log-Schema-Erweiterung (`mode`-Field) ohne Provider-Adapter-Bruch
+8. Embedding-Modell-Pfad-Konflikt-Freiheit zum Chat-Modell-Pfad (geklaert: kein Konflikt)
+
+### Consistency-Check (vor /coding-Pass)
+
+plan-context-epic26.md ist konsistent mit ADR-120, ADR-121, ADR-122, ADR-123, ADR-115 Amendment, BA-27, FEAT-26-01..06. Keine widerspruechlichen Aussagen ueber Schema, Tier-Resolution, Migration-Pfad oder Eskalations-Mechanik. ARCHITECTURE.map und arc42 Sektion 5.10 / 8.15 sind synchron.
+
+### Was /coding jetzt tut
+
+1. plan-context-epic26.md + 4 ADRs + ADR-115 + FEAT-26-01..06 laden
+2. Codebase-Recon: existierende `fetchProviderModels()`, `AgentTask.spawnSubtask()`, Subagent-Profile-Registry, Settings-Save-Pfad pruefen
+3. Bei Pivot-Bedarf: ADRs mit Amendment-Notes versehen, plan-context schaerfen
+4. PLAN-Items pro Welle erstellen (PLAN-24 Advisor-Engine + Klassifikator, PLAN-25 Provider-UI + Migration, PLAN-26 Chat-Dropdown + Prompt-Slim)
+5. Implementation pro Welle, Tests gruen halten, build + deploy
+6. Live-Messlauf gegen Sebastians Setup vor Public-Release
