@@ -3182,3 +3182,51 @@ Alle drei Findings sind im PLAN-24 als Sub-Tasks (Task 5, 10, 1) festgehalten.
 5. Tasks 5-12 als Feature-Block (Profile-Interface, Advisor-Tool, Cost-Log, Default-Tier)
 6. Pro Task: Code + Tests + Build + Deploy + Backlog-Update
 7. Am Ende: Status PLAN-24 auf Done, Implementation-Notes-Section gefuellt, Phase-Tag epic-26/code-done
+
+---
+
+## EPIC-26 Welle 1 Backend -- /coding (Phase 3+4, 2026-05-16)
+
+triage: EPIC-26 / PLAN-24
+triage_kind: plan
+epic: EPIC-26
+
+Branch: `feature/cost-reduction-wave-2`. Pair-id: sebastian-claude-opus-4-7.
+
+### Was wurde implementiert
+
+Alle 12 Tasks aus PLAN-24 sind grün. Code-Touch-Punkte:
+
+- **Types & Settings:** `src/types/settings.ts` -- neue Interfaces `ProviderConfig`, `DiscoveredModel`; neue Top-Level-Felder `providerConfigs[]`, `activeProviderId`, `schemaVersion?`, `defaultMainModelTier?`, `legacy_active_models_backup?`. DEFAULT_SETTINGS-Defaults: `[]`, `null`, `'mid'`.
+- **Routing-Modul (neu):** `src/core/routing/ModelTierClassifier.ts` (pure function, 49 Tests), `src/core/routing/ModelDiscoveryService.ts` (Wrapper + 24h-Cache, 9 Tests), `src/core/routing/README.md`.
+- **Plugin-Accessors:** `src/main.ts` -- `getActiveProvider`, `getTierModel(tier)`, `getAdvisorModel`, `providerConfigToCustomModel`; `getHelperModel` ist tier-aware erweitert; `initApiHandler` resolved via Tier mit Fallback auf `getActiveModel()`.
+- **Subagent-Profile:** `src/core/agent/subagent-profiles.ts` -- Interface um `tierOverride`+`maxOutputTokens` erweitert; RESEARCH bekommt `tierOverride: 'fast'`; neues ADVISOR_PROFILE mit `tierOverride: 'flagship'` + Hard-Cap 3000.
+- **AgentTask:** `src/core/AgentTask.ts` -- spawnSubtask baut tier-spezifischen API-Handler aus Profile; Per-Task-Advisor-Counter (`consumeAdvisorSlot`); Prompt-Cache-Rebuild bei Mistakes-Threshold; Cost-Log mode-Tag-Forwarding.
+- **ConsultFlagshipTool (neu):** `src/core/tools/agent/ConsultFlagshipTool.ts` (8 Tests). Registriert in `ToolRegistry.ts`, in `TOOL_METADATA`, in `TOOL_GROUP_MAP.agent`, in `ToolName`-Union. `ToolExecutionContext.consumeAdvisorSlot` + `ContextExtensions` durchgereicht.
+- **Filter:** `consult_flagship` wird aus dem Tool-Schema entfernt wenn `plugin.getAdvisorModel()` null liefert (Pre-Migration-State / Provider ohne flagship-Slot).
+- **System-Prompt:** `src/core/systemPrompt.ts` -- neue Conditional-Section unter CACHE_BREAKPOINT_MARKER (Advisor Hint) mit zwei Flags (`consultFlagshipReminderActive`, `consultFlagshipAvailable`). 5 neue systemPrompt-Tests.
+- **Cost-Log:** `TaskCallbacks.onUsage` um 6. Argument `routingMode` erweitert; `TaskMonitor.onUsage` schreibt `mode=<auto|override|advisor|subagent>` ins `[Cost]`-Log.
+- **Wayfinder:** `src/ARCHITECTURE.map` -- 5 neue Concept-Rows (model-tier-classifier, model-discovery, advisor-pattern, subagent-profiles, tier-resolution).
+
+### Deviations / Findings
+
+- **F-4 (Mid-course design, 2026-05-16):** Top-Level-Feld heißt `providerConfigs[]`, nicht `providers[]` -- der Legacy-Key war schon belegt durch `providers: Record<string, LLMProvider>`. Dokumentiert in PLAN-24 Change Log + Implementation Notes; ADR-122 Implementation-Notes-Section wird beim nächsten Architektur-Pass nachgezogen.
+- **TaskTelemetry.mode:** bestehendes Feld ist Agent-Mode (ask/agent). Routing-mode wird stattdessen über `routingMode`-Argument an `onUsage` + `[Cost]`-Log-Tag transportiert; das persistierte Telemetry-File bleibt unverändert. Provider-Adapter mussten nicht angefasst werden.
+- **OpenRouter-Pricing-Discovery:** der Production-Fetcher wird in PLAN-25 mit der Settings-UI angeflanscht (`fetchProviderModels` returnt heute nur `{ id, label }`). DiscoveryService akzeptiert über DI bereits einen `ModelFetcher`, der Pricing kennt -- Test-Coverage ist da, die echte Verdrahtung fehlt.
+
+### Offene Punkte für /testing
+
+- **Live-Smoke:** Sandbox-Vault mit zwei `providerConfigs[]`-Beispielen aufsetzen (anthropic + openrouter), `defaultMainModelTier='mid'`, manuell ein `consult_flagship` via Test-Prompt triggern. Erwartet: `[Cost]`-Log zeigt `mode=advisor` für den Subagent-Call.
+- **Integrationstest:** Spawn mit research-Profile (fast-Tier-Inheritance), Spawn mit advisor-Profile (flagship + 3000-Cap), Spawn ohne Profile (Parent-API-Inheritance). Unit-Tests existieren; ein integrierter AgentTask-Test wäre Welle-1-Confidence.
+- **Tool-Registration-Filter:** AgentTask-Test der bei leerem flagship-Slot bestätigt dass `consult_flagship` NICHT im Tool-Schema landet (Snapshot der `cachedTools`-Liste).
+- **Negative-Test:** Per-Task-Limit -- 4. consult_flagship-Call innerhalb derselben AgentTask muss `advisor budget exhausted` zurückgeben.
+
+### Open concerns / Annahmen
+
+- **Provider-Migration:** zur Welle-1-Auslieferung gibt es keine `providerConfigs[]`-Einträge. Alle Pfade fallen sauber auf das alte `activeModels[]`-Verhalten zurück (verifiziert via Tests R-B). Sebastian merkt nichts vom EPIC-26-Code bis PLAN-25 die Migration einschaltet.
+- **Cache-Invalidation bei Mistakes-Reminder:** Threshold-Übergang bei `consecutiveMistakes>=2` triggert genau einen Rebuild des System-Prompts. Der Reminder lebt unter dem Cache-Marker -- der stabile Prefix bleibt cached.
+- **Pre-existing Test-Failures:** 28 Tests waren vor Branch-Start rot (auf `main`: searchHistory folder-rename, deferredToolLoading-Ranking, WriterLock, GlobalFileService, migrateFolderRename, ResultExternalizer iCloud-EPERM, VaultHealthService, ExtractionQueue). NICHT durch EPIC-26 verursacht; in eigenem FIX-Block adressieren.
+
+### Empfehlung
+
+Phase Coding ist abgeschlossen. Next: `/testing` für die oben genannten Live- und Integrationstests, danach `/security-audit` (PLAN-24 hat keinen sicherheitskritischen Pfad geöffnet; ADR-120-Eskalationsmuster + ADR-115-Amendment sollten audit-frei sein).
