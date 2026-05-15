@@ -3,7 +3,7 @@
 > Single source of truth for state and the artifact relation graph.
 > Status fields live HERE, not in artifact frontmatter.
 
-Last update: 2026-05-12 by agent-loop-cost-refactoring (EPIC-24 Agent-Loop Effizienz angelegt: 6 FEAT + 5 FIX + 1 IMP skeletons; Quelle RESEARCH-36; Detail-Files folgen, Counts via /consistency-check zu verifizieren)
+Last update: 2026-05-15 by requirements-engineering (EPIC-26 Advisor-Pattern + Provider-only Setup + Auto-Discovery angelegt: 6 FEAT + Architect-Handoff; Quelle BA-27, QA-Session-Decisions in Issue #319; EPIC-27 in EPIC-26 absorbiert; Counts via /consistency-check zu verifizieren)
 
 ---
 
@@ -542,6 +542,25 @@ Verwandt: RESEARCH-36 (Diagnose + 3-Wege-Vergleich Claude Code / EnBW Cowork), N
 | FIX-24-06-01 | Fix | 06-01: Deferred-Tool-Execution-Guard fehlt -- Modell halluziniert update_settings/inspect_self ohne find_tool, Tool laeuft trotz fehlendem Schema, Agent rate Pfade und verbrennt Cost | Done | Building | FEAT-24-06, EPIC-24, ADR-118 | BUG |  |  | 2026-05-13 | P1 Erledigt 2026-05-13. Live entdeckt in MESSLAUF Test 2 Teil C: Agent rief 5x update_settings mit falschen Pfaden (permissions.autoApproveNoteEdits, approvals.noteEdits, ...) statt erst find_tool zu rufen. **Root cause:** Schema-Filter in AgentTask.ts:548 funktioniert (33 Schemas), aber Execution-Pipeline hatte keinen Aktivierungs-Guard -- LLM kann Namen aus Training/Recipe hallucinieren und Tool laeuft ohne Schema-Guidance. **Fix:** Guard in `runTool` direkt nach RepetitionDetector -- if isDeferredTool && !activatedDeferredTools.has -> tool_error mit `Call find_tool(...) first to discover and activate it.`. 1477 Tests gruen, lint 0 errors, tsc clean, build+deploy gruen. |
 | FIX-24-06-02 | Fix | 06-02: MemorySourceStore wird nie initialisiert -- Init-Order-Bug in main.ts (Check bei Z.600 prueft memoryDB, das erst bei Z.1100 geoffnet wird) | Done | Building | FEAT-24-06, EPIC-24 | BUG |  |  | 2026-05-13 | P1 Erledigt 2026-05-13 + live verifiziert via MESSLAUF Test 2 Teil D Re-Verify: `list_memory_source_notes({})` antwortet jetzt "No notes registered as memory-source yet." statt Fehler. **Root cause:** memorySourceStore-Init in main.ts:600 prueft `this.memoryDB?.isOpen()`, aber memoryDB wird erst in main.ts:1101 erzeugt -- 500 Zeilen spaeter. Folge: Conditional immer false, Store fuer immer null, alle 3 Memory-Source-Tools (list/mark/unmark) tot. Wahrscheinlich Refactoring-Artefakt. **Fix:** Second-Pass-Init direkt nach memoryDB.open() in main.ts:1110 -- if memoryDB.isOpen() && !memorySourceStore -> init now. **Bewusst out-of-scope:** memorySourceHook (Bridge zur ExtractionQueue) bleibt unbenutzt -- separater Plumbing-Bug. List/Mark/Unmark-Tools sind unblocked. 1477 Tests gruen, lint 0 errors, tsc clean, build+deploy gruen. |
 | FIX-24-06-03 | Fix | 06-03: read_mcp_tool fehlt in TOOL_GROUP_MAP -- Tool registriert aber nicht im Schema; Modell routet Calls faelschlich via use_mcp_tool an den MCP-Server | Done | Building | FEAT-24-06, EPIC-24, ADR-118 | BUG |  |  | 2026-05-13 | P1 Erledigt 2026-05-13. Live entdeckt in MESSLAUF Test 2 Teil B Re-Verify: Modell rief `use_mcp_tool({tool_name:"read_mcp_tool", ...})` statt direkt `read_mcp_tool` -> icons8-Server antwortet "Unknown tool: read_mcp_tool". **Root cause:** wie BUG-021 / FIX-19-28 -- bei FEAT-24-06 /coding wurde ReadMcpToolTool in ToolRegistry registriert aber Eintrag in `TOOL_GROUP_MAP.mcp` (builtinModes.ts:31) vergessen. Memory zum Pattern existiert (feedback_tool_group_drift.md), wurde beim /coding nicht geprueft. **Fix:** read_mcp_tool zur mcp-Gruppe + Coverage-Test-Eintrag in builtinModes.coverage.test.ts. **Followup:** find_tool/read_skill sind im gleichen Zustand aber klappen per Hallucination (fragil) -- eigenes FIX-Item, nicht hier. 1478 Tests gruen (+1), tsc clean, build+deploy gruen. |
+
+### EPIC-26: Advisor-Pattern + Provider-only Setup + Auto-Discovery
+
+Source: `_devprocess/requirements/epics/EPIC-26-advisor-pattern-provider-setup.md`
+BA: `_devprocess/analysis/BA-27-advisor-pattern-provider-setup.md`
+Handoff: `_devprocess/requirements/handoff/architect-handoff-epic26.md`
+Issue: https://github.com/pssah4/vault-operator-dev/issues/319
+Phase: RE | Status: Active
+Absorbiert: EPIC-27 (Provider-only Setup) am 2026-05-15 in EPIC-26 absorbiert. EPIC-27-Issue #320 geschlossen mit Merge-Hinweis.
+Verwandt: Nachfolger von EPIC-24 (Agent-Loop Effizienz, v2.7.3..v2.10.x). Adressiert das in BA-12 nicht gedeckte "complex-text"-Plateau plus Provider-Setup-Vereinfachung. Cowork-Architektur-Analyse als Referenz.
+
+| ID | Type | Title | Status | Phase | Refs | Source | Commit | Claim | Last change | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|
+| FEAT-26-01 | Feature | Advisor-Pattern Engine (`consult_flagship`-Tool, Eskalations-Mechanik, Per-Task-Limit 3) | Planned | Building | EPIC-26, BA-27 | BA-27 |  |  | 2026-05-15 | P0 Welle 1; depends-on FEAT-26-02. Hauptloop auf mid-Tier, on-demand-Eskalation via Tool. Cowork-Pattern adaptiert. Validation H-03 in Beta. |
+| FEAT-26-02 | Feature | Tier-Klassifikator + Discovery-Service (Pattern + Capability, 24h-Cache, OpenRouter-Pricing-Sonderpfad) | Planned | Building | EPIC-26, BA-27 | BA-27 |  |  | 2026-05-15 | P0 Welle 1; keine Dependencies. Erweitert bestehenden `fetchProviderModels()` um Caching + Klassifikator. Validation H-02 vor Release. |
+| FEAT-26-03 | Feature | Provider-only Settings UI (Provider-zentrierte Pflege, Tier-Mapping mit Auto+Override) | Planned | Building | EPIC-26, BA-27 | BA-27 |  |  | 2026-05-15 | P0 Welle 2; depends-on FEAT-26-02. Settings-Tab Refactor "Models" -> "Providers". Validation H-04 in Beta (≤1 Min Setup-Time). |
+| FEAT-26-04 | Feature | Migration und Backwards-Compat (Auto-Migrate activeModels[] zu providers[], Notification-Modal, 30-Tage-Backup) | Planned | Building | EPIC-26, BA-27 | BA-27 |  |  | 2026-05-15 | P0 Welle 2; depends-on FEAT-26-02 + FEAT-26-03. Validation H-05 gegen Sebastians eigenes Multi-Provider-Setup. |
+| FEAT-26-05 | Feature | Chat-Model-Dropdown-Refactor (Auto + Provider-Modelle als Override pro Turn) | Planned | Building | EPIC-26, BA-27 | BA-27 |  |  | 2026-05-15 | P0 Welle 2; depends-on FEAT-26-01 + FEAT-26-02 + FEAT-26-03. Validation H-06 in Beta. |
+| FEAT-26-06 | Feature | Prompt-Slim (cost-heuristics konditional, plugin-skills konditional, tool-routing schlanker) | Planned | Building | EPIC-26, BA-27 | BA-27 |  |  | 2026-05-15 | P2 Welle 3; unabhaengig von 26-01..05. ~30% System-Prompt-Reduktion fuer Standard-Auto-Sessions. |
 
 ## Cross-cutting (ADRs, Plans, no Epic)
 

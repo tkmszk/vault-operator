@@ -3012,3 +3012,64 @@ Wie koennen wir den Hauptloop von Vault Operator auf einem schlankeren Modell la
 - User Stories aus den JTBDs ableiten (JTBD-1 bis JTBD-6 in BA Sektion 4.4)
 - Prioritaeten setzen (P0/P1/P2)
 
+
+---
+
+## EPIC-26 -- /requirements-engineering (2026-05-15)
+
+triage: EPIC-26
+triage_kind: epic
+epic: EPIC-26
+
+Branch: `feature/cost-reduction-wave-2` (Sammelbranch). Artefakte:
+- Epic-Spec: [EPIC-26-advisor-pattern-provider-setup.md](../requirements/epics/EPIC-26-advisor-pattern-provider-setup.md)
+- Feature-Specs: [FEAT-26-01](../requirements/features/FEAT-26-01-advisor-pattern-engine.md), [02](../requirements/features/FEAT-26-02-tier-klassifikator-discovery.md), [03](../requirements/features/FEAT-26-03-provider-only-settings-ui.md), [04](../requirements/features/FEAT-26-04-migration-backwards-compat.md), [05](../requirements/features/FEAT-26-05-chat-model-dropdown.md), [06](../requirements/features/FEAT-26-06-prompt-slim.md)
+- Architect-Handoff: [architect-handoff-epic26.md](../requirements/handoff/architect-handoff-epic26.md)
+- BACKLOG: 6 neue FEAT-Rows, EPIC-26-Sektion ergaenzt
+
+### NFR-Summary
+
+- **Performance:** Eskalations-Call ≤3000 Tokens (Subtask-Pattern), Per-Turn-API-Handler-Resolution ≤50ms, Discovery-Timeout 10s/Provider, Cache-Hit-Rate ≥95 %
+- **Security:** OAuth-Flows unveraendert, Schema-Migration mit Version, Tool-Schema-Validation provider-seitig
+- **Scalability:** ~20-30 Modell-Familien im Klassifikator, 10 Provider supported
+- **Availability:** Fail-Safe bei API-Errors, Migration-Fehler erhalten alten State, Eskalations-Fehler ohne Hauptloop-Crash
+- **Cost:** Per-Task-Counter (max 3 Eskalations-Calls), Cost-Log mit mode-Field, System-Prompt ≥30 % kleiner
+
+### Critical ASRs (jeweils ADR-Bedarf)
+
+- **ASR-CRIT-EPIC-26-01:** Advisor-Pattern-Architektur (statt 3-Tier-Routing) -> ADR-XXX
+- **ASR-CRIT-EPIC-26-02:** Tier-Klassifikator-Strategie (Pattern + Capability + OpenRouter-Pricing) -> ADR-XXX
+- **ASR-CRIT-EPIC-26-03:** Provider-only Settings-Architektur (Schema-Wechsel activeModels -> providers) -> ADR-XXX
+- **ASR-CRIT-EPIC-26-04:** Migrations-Strategie + Backup-Pfad -> ADR-XXX
+- **ASR-CRIT-EPIC-26-05:** ADR-115 Amendment (Helper-Modell-Routing erweitert um Tier-Semantik)
+
+### Offene Architektur-Fragen (an Architect)
+
+1. Subtask-Tier-Inheritance: erbt new_task das Parent-Tier? Recursive-Subtask + Profile-Conflict klaeren
+2. `helperModelKey` vs neue Tier-Settings: erhalten oder ersetzen?
+3. OAuth-Provider-Listing-Endpunkte: Copilot + ChatGPT-Sub haben provider-spezifische Schema-Parser
+4. Bedrock Cross-Region-Inference-Profile (`eu.anthropic...`): Normalisierung im Klassifikator-Pfad
+5. Refresh-Trigger: Manual-only oder Auto-bei-Settings-Open / Auto-bei-Stale-Send?
+6. Notification-Modal-Inhalt nach Migration: konkrete Felder
+7. Cost-Log-Schema-Erweiterung (mode-Field) in `TaskTelemetry.ts` Provider-Adapter-konform
+8. Embedding-Modell-Pfad bleibt separat, Konflikt-frei zu Chat-Modell-Pfad
+
+### Constraints (an Architect)
+
+- ReAct-Loop-Kern unveraendert
+- EPIC-24-Mechaniken (Cache-Marker, Microcompaction, Externalizer, MCP-Listing-Cap) bleiben
+- 24h-Cache fuer Discovery, kein Background-Refresh
+- Migration darf bestehende Setups nicht zerstoeren
+- 10 Provider-Types supported, alle Auth-Mechaniken erhalten
+- Release als v2.11.0 mit BRAT-Beta-Phase
+
+### Forbidden-Terms-Check
+
+Success Criteria der FEATs sind primaer user-facing formuliert. Technische Begriffe (`Tool-Schema`, `Cache-Prefix`, `CACHE_BREAKPOINT_MARKER`) sind in NFR/ASR/Description, nicht in SC. Keine OAuth/REST/SQL-Terms in den SC. Akzeptabler Rahmen fuer ein technisches Plugin-Feature.
+
+### Was /architecture jetzt tut
+
+- 5 ADRs entwerfen (ASR-CRIT-EPIC-26-01..05) plus ggf. Moderate-ASRs
+- arc42 Snapshot aktualisieren (Section "Modell-Routing", "Provider-Settings", "Migrations-Strategie")
+- plan-context.md erstellen, damit /coding die Implementierung starten kann
+- Architecture-Refinement-Dialog im architect-handoff-epic26.md (Append-only)
