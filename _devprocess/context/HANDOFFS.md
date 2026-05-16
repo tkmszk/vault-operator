@@ -3454,3 +3454,54 @@ EPIC-26 ist komplett auf Status Review. Audit-relevante neue Pfade:
 
 Keine offenen Privacy- oder Code-Injection-Vektoren erkannt. Audit kann sich auf die bestehenden Welle-1-Pfade (ConsultFlagshipTool-Spawn) konzentrieren; Welle 2+3 sind Backend-additive UI-Refactors.
 
+---
+
+## EPIC-26 -- /security-audit (Phase 6, 2026-05-16)
+
+triage: EPIC-26 / AUDIT-027
+triage_kind: audit
+epic: EPIC-26
+
+Branch: `feature/cost-reduction-wave-2`. Pair-id: sebastian-claude-opus-4-7.
+
+### Audit-Verdict: Green (H-1 in diesem Pass resolved)
+
+Report: `_devprocess/analysis/AUDIT-027-epic-26-2026-05-16.md`
+
+### Findings-Summary
+
+- **H-1 (RESOLVED in dieser Session):** providerConfigs[] und legacy_active_models_backup speicherten Credentials im Klartext (CWE-312). encryptSettingsForSave / decryptSettings hatten die neuen Arrays nicht im Switchboard. Fix:
+  - Pure-function-Walker `encryptProviderCredentialsInPlace` / `decryptProviderCredentialsInPlace` in `src/core/security/providerCredentialCrypto.ts` extrahiert
+  - main.ts delegiert; inline-Listen sind weg
+  - 11 Regression-Tests inkl. **Contract-Test** der die Credential-Key-Liste lockt → wenn jemand ein neues Secret-Feld in ProviderConfig oder CustomModel hinzufügt und den Walker vergisst, schlägt der Test fehl
+  - BACKLOG: FIX-26-04-01 als Done eingetragen
+- **L-1 (DEFERRED to IMP-26-04-01):** Multi-Auth-Provider-ID nutzt 8 Zeichen des API-Keys als Discriminator. Cosmetic, kein Exploit-Pfad. Sebastians Setup ist single-auth, Risiko = 0.
+- **I-1 (intentional):** ConsultFlagshipTool input-trust-boundary dokumentiert. Char-Limits + Read-only-Profile + Per-Task-Budget = ausreichend.
+- **I-2 (intentional):** Provider-API-Response-Trust dokumentiert. createSpan({text}) / setText sinks sind text-only → kein XSS.
+
+### Verifikation (in dieser Message)
+
+- `npm audit --omit=dev`: 0 critical / 0 high / 0 moderate / 0 low über 398 production deps
+- `npx tsc --noEmit`: clean
+- 11 neue Regression-Tests in providerCredentialCrypto.test.ts grün
+- `npm run build`: clean, main.js 4.3 MB, deployed
+
+### Sicherheits-positive Befunde
+
+- DOM-Rendering konsistent text-only (kein innerHTML in der EPIC-26-Surface)
+- Kein eval / new Function / require / raw fetch im neuen Code
+- Migration non-destructive + idempotent (legacy_active_models_backup + double-guard schemaVersion + nicht-leer providerConfigs)
+- ConsultFlagshipTool defends multi-layer (schema char-limits + per-task budget 3 + advisor read-only allowlist + 3000-Token-Cap + tool-schema-filter wenn no flagship)
+- Tier resolution rein pure (extracted aus main.ts, side-effect-free)
+
+### Release-Readiness: Green
+
+EPIC-26 ist auditiert + freigegeben für die Beta-Distribution. Empfehlung:
+
+- /release oder /dia-orchestrator Phase 7 für die Release-Closure (CHANGELOG-Update, Version-Bump, Public-Sync)
+- Open-Items für die nächste Audit-Runde:
+  - Verify after-fix: nach nächstem Plugin-Reload prüfen ob in data.json alle providerConfigs[i].apiKey + AWS-Felder den SafeStorage-Encrypt-Prefix tragen
+  - IMP-26-04-01 (Multi-Auth Discriminator) bei nächstem Migration-Touch
+  - OAuth-Sign-In-Inline-Implementation als Folge-Pass wenn Welle-2-Stub ersetzt wird
+
+

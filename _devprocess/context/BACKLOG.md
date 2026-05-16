@@ -3,7 +3,7 @@
 > Single source of truth for state and the artifact relation graph.
 > Status fields live HERE, not in artifact frontmatter.
 
-Last update: 2026-05-16 by testing (EPIC-26 Welle 2+3 getestet: 1623/1651 Tests grün (+19 vs. /coding); 28 pre-existing failures unverändert; UX-Rework abgeschlossen: ProvidersTab im model-table-Layout, ProviderDetailModal mit Save/Cancel + Provider-Type-Dropdown + Auto-Discovery nach Save, Brand-Label-Migration, Tier-Badges Budget/Premium/Frontier, ChatModelPicker mit Search, Mode-Switcher-Removal, Prompt-Slim. Bereit für /security-audit.)
+Last update: 2026-05-16 by security-audit (AUDIT-027 EPIC-26 Delta: 1 High resolved (Plaintext-Credentials in providerConfigs[] + legacy_active_models_backup -- CWE-312, gefixt via providerCredentialCrypto-Walker mit 11 Regression-Tests), 1 Low deferred zu IMP-26-04-01, 2 Info. npm audit clean. Release-Verdict: Green.)
 
 ---
 
@@ -561,6 +561,8 @@ Verwandt: Nachfolger von EPIC-24 (Agent-Loop Effizienz, v2.7.3..v2.10.x). Adress
 | FEAT-26-04 | Feature | Migration und Backwards-Compat (Auto-Migrate activeModels[] zu providers[], Notification-Modal, 30-Tage-Backup) | Review | Building | EPIC-26, BA-27, PLAN-25 | BA-27 | sebastian-claude-opus-4-7 | 2026-05-15 | 2026-05-16 | P0 Welle 2 -- Migration + MigrationNotificationModal via PLAN-25 implementiert. legacy_active_models_backup in data.json persistiert. Restore-Legacy-Action via data.json statt UI. Validation H-05 in Beta. |
 | FEAT-26-05 | Feature | Chat-Model-Dropdown-Refactor (Auto + Provider-Modelle als Override pro Turn) plus Mode-Switcher-Removal aus Chat-Header | Review | Building | EPIC-26, BA-27, PLAN-26 | BA-27 | sebastian-claude-opus-4-7 | 2026-05-15 | 2026-05-16 | P0 Welle 3 -- Chat-Dropdown mit Auto + Provider-Modelle + Per-Turn-Override via PLAN-26 implementiert; consult_flagship-Filter bei Override; Mode-Switcher-Button entfernt. 10 Dropdown-Tests + 6 systemPrompt-Tests grün. Validation H-06 in Beta. |
 | FEAT-26-06 | Feature | Prompt-Slim (cost-heuristics konditional, plugin-skills konditional, tool-routing schlanker) | Review | Building | EPIC-26, BA-27, PLAN-26 | BA-27 | sebastian-claude-opus-4-7 | 2026-05-15 | 2026-05-16 | P2 Welle 3 -- Lean-Varianten von cost-heuristics + plugin-skills implementiert; AgentTask trackt recentPluginSkillUsage. Erwartete Prompt-Reduktion ~32% bei Standard-Auto-Sessions (Live-Validation Beta). tool-routing-Slim deferred (separater IMP). |
+| FIX-26-04-01 | Fix | AUDIT-027 H-1: providerConfigs[] + legacy_active_models_backup credentials wurden im Klartext in data.json persistiert (CWE-312) | Done | Building | FEAT-26-04, EPIC-26, AUDIT-027 | SEC | sebastian-claude-opus-4-7 | 2026-05-16 | 2026-05-16 | P1 resolved in /security-audit-Pass. Walker `encryptProviderCredentialsInPlace` / `decryptProviderCredentialsInPlace` in `src/core/security/providerCredentialCrypto.ts` extrahiert + 11 Regression-Tests inkl. Contract-Test gegen Drift bei neuen Credential-Feldern. main.ts encryptSettingsForSave + decryptSettings delegieren jetzt. |
+| IMP-26-04-01 | Improvement | AUDIT-027 L-1: Multi-Auth Provider-Instance-ID nutzt erste 8 Zeichen des API-Keys als Discriminator -- defensiv ersetzen durch Counter-Suffix | Backlog | Planned | FEAT-26-04, EPIC-26, AUDIT-027 | SEC |  | 2026-05-16 | 2026-05-16 | P3 deferred -- Cosmetic, kein Exploit-Pfad. Sebastians Setup ist single-auth pro Provider; Finding ist defensive Hygiene. Fix: ${type}-2/${type}-3 Counter statt apiKey-Prefix. |
 
 ## Cross-cutting (ADRs, Plans, no Epic)
 
