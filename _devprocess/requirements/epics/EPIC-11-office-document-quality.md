@@ -113,28 +113,27 @@ Template.pptx (beliebig)
 | **Gestalt-Prinzipien** | Proximity, Similarity, Closure als Layout-Constraints |
 | **Andrew Abela** | Chart Chooser Framework |
 
-## MVP Features
-
+## MVP Scope (Features)
 ### Phase 1: Implementiert (Basis-Infrastruktur)
 
-| Feature ID | Name | Priority | Effort | Status |
-|------------|------|----------|--------|--------|
-| FEAT-11-00 | Template-Engine (JSZip + OOXML) | P0 | L | **Implementiert** |
-| FEAT-11-01 | Default-Templates (HTML-Pipeline) | P0 | M | **Teilweise** |
-| FEAT-11-02 | Pre-Creation Dialog & Template-Upload | P0 | S | **Implementiert** |
-| FEAT-11-10 | Shape-Name-Matching (S0) | P0 | S | **Implementiert** |
+| Feature ID | Name | Priority | Effort |
+|------------|------|----------|--------|
+| FEAT-11-00 | Template-Engine (JSZip + OOXML) | P0 | L |
+| FEAT-11-01 | Default-Templates (HTML-Pipeline) | P0 | M |
+| FEAT-11-02 | Pre-Creation Dialog & Template-Upload | P0 | S |
+| FEAT-11-10 | Shape-Name-Matching (S0) | P0 | S |
 
 ### Phase 2: Template Design Intelligence (neuer Fokus)
 
-| Feature ID | Name | Priority | Effort | Status |
-|------------|------|----------|--------|--------|
-| FEAT-11-05 | Universelle Design-Prinzipien (Skill-Erweiterung) | P0 | M | **Implementiert** |
-| FEAT-11-11 | Visual Design Language Document (Skill-Format) | P0 | M | **Implementiert** |
-| FEAT-11-08 | In-Plugin Template-Analyzer (Spatial Analysis) | P1 | M | **Ersetzt durch FEAT-11-15** |
-| FEAT-11-15 | Visual Intelligence (Agent-Analyse + LibreOffice Rendering) | P0 | L | **Implementiert** |
-| FEAT-11-12 | Multimodaler Template-Analyzer (Cloud Run Backend) | P2 | L | **Ersetzt durch Agent-Analyse** |
-| FEAT-11-13 | Template-Analyzer Web-Frontend (pssah4.github.io/vault-operator) | P2 | M | **Zurueckgestellt** |
-| FEAT-11-14 | Template Gallery (Community) | P2 | S | **Zurueckgestellt** |
+| Feature ID | Name | Priority | Effort |
+|------------|------|----------|--------|
+| FEAT-11-05 | Universelle Design-Prinzipien (Skill-Erweiterung) | P0 | M |
+| FEAT-11-11 | Visual Design Language Document (Skill-Format) | P0 | M |
+| FEAT-11-08 | In-Plugin Template-Analyzer (Spatial Analysis) | P1 | M |
+| FEAT-11-15 | Visual Intelligence (Agent-Analyse + LibreOffice Rendering) | P0 | L |
+| FEAT-11-12 | Multimodaler Template-Analyzer (Cloud Run Backend) | P2 | L |
+| FEAT-11-13 | Template-Analyzer Web-Frontend (pssah4.github.io/vault-operator) | P2 | M |
+| FEAT-11-14 | Template Gallery (Community) | P2 | S |
 
 **Effort:** S (1-2 Tage), M (3-5 Tage), L (1-2 Wochen)
 

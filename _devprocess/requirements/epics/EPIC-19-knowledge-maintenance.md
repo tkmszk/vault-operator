@@ -44,18 +44,17 @@ Was fehlt ist der Schritt vom passiven Index zum aktiven Wissens-Pfleger:
 - **Synthese-Button-Nutzung**: Wie oft werden Chat-Synthesen als Zettel gespeichert?
 - **OCR-Nutzung**: Wie viele PDFs werden via OCR konvertiert?
 
-## MVP Features
-
-| Feature ID | Name | Typ | Priority | Effort | Status |
-|------------|------|-----|----------|--------|--------|
-| FEAT-19-00 | Knowledge Ingest Skill | Skill | P0 | M | Implementiert (`bundled-skills/knowledge-ingest/SKILL.md`, 269 Zeilen) |
-| FEAT-19-01 | Vault Health Check (Lint) | Feature (Toggle) | P0 | M | Implementiert (VaultHealthCheckTool, VaultHealthService, VaultHealthRepairModal) |
-| FEAT-19-02 | Knowledge Ontologie | Infrastruktur | P0 | M | Teilweise (OntologyStore.ts implementiert, ADR-65) |
-| FEAT-19-03 | Template-Onboarding | Einmalig | P1 | S | Geplant |
-| FEAT-19-04 | Synthese → Zettel | UI-Button (Toggle) | P1 | S | Implementiert (AgentSidebarView synthesisZettel-Button, Setting `enableSynthesisButton`) |
-| FEAT-19-05 | OCR-Integration | Sub-Feature (Toggle) | P1 | M | Implementiert (text-extractor Fallback, ADR-68) |
-| FEAT-19-06 | Attachment-Batch-Umbenennung | Skill | P1 | S | Implementiert (`bundled-skills/knowledge-rename/SKILL.md`) |
-| FEAT-19-07 | Chat UI Polish | UI-Fix | P2 | S | Geplant |
+## MVP Scope (Features)
+| Feature ID | Name | Typ | Priority | Effort |
+|------------|------|-----|----------|--------|
+| FEAT-19-00 | Knowledge Ingest Skill | Skill | P0 | M |
+| FEAT-19-01 | Vault Health Check (Lint) | Feature (Toggle) | P0 | M |
+| FEAT-19-02 | Knowledge Ontologie | Infrastruktur | P0 | M |
+| FEAT-19-03 | Template-Onboarding | Einmalig | P1 | S |
+| FEAT-19-04 | Synthese → Zettel | UI-Button (Toggle) | P1 | S |
+| FEAT-19-05 | OCR-Integration | Sub-Feature (Toggle) | P1 | M |
+| FEAT-19-06 | Attachment-Batch-Umbenennung | Skill | P1 | S |
+| FEAT-19-07 | Chat UI Polish | UI-Fix | P2 | S |
 
 **Priority:** P0-Critical, P1-High, P2-Medium
 **Effort:** S (1-2 Sprints), M (3-5 Sprints), L (6+ Sprints)

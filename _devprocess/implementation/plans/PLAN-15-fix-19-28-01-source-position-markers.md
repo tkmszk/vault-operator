@@ -190,7 +190,7 @@ In `DeepIngestPipeline.run()`:
 4. `OutputModeGenerator.writeSourceNote` ruft intern `markBlockIds` ->
    liefert `anchorToBlockId`-Map. Diese Map muss aus der writer-Methode
    nach aussen gegeben werden -- bisher wird sie verworfen
-   ([OutputModeGenerator.ts:119](src/core/ingest/OutputModeGenerator.ts#L119)).
+   ([OutputModeGenerator.ts:119](../../../src/core/ingest/OutputModeGenerator.ts#L119)).
 5. Annotator (2.3) baut Sense-Making-Body mit der Map.
 
 `OutputModeGenerator.writeSourceNote` erweitern um Rueckgabe-Wert:

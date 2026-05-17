@@ -23,10 +23,10 @@ keep changes minimal and verifiable.
 
 | ID | Symptom | Layer | Epic (proposed) | Priority |
 |----|---------|-------|-----------------|----------|
-| [BUG-019](BUG-019-drag-drop-from-vault-explorer.md) | Drag from file explorer into chat opens the file in a new tab instead of attaching | UI / sidebar | EPIC-04 (Chat UX) | P1 |
-| [BUG-020](BUG-020-read-file-externalized-tmp.md) | `read_file` cannot open externalised tool results in `.obsidian-agent/tmp/` | Tool pipeline | EPIC-18 (Token-Kostenreduktion / ADR-63) | P1 |
-| [BUG-021](BUG-021-missing-tools-in-builtin-modes.md) | `vault_health_check` not in the vault group, `ingest_document` not in the edit group of `builtinModes.ts` | Mode config | EPIC-19 (Knowledge Maintenance) | P2 |
-| [BUG-022](BUG-022-sandbox-integrity-hashes-and-root-listing.md) | Pinned esbuild-wasm SHA-256 hashes no longer match the CDN; `vaultList('/')` throws because `getAbstractFileByPath('/')` returns null | Sandbox | EPIC-05 (Sandbox) | P1 |
+| [BUG-019](../requirements/fixes/FIX-01-12-01-drag-drop-from-vault-explorer.md) | Drag from file explorer into chat opens the file in a new tab instead of attaching | UI / sidebar | EPIC-04 (Chat UX) | P1 |
+| [BUG-020](../requirements/fixes/FIX-18-03-03-externalize-cleanup-eperm-icloud.md) | `read_file` cannot open externalised tool results in `.obsidian-agent/tmp/` | Tool pipeline | EPIC-18 (Token-Kostenreduktion / ADR-63) | P1 |
+| [BUG-021](../requirements/fixes/FIX-19-01-01-missing-tools-in-builtin-modes.md) | `vault_health_check` not in the vault group, `ingest_document` not in the edit group of `builtinModes.ts` | Mode config | EPIC-19 (Knowledge Maintenance) | P2 |
+| [BUG-022](../requirements/fixes/FIX-05-02-03-sandbox-vault-list-trailing-slash.md) | Pinned esbuild-wasm SHA-256 hashes no longer match the CDN; `vaultList('/')` throws because `getAbstractFileByPath('/')` returns null | Sandbox | EPIC-05 (Sandbox) | P1 |
 
 All four fixes are already authored by the reporter and visible in the
 upstream branch. Our job is to review, validate against our codebase,

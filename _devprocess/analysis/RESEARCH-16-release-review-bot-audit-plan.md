@@ -51,7 +51,7 @@ Die Bot-Funde im PR lagen vor allem in diesen Gruppen:
 
 ### 2.3 Was davon spaeter bewusst nicht gefixt wurde
 
-Der dokumentierte `/skip`-Rest in [REVIEW-001-bot-skip-list.md](_devprocess/analysis/REVIEW-001-bot-skip-list.md) bestand aus sieben begruendeten Klassen:
+Der damals geplante `REVIEW-001-bot-skip-list.md` (nie als eigene Datei angelegt) sollte sieben begruendete `/skip`-Klassen tragen:
 
 1. `async`-Methoden ohne `await`, wenn ein Interface- oder Lifecycle-Contract `Promise<T>` verlangt
 2. `SSEClientTransport` als notwendiger Legacy-Fallback im MCP-Client
@@ -67,7 +67,7 @@ Wichtig: Diese Liste ist kein Freifahrtschein. Sie ist nur gueltig, wenn die akt
 
 ## 3. Wie die frueheren Probleme beseitigt wurden
 
-Die frueheren Fixes sind bereits in [TECH-011-review-bot-compliance.md](_devprocess/implementation/TECH-011-review-bot-compliance.md) und [IMPL-001-review-bot-fixes.md](_devprocess/implementation/IMPL-001-review-bot-fixes.md) dokumentiert. Die wichtigsten erfolgreichen Muster waren:
+Die frueheren Fixes wurden in den Releases v2.x landed; eigenstaendige `TECH-011-review-bot-compliance.md` und `IMPL-001-review-bot-fixes.md` waren geplant, wurden aber nicht als separate Dateien angelegt. Eintraege leben in den jeweiligen Release-PRs und in `memory/review-bot-compliance.md` (in der Claude-Auto-Memory; im Projekt selber liegt die abgekuerzte Variante in `CLAUDE.md` -- Abschnitt "Obsidian Community Plugin Review-Bot Rules"). Die wichtigsten erfolgreichen Muster waren:
 
 ### 3.1 Mechanische Massenfixes
 
@@ -135,7 +135,7 @@ Die direkt Review-Bot-relevanten Treffer sitzen aktuell vor allem hier:
 
 ### 4.3 Delta zur frueheren sauberen Lage
 
-Die historische Aussage in [AUDIT-003-obsilo-2026-03-06.md](_devprocess/analysis/AUDIT-003-obsilo-2026-03-06.md), dass Review-Bot-Compliance vollstaendig bestanden sei, ist fuer die heutige Codebasis nicht mehr belastbar. Seitdem sind neue Office-, PPTX-, UI-, Security- und Provider-Aenderungen hinzugekommen. Der aktuelle Lint-Lauf zeigt klar, dass die Codebase wieder neu geprueft werden muss.
+Die historische Aussage in [AUDIT-003-obsilo-2026-03-06.md](AUDIT-003-obsilo-2026-03-06.md), dass Review-Bot-Compliance vollstaendig bestanden sei, ist fuer die heutige Codebasis nicht mehr belastbar. Seitdem sind neue Office-, PPTX-, UI-, Security- und Provider-Aenderungen hinzugekommen. Der aktuelle Lint-Lauf zeigt klar, dass die Codebase wieder neu geprueft werden muss.
 
 ---
 
@@ -175,8 +175,8 @@ Ziel: historische und aktuelle Regeln in einer belastbaren Baseline zusammenzieh
 Schritte:
 
 1. PR #10565 als Referenzbestand vollständig in Kategorien zerlegen: fixbar, skipbar, extern.
-2. [TECH-011-review-bot-compliance.md](_devprocess/implementation/TECH-011-review-bot-compliance.md) als Fix-Pattern-Katalog verwenden.
-3. [REVIEW-001-bot-skip-list.md](_devprocess/analysis/REVIEW-001-bot-skip-list.md) in eine aktuelle “nur wenn weiterhin technisch notwendig”-Skip-Matrix ueberfuehren.
+2. Den dokumentierten Fix-Pattern-Katalog aus `memory/review-bot-compliance.md` (in der Claude-Auto-Memory; im Projekt selber liegt die abgekuerzte Variante in `CLAUDE.md` -- Abschnitt "Obsidian Community Plugin Review-Bot Rules") verwenden (urspruenglich als `TECH-011-review-bot-compliance.md` geplant, nicht separat angelegt).
+3. Die aktiven `/skip`-Anweisungen in eine aktuelle "nur wenn weiterhin technisch notwendig"-Skip-Matrix ueberfuehren (urspruenglich als `REVIEW-001-bot-skip-list.md` geplant, nicht als separate Datei materialisiert).
 4. Eine aktuelle Release-Checkliste definieren, die nicht nur historische Regeln wiederholt, sondern neue Feature-Flaechen explizit mit abdeckt.
 
 Ergebnis:
@@ -336,8 +336,8 @@ Ergebnis:
 
 ## 10. Referenzen
 
-- [TECH-011-review-bot-compliance.md](_devprocess/implementation/TECH-011-review-bot-compliance.md)
-- [IMPL-001-review-bot-fixes.md](_devprocess/implementation/IMPL-001-review-bot-fixes.md)
-- [REVIEW-001-bot-skip-list.md](_devprocess/analysis/REVIEW-001-bot-skip-list.md)
-- [AUDIT-003-obsilo-2026-03-06.md](_devprocess/analysis/AUDIT-003-obsilo-2026-03-06.md)
+- `memory/review-bot-compliance.md` (in der Claude-Auto-Memory; im Projekt selber liegt die abgekuerzte Variante in `CLAUDE.md` -- Abschnitt "Obsidian Community Plugin Review-Bot Rules") (Aktive Fix-Pattern-Referenz; urspruenglich als `TECH-011-review-bot-compliance.md` geplant)
+- `IMPL-001-review-bot-fixes.md` (geplant, nicht angelegt; Fixes in Release-PRs der jeweiligen v2.x-Wellen dokumentiert)
+- `REVIEW-001-bot-skip-list.md` (geplant, nicht angelegt; aktuelle Skips im Source-Code per `eslint-disable -- reason`)
+- [AUDIT-003-obsilo-2026-03-06.md](AUDIT-003-obsilo-2026-03-06.md)
 - PR: `https://github.com/obsidianmd/obsidian-releases/pull/10565`

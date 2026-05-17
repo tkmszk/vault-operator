@@ -87,3 +87,31 @@ Vollstaendige Referenz: `memory/review-bot-compliance.md`.
 Fuer "wo lebt X?"-Fragen: `grep "<concept>" src/ARCHITECTURE.map` und
 dann den JSDoc-Header der Entry-Point-Datei lesen. Diese Datei hier
 listet Regeln, nicht Pfade.
+
+## Markdown-Link-Konvention (`_devprocess/`)
+
+- Cross-Doc-Links zwischen Markdown-Dateien sind **datei-relativ**
+  (CommonMark): aus `_devprocess/analysis/X.md` zu einer ADR via
+  `[..](../architecture/ADR-NN-...md)`, zu einem Sibling via
+  `[..](Y.md)`.
+- Quellcode-Verweise sind **datei-relativ** (aus
+  `_devprocess/analysis/X.md` zu einer Code-Datei via
+  `[ToolRegistry.ts:42](../../src/core/tools/ToolRegistry.ts#L42)`).
+  Workspace-relative Schreibweise (`src/core/...` ohne `../../`) ist
+  Drift; CommonMark resolved sie nicht und die DIA-Linkpruefung
+  meldet sie als Dead-Link. Konvertierung mechanisch moeglich
+  (siehe Hygiene-Lauf 2026-05-17).
+- Bei `_devprocess/`-internen Links **immer datei-relativ**
+  (`../requirements/...`, nicht `_devprocess/requirements/...`).
+  Letztere Form sieht aus wie ein absolut-aussehender Pfad, schlaegt
+  aber bei jeder Resolver-Strategie ausser workspace-root fehl.
+
+## ADR-ID-Schreibweise
+
+- ADR-Dateinamen verwenden die natuerliche ID-Form ohne fuehrende
+  Nullen (`ADR-09-...`, `ADR-90-...`, `ADR-123-...`). Drei-stellige
+  Schreibweise mit fuehrender Null (`ADR-090`, `ADR-063`) ist Drift
+  und sollte vermieden werden.
+- Frontmatter-Felder (`adr-refs: [ADR-90, ADR-63, ADR-123]`),
+  BACKLOG-Zeilen und ADR-Cross-Refs verwenden dieselbe Form ohne
+  fuehrende Nullen.

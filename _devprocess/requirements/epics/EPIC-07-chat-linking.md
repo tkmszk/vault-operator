@@ -27,15 +27,14 @@ UNSERE LÖSUNG verknüpft Notes mit ihren Quell-Chats wie Fußnoten -- dezent, a
 - **Kontextübernahme**: Nutzer startet neue Chats basierend auf Erkenntnissen aus zurückverfolgten Chats
 - **Titel-Erkennbarkeit**: Nutzer identifiziert den richtigen Chat anhand des Titels (kein Trial-and-Error)
 
-## MVP Features
-
-| Feature ID | Name | Priority | Effort | Status |
-|------------|------|----------|--------|--------|
-| FEAT-07-01 | Chat-Linking (Überblick) | P0-Critical | — | Implementiert |
-| FEAT-07-02 | Protocol Handler (Deep-Links) | P0-Critical | S | Implementiert |
-| FEAT-07-03 | Auto-Frontmatter-Linking | P0-Critical | M | Implementiert |
-| FEAT-07-04 | Semantisches Chat-Titling | P1-High | S | Implementiert |
-| FEAT-07-05 | Chat-Linking Setting | P2-Medium | S | Implementiert |
+## MVP Scope (Features)
+| Feature ID | Name | Priority | Effort |
+|------------|------|----------|--------|
+| FEAT-07-01 | Chat-Linking (Überblick) | P0-Critical | — |
+| FEAT-07-02 | Protocol Handler (Deep-Links) | P0-Critical | S |
+| FEAT-07-03 | Auto-Frontmatter-Linking | P0-Critical | M |
+| FEAT-07-04 | Semantisches Chat-Titling | P1-High | S |
+| FEAT-07-05 | Chat-Linking Setting | P2-Medium | S |
 
 **Priority Legend:**
 - P0-Critical: Ohne geht MVP nicht (Linking + Deep-Link = Kernfunktion)

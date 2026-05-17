@@ -30,19 +30,18 @@ UNSERE LOESUNG kombiniert Vektor-Aehnlichkeit mit dem existierenden Obsidian-Gra
 - **Implicit-Edge-Count**: Anzahl vorberechneter impliziter Verbindungen (zeigt Vernetzungstiefe)
 - **Reranker-Precision-Delta**: Subjektive Verbesserung der Top-5 Ergebnisse nach Reranking
 
-## MVP Features
-
-| Feature ID | Name | Priority | Effort | Status |
-|------------|------|----------|--------|--------|
-| FEAT-15-00 | SQLite Knowledge DB | P0 | L | Implemented |
-| FEAT-15-01 | Enhanced Vector Retrieval | P0 | M | Implemented |
-| FEAT-15-02 | Graph Data Extraction & Expansion | P0 | M | Implemented |
-| FEAT-15-03 | Implicit Connection Discovery | P1 | M | Implemented |
-| FEAT-15-04 | Local Reranking | P1 | M | Implemented (transformers.js WASM) |
-| FEAT-15-05 | Knowledge Data Consolidation | P1 | M | Implemented |
-| FEAT-15-06 | Implicit Connection UI | P2 | S | Implemented |
-| FEAT-15-07 | Image OCR Indexing | P3 | S | Not Started |
-| FEAT-15-08 | Storage Consolidation | P0 | M | Implemented |
+## MVP Scope (Features)
+| Feature ID | Name | Priority | Effort |
+|------------|------|----------|--------|
+| FEAT-15-00 | SQLite Knowledge DB | P0 | L |
+| FEAT-15-01 | Enhanced Vector Retrieval | P0 | M |
+| FEAT-15-02 | Graph Data Extraction & Expansion | P0 | M |
+| FEAT-15-03 | Implicit Connection Discovery | P1 | M |
+| FEAT-15-04 | Local Reranking | P1 | M |
+| FEAT-15-05 | Knowledge Data Consolidation | P1 | M |
+| FEAT-15-06 | Implicit Connection UI | P2 | S |
+| FEAT-15-07 | Image OCR Indexing | P3 | S |
+| FEAT-15-08 | Storage Consolidation | P0 | M |
 
 **Priority:** P0-Critical (ohne geht MVP nicht), P1-High (wichtig), P2-Medium (wertsteigernd)
 **Effort:** S (1-2 Sprints), M (3-5 Sprints), L (6+ Sprints)

@@ -31,7 +31,7 @@ Sense-Making-Note wurde zwar geschrieben, aber:
 
 ## Root Cause
 
-[AgentSidebarView.ts:1710-1722](src/ui/AgentSidebarView.ts#L1710-L1722)
+[AgentSidebarView.ts:1710-1722](../../../src/ui/AgentSidebarView.ts#L1710-L1722)
 ruft pro `handleSendMessage`-Aufruf `attachments.getFullDocTexts()`
 und passt das Ergebnis an `IngestDocumentTool.setAttachmentTexts(...)`.
 

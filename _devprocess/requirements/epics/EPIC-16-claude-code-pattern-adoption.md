@@ -28,15 +28,14 @@ UNSERE LOESUNG uebernimmt nur die Patterns die sich auf Wissensarbeit uebertrage
 - **Skill-Count im Prompt**: Anzahl aktiver Skills pro Turn (Ziel: nur kontextuell relevante)
 - **SubTask-Parallelitaet**: Anzahl gleichzeitig laufender read-SubTasks (Baseline: 0, Ziel: 2-5)
 
-## Features
-
-| Feature ID | Name | Priority | Effort | Status |
-|------------|------|----------|--------|--------|
-| FEAT-16-00 | Deferred Tool Loading | P1-High | M | Geplant |
-| FEAT-16-01 | Memory Side-Query | P1-High | M | Geplant |
-| FEAT-16-02 | Conditional Skills | P2-Medium | M | Geplant |
-| FEAT-16-03 | Parallel SubTasks (Fan-Out) | P2-Medium | M | Geplant |
-| FEAT-16-04 | Task-Typisierung | P3-Low | S | Geplant |
+## Feature Scope
+| Feature ID | Name | Priority | Effort |
+|------------|------|----------|--------|
+| FEAT-16-00 | Deferred Tool Loading | P1-High | M |
+| FEAT-16-01 | Memory Side-Query | P1-High | M |
+| FEAT-16-02 | Conditional Skills | P2-Medium | M |
+| FEAT-16-03 | Parallel SubTasks (Fan-Out) | P2-Medium | M |
+| FEAT-16-04 | Task-Typisierung | P3-Low | S |
 
 **Priority:** P1-High (groesster ROI), P2-Medium (wertsteigernd), P3-Low (Housekeeping)
 **Effort:** S (1-2 Sprints), M (3-5 Sprints)

@@ -1,7 +1,7 @@
 # Feature: create_docx Tool
 
-> **Feature ID**: FEAT-04-01
-> **Epic**: EPIC-04 - Office Document Creation
+> **Feature ID**: FEAT-10-01
+> **Epic**: EPIC-10 - Office Document Creation
 > **Priority**: P0-Critical
 > **Effort Estimate**: M
 
@@ -123,7 +123,7 @@ das Tool erzeugt die Datei programmatisch und speichert sie im Vault.
 
 - **Library**: docx (npm) -- muss im Plugin-Kontext funktionieren
 - **Vault API**: Binary-Write-Capability
-- **FEAT-04-04**: Agent-Prompt-Update
+- **FEAT-10-04**: Agent-Prompt-Update
 
 ## Assumptions
 

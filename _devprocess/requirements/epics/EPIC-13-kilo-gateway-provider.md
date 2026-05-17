@@ -28,17 +28,16 @@ UNSERE LOESUNG verbindet einen einmaligen Kilo-Login mit dynamischem Modellzugan
 - Organization Context Usage: Anteil der Kilo-Nutzer die einen Org-Kontext aktiv nutzen
 - Gateway Session Usage: Anzahl aktiver Chat-Sitzungen ueber Kilo Gateway
 
-## MVP Features
-
-| Feature ID | Name | Priority | Effort | Status |
-|------------|------|----------|--------|--------|
-| FEAT-13-01 | Kilo Auth & Session Management | P0 | M | Not Started |
-| FEAT-13-02 | Kilo Gateway Chat Provider | P0 | M | Not Started |
-| FEAT-13-03 | Kilo Settings UI Integration | P0 | M | Not Started |
-| FEAT-13-04 | Kilo Dynamic Model Listing | P1 | S | Not Started |
-| FEAT-13-05 | Kilo Organization Context | P1 | S | Not Started |
-| FEAT-13-06 | Kilo Embedding Support | P1 | S | Not Started |
-| FEAT-13-07 | Kilo Manual Token Mode | P1 | S | Not Started |
+## MVP Scope (Features)
+| Feature ID | Name | Priority | Effort |
+|------------|------|----------|--------|
+| FEAT-13-01 | Kilo Auth & Session Management | P0 | M |
+| FEAT-13-02 | Kilo Gateway Chat Provider | P0 | M |
+| FEAT-13-03 | Kilo Settings UI Integration | P0 | M |
+| FEAT-13-04 | Kilo Dynamic Model Listing | P1 | S |
+| FEAT-13-05 | Kilo Organization Context | P1 | S |
+| FEAT-13-06 | Kilo Embedding Support | P1 | S |
+| FEAT-13-07 | Kilo Manual Token Mode | P1 | S |
 
 **Priority Legend:**
 - P0-Critical: Ohne geht MVP nicht

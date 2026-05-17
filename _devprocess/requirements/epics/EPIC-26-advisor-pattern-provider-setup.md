@@ -31,8 +31,7 @@ Wie können wir den Hauptloop des Plugins auf einem schlankeren Modell betreiben
 - **OUT-05:** Advisor-Eskalations-Rate liegt zwischen 5-15 % der Auto-Chats. Telemetrie-Counter pro Session.
 - **OUT-06:** Keine spürbare Qualitäts-Regression bei Strategie-/Recherche-Chats. User-Feedback in Beta-Phase.
 
-## Features
-
+## Feature Scope
 ### Welle 1: Core Mechanik (P0)
 
 | ID | Title | Wert |

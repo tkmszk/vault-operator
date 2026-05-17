@@ -8,7 +8,7 @@
 
 `IngestDeepTool.planGenerator` ist heute ein Default-Stub: nimmt die
 ersten 5 Absaetze als Take-Aways, baut einen Bullet-Body, kein LLM-
-Aufruf. Code-Kommentar [IngestDeepTool.ts:117-148](src/core/tools/vault/IngestDeepTool.ts#L117-L148): "echter Multi-Turn-Dialog kann
+Aufruf. Code-Kommentar [IngestDeepTool.ts:117-148](../../../src/core/tools/vault/IngestDeepTool.ts#L117-L148): "echter Multi-Turn-Dialog kann
 spaeter via Conversation-Loop kommen; Hook bleibt offen."
 
 Folge: BA-25 11.2.1 (Modus A Aktiver Dialog) ist im Code nicht

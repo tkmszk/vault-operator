@@ -27,15 +27,14 @@ und Provider-spezifischen Optimierungen, ohne die Ergebnisqualitaet zu beeintrae
 - **Prompt Cache Hit Rate**: >80% bei Providern die Caching unterstuetzen
 - **Fast Path Nutzung**: >30% aller Tasks nutzen Fast Path nach 2 Wochen Lernzeit
 
-## MVP Features
-
-| Feature ID | Name | Priority | Effort | Status |
-|------------|------|----------|--------|--------|
-| FEAT-18-00 | Fast Path Execution | P0 | M | Implementiert (ADR-61) |
-| FEAT-18-01 | Prompt Caching (Provider-agnostisch) | P0 | S | Implementiert (ADR-62) |
-| FEAT-18-02 | Context Externalization (Dateisystem als Kontext) | P1 | M | Implementiert (ADR-63) |
-| FEAT-18-03 | Cross-Platform TMP-Pfade fuer Context Externalization | P1 | S | Implementiert v2.5.0 (BUG-014, Issue #29) |
-| FEAT-18-04 | Cost-Aware Agent Heuristics (Plan-First, Tool-Tiers, Brakes, Telemetry) | P0 | M | Implementiert 2026-04-29 (ADR-90, BUG-032) |
+## MVP Scope (Features)
+| Feature ID | Name | Priority | Effort |
+|------------|------|----------|--------|
+| FEAT-18-00 | Fast Path Execution | P0 | M |
+| FEAT-18-01 | Prompt Caching (Provider-agnostisch) | P0 | S |
+| FEAT-18-02 | Context Externalization (Dateisystem als Kontext) | P1 | M |
+| FEAT-18-03 | Cross-Platform TMP-Pfade fuer Context Externalization | P1 | S |
+| FEAT-18-04 | Cost-Aware Agent Heuristics (Plan-First, Tool-Tiers, Brakes, Telemetry) | P0 | M |
 
 **Priority:** P0-Critical (ohne geht MVP nicht), P1-High (wichtig), P2-Medium (wertsteigernd)
 **Effort:** S (1-3 Tage), M (4-7 Tage), L (2+ Wochen)

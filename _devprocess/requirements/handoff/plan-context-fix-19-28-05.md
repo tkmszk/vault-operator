@@ -297,8 +297,8 @@ Keine.
 
 Claude Code sollte folgende Dokumente als Kontext lesen:
 
-1. [_devprocess/architecture/ADR-112-attachment-lifecycle-im-sidebar.md](../architecture/ADR-112-attachment-lifecycle-im-sidebar.md) (Decision)
-2. [_devprocess/requirements/fixes/FIX-19-28-05-attachment-clear-lifecycle.md](../requirements/fixes/FIX-19-28-05-attachment-clear-lifecycle.md) (FIX-Detail mit AC + Test-Strategie)
+1. [_devprocess/architecture/ADR-112-attachment-lifecycle-im-sidebar.md](../../architecture/ADR-112-attachment-lifecycle-im-sidebar.md) (Decision)
+2. [_devprocess/requirements/fixes/FIX-19-28-05-attachment-clear-lifecycle.md](../fixes/FIX-19-28-05-attachment-clear-lifecycle.md) (FIX-Detail mit AC + Test-Strategie)
 3. [_devprocess/requirements/handoff/architect-handoff-fix-19-28-05.md](architect-handoff-fix-19-28-05.md) (RE-Output, fuer Q-Antworten und Out-of-Scope-Begruendung)
 
 ---
