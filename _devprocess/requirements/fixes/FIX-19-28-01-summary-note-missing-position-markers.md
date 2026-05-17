@@ -117,7 +117,7 @@ zum versprochenen Output. Drei verkettete Probleme.
 ### Kette
 
 **Schritt 1: planGenerator-Default ist Stub ohne Position-Marker**
-[IngestDeepTool.ts:117-148](src/core/tools/vault/IngestDeepTool.ts#L117-L148)
+[IngestDeepTool.ts:117-148](../../../src/core/tools/vault/IngestDeepTool.ts#L117-L148)
 
 ```typescript
 const planGenerator = async (f: TFile, _m: IngestMode, om: OutputMode) => {
@@ -138,7 +138,7 @@ kann spaeter via Conversation-Loop kommen; Hook bleibt offen." Der LLM-
 gestuetzte Hook ist nicht verdrahtet, der Stub ist Default in Production.
 
 **Schritt 2: PDF wird als Text gelesen (Binary-Garbage)**
-[IngestDeepTool.ts:122](src/core/tools/vault/IngestDeepTool.ts#L122)
+[IngestDeepTool.ts:122](../../../src/core/tools/vault/IngestDeepTool.ts#L122)
 
 `cachedRead(f)` auf einer PDF-TFile liefert die rohe Datei-Repraesentation
 (im Wesentlichen leer fuer binaer-only PDFs, sonst PDF-Stream-Garbage).
@@ -146,14 +146,14 @@ Die "ersten 5 Absaetze" sind dann sinnlos. Der Stub haette `parsePdf` nutzen
 muessen oder den Pfad fuer PDFs gar nicht treten.
 
 Im opt-in `markdown-mirror`-Pfad wird `actualSource = result.mirrorFile`
-gesetzt ([IngestDeepTool.ts:98](src/core/tools/vault/IngestDeepTool.ts#L98)),
+gesetzt ([IngestDeepTool.ts:98](../../../src/core/tools/vault/IngestDeepTool.ts#L98)),
 dann liest `cachedRead` korrekt den Mirror-Markdown. Aber im Default
 `page-refs`-Pfad bleibt `actualSource = file` (PDF), und der Read produziert
 Garbage. Zusaetzliches Symptom: Take-Aways enthalten dann garbled Text,
 BlockIdSetter findet keine Anchors, kein Block-Marker entsteht.
 
 **Schritt 3: DeepIngestPipeline schreibt Source-Note mit leerem Body**
-[DeepIngestPipeline.ts:104-113](src/core/ingest/DeepIngestPipeline.ts#L104-L113)
+[DeepIngestPipeline.ts:104-113](../../../src/core/ingest/DeepIngestPipeline.ts#L104-L113)
 
 ```typescript
 const sourceContent: SourceContent = {
@@ -176,7 +176,7 @@ verlinken WUERDE, gaebe es kein `^block-N` zum Anspringen. Die zwei Welten
 nicht miteinander verdrahtet.
 
 **Schritt 4: kein Post-Processing-Step injiziert Position-Marker**
-[DeepIngestPipeline.ts:117-120](src/core/ingest/DeepIngestPipeline.ts#L117-L120)
+[DeepIngestPipeline.ts:117-120](../../../src/core/ingest/DeepIngestPipeline.ts#L117-L120)
 
 Im Pipeline-Schritt 5 wird `senseMaking.body = plan.summaryBody` 1:1 (plus
 optional Tension-Footer) durchgereicht. Es gibt keine Stelle, an der
@@ -289,7 +289,7 @@ oder "Sense-Making-Note" erzeugen. Drei Tools im Spiel.
 
 ### Pfad A: `ingest_document` (vermutlich der user-genutzte Pfad)
 
-[IngestDocumentTool.ts](src/core/tools/vault/IngestDocumentTool.ts).
+[IngestDocumentTool.ts](../../../src/core/tools/vault/IngestDocumentTool.ts).
 Tool-Description sagt explizit: "Always use this tool for document
 ingestion -- never fall back to write_file."
 
@@ -326,7 +326,7 @@ projiziert, der kein Setting konsultiert.
 
 ### Pfad B: `ingest_deep` (BA-25 Karpathy-Pattern)
 
-[IngestDeepTool.ts](src/core/tools/vault/IngestDeepTool.ts).
+[IngestDeepTool.ts](../../../src/core/tools/vault/IngestDeepTool.ts).
 Reine BA-25-Pipeline mit Output-Modi und Cluster-Routing. Konsumiert
 `vaultIngest.pdfStrategy`.
 
@@ -345,13 +345,13 @@ Wirkung wegen leerem Source-Body.
 
 ### Pfad C: `ingest_triage` -- nicht relevant
 
-[IngestTriageTool.ts](src/core/tools/vault/IngestTriageTool.ts) erzeugt
+[IngestTriageTool.ts](../../../src/core/tools/vault/IngestTriageTool.ts) erzeugt
 nur eine 10s-Triage-Karte (Markdown-Report mit Cluster-Match + Decision-
 Log). **Kein Summary, keine Source-Note.** Faellt aus dem Issue-#11-Scope.
 
 ### Pfad D: FrontmatterIndexer + SummaryGenerator -- nicht relevant
 
-[SummaryGenerator.ts](src/core/ingest/SummaryGenerator.ts) erzeugt
+[SummaryGenerator.ts](../../../src/core/ingest/SummaryGenerator.ts) erzeugt
 nur Frontmatter-Summary (max 25 Woerter, ein Satz) fuer Note-Metadata.
 Position-Marker sind hier per Design nicht vorgesehen. Faellt aus dem
 Issue-#11-Scope.

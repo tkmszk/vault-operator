@@ -29,8 +29,7 @@ Wie koennen wir den Obsidian-Community-Plugin-Store-Review so vorbereiten, dass 
 - **OUT-04:** Pfad-Traversal-Angriffe (`..`-Sequenzen, absolute Pfade ausserhalb der Allowlist) werfen in jedem fs-Call. Gemessen via Test-Suite.
 - **OUT-05:** Versuche, ein nicht-allowlisted Binary zu spawnen, werfen mit eindeutiger Fehlermeldung. Gemessen via Test-Suite.
 
-## Features
-
+## Feature Scope
 ### Welle 1: Zentrale Wrapper (P0)
 
 | ID | Title | Wert |

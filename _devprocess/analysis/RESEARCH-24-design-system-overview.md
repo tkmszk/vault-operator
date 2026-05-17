@@ -247,6 +247,6 @@ Obsidian Agent (Vault Operator) is a desktop-first Obsidian plugin (v1.1.0) that
 - [arc42 Architecture](../architecture/arc42.md) — Full arc42 documentation (v3.4)
 - [ADR Index](../architecture/) — 21 Architecture Decision Records
 - [Backlog](../context/BACKLOG.md) — Feature implementation status
-- [Agent Internals](../implementation/TECH-001-agent-internals.md) — Deep technical internals
-- [Component Designs](DESIGN-001-component-designs.md) — Detailed component specifications
-- [Implementation Roadmap](ROADMAP-002-implementation.md) — 8-phase development plan
+- Agent Internals: keine separate `TECH-001-agent-internals.md` angelegt; technische Details liegen in [arc42 Kapitel 5+8](../architecture/arc42.md) und im `src/ARCHITECTURE.map`.
+- Component Designs: keine separate `DESIGN-001-component-designs.md` angelegt; Komponenten-Details in den jeweiligen FEATURE-Dateien unter `_devprocess/requirements/features/`.
+- Implementation Roadmap: keine separate `ROADMAP-002-implementation.md` angelegt; Phasen-Stand siehe [BACKLOG.md](../context/BACKLOG.md) und Memory-Index.

@@ -2,18 +2,18 @@
 
 > Status: Implemented 2026-05-13
 > Branch: `feature/feat-24-04-subagent-delegation` (off `dev`)
-> Refs: FEAT-24-04, ADR-113, ADR-090 (Cost-Aware Heuristics, in Spannung), ADR-01 (ToolExecutionPipeline), ADR-12 (Context Condensing), ADR-62 (KV-Cache), ADR-63 (Context Externalization), RESEARCH-36 Abschnitt 8 (Hebel E)
+> Refs: FEAT-24-04, ADR-113, ADR-90 (Cost-Aware Heuristics, in Spannung), ADR-01 (ToolExecutionPipeline), ADR-12 (Context Condensing), ADR-62 (KV-Cache), ADR-63 (Context Externalization), RESEARCH-36 Abschnitt 8 (Hebel E)
 > Vorgaenger: PLAN-21 (FEAT-24-06 MCP-Listing-Cap, released auf `dev`)
 
 ---
 
 ## 1. Kontext
 
-`spawnSubtask` und `new_task` existieren ([`AgentTask.ts:414-471`](../../../src/core/AgentTask.ts#L414-L471), [`NewTaskTool.ts`](../../../src/core/tools/agent/NewTaskTool.ts)). Heute restriktiv per ADR-090 Lever 4+7: Tier-4-Eskalation mit drei expliziten Kategorien (PARALLEL, SPECIALIST, ESCALATION), `justification_category` + `justification_reason` als required. Subagent erbt Mode + Rules + MCP + Plugin-Skills vom Parent; nur Skills/Memory/Recipes werden via `isSubtask`-Gate weggelassen. Kein Profile-Konzept, kein Token-Budget.
+`spawnSubtask` und `new_task` existieren ([`AgentTask.ts:414-471`](../../../src/core/AgentTask.ts#L414-L471), [`NewTaskTool.ts`](../../../src/core/tools/agent/NewTaskTool.ts)). Heute restriktiv per ADR-90 Lever 4+7: Tier-4-Eskalation mit drei expliziten Kategorien (PARALLEL, SPECIALIST, ESCALATION), `justification_category` + `justification_reason` als required. Subagent erbt Mode + Rules + MCP + Plugin-Skills vom Parent; nur Skills/Memory/Recipes werden via `isSubtask`-Gate weggelassen. Kein Profile-Konzept, kein Token-Budget.
 
-### Spannung ADR-113 vs ADR-090
+### Spannung ADR-113 vs ADR-90
 
-ADR-113 will `new_task` "prominent fuer explorative/recherchierende Teilaufgaben" machen. ADR-090 hat es bewusst restriktiv: Cost-Aware Tier-4-Eskalation. Beide stehen auf demselben Tool.
+ADR-113 will `new_task` "prominent fuer explorative/recherchierende Teilaufgaben" machen. ADR-90 hat es bewusst restriktiv: Cost-Aware Tier-4-Eskalation. Beide stehen auf demselben Tool.
 
 **Aufloesung (entschieden im Plan, nicht im ADR):** **additiv, nicht ersetzend.** Der heutige Tier-4-Pfad (kein `profile`) bleibt strikt wie er ist; die `justification_category`-Required-Logik unveraendert. Ein neuer **optionaler `profile`-Parameter** schaltet einen schlankeren Subagent-Modus frei. Wenn `profile` gesetzt ist:
 
@@ -21,7 +21,7 @@ ADR-113 will `new_task` "prominent fuer explorative/recherchierende Teilaufgaben
 - Der Subagent laeuft mit Profile-spezifischem schlankem System-Prompt + reduzierter Tool-Liste.
 - Per-Call-Token-Budget gilt sowohl fuer Profile- als auch fuer Tier-4-Spawns.
 
-Der Tier-4-Schutz bleibt fuer alle nicht-profile-Spawns aktiv. Damit ergaenzen sich ADR-090 und ADR-113 statt sich zu widersprechen. ADR-090 deckt "wann ueberhaupt new_task" (Tier 4 fuer generelle Eskalation), ADR-113 deckt "wenn explorative Teilaufgabe -- nutze ein Profile".
+Der Tier-4-Schutz bleibt fuer alle nicht-profile-Spawns aktiv. Damit ergaenzen sich ADR-90 und ADR-113 statt sich zu widersprechen. ADR-90 deckt "wann ueberhaupt new_task" (Tier 4 fuer generelle Eskalation), ADR-113 deckt "wenn explorative Teilaufgabe -- nutze ein Profile".
 
 ### Codebase-Anker (gegen ADR-113-Implementation-Notes)
 
@@ -214,7 +214,7 @@ Tier-4 justification rules in new_task still apply.
 
 - `FEAT-24-04-subagent-delegation.md`: `plan-refs: [PLAN-22]`; SC konkretisieren.
 - `BACKLOG.md`: FEAT-24-04 Status auf `In Progress`; PLAN-22 als neue Row.
-- `ADR-113`: Status -> `Accepted` + Amendment-Hinweis auf den additiv-zu-ADR-090-Pivot.
+- `ADR-113`: Status -> `Accepted` + Amendment-Hinweis auf den additiv-zu-ADR-90-Pivot.
 
 ---
 
@@ -240,7 +240,7 @@ Tier-4 justification rules in new_task still apply.
 - `find_tool` / Deferred-Loading (FEATURE-1600).
 - Skills-Pfad (FEAT-24-09), MCP-Pfad (FEAT-24-06): unangetastet.
 - Mode-System: heutige Modes (`agent`, `ask`) unveraendert. Profile sind ein parallel-Konzept fuer Subagents.
-- ADR-090 Tier-4-Logik fuer non-profile new_task: unveraendert.
+- ADR-90 Tier-4-Logik fuer non-profile new_task: unveraendert.
 - Tool-Result-Pipeline-Caps (FEAT-24-03).
 - Cache-Praefix-Stabilitaet (FEAT-24-01).
 
@@ -262,7 +262,7 @@ Tier-4 justification rules in new_task still apply.
 | SC-1 `new_task` akzeptiert `profile='research'` (optional) | Task 3 + Validierung-Test | mapped |
 | SC-2 Profile-Spawn nutzt schlanken System-Prompt + reduzierte Tool-Liste | Task 1 + 4 + mode.test | mapped |
 | SC-3 Per-Call-Token-Budget greift, Fehler mit ist/soll | Task 2 + NewTaskTool-Test | mapped |
-| SC-4 Non-profile-Pfad unveraendert (ADR-090-Schutz bleibt) | Task 3 + newTaskValidation-Regression-Test | mapped |
+| SC-4 Non-profile-Pfad unveraendert (ADR-90-Schutz bleibt) | Task 3 + newTaskValidation-Regression-Test | mapped |
 | SC-5 Eltern-Kontext waechst bei Research-Subtask nur um die Antwort | Task 4 + Live-Messlauf `[AWAITING RE]` | partial (struktureller Beleg in Code-Diff, Live-SC bleibt manuell) |
 
 ADR-113 Decisions:
@@ -275,7 +275,7 @@ ADR-113 Decisions:
 
 ### 2026-05-13 -- Plan persistiert (trigger=design)
 
-Aufgesetzt mit dem ADR-113-Amendment "additiv zu ADR-090". Coverage Gate
+Aufgesetzt mit dem ADR-113-Amendment "additiv zu ADR-90". Coverage Gate
 beim Persistieren erfuellt: alle 6 SC + 4 ADR-113-Decisions mapped.
 
 ### 2026-05-13 -- Implementation komplett (trigger=task)

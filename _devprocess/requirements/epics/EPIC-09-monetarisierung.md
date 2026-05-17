@@ -7,8 +7,7 @@
 
 Vault Operator Gateway: Zentraler API-Gateway für Monetarisierung und Lizenzierung.
 
-## Features
-
-| Feature ID | Name | Priority | Status |
-|------------|------|----------|--------|
-| FEAT-09-01 | Vault Operator Gateway | P2 | Geplant |
+## Feature Scope
+| Feature ID | Name | Priority |
+|------------|------|----------|
+| FEAT-09-01 | Vault Operator Gateway | P2 |

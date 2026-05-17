@@ -26,18 +26,17 @@ UNSERE LOESUNG strukturiert Wissen nach Nutzer-Beduerfnissen statt nach technisc
 - Dev Docs decken alle Subsysteme ab (pruefbar gegen Architektur-Ueberblick)
 - Doku-Skill antwortet korrekt auf 10 vordefinierte Test-Fragen
 
-## MVP Features
-
-| Feature ID | Name | Priority | Effort | Status |
-|------------|------|----------|--------|--------|
-| FEAT-17-00 | SSG-Migration & Grundgeruest | P0 | M | Geplant |
-| FEAT-17-01 | User Guide -- Informationsarchitektur & Content | P0 | L | Geplant |
-| FEAT-17-02 | Vault Operator Doku-Skill | P0 | S | Geplant |
-| FEAT-17-03 | Developer Docs -- Update & Erweiterung | P1 | M | Geplant |
-| FEAT-17-04 | Homepage -- Roadmap & Versions-Log | P1 | S | Geplant |
-| FEAT-17-05 | Homepage -- Hero & Messaging Update | P1 | S | Geplant |
-| FEAT-17-06 | Design-Ueberarbeitung (Best-in-Class) | P2 | M | Geplant |
-| FEAT-17-07 | DE Uebersetzung | P2 | M | Geplant |
+## MVP Scope (Features)
+| Feature ID | Name | Priority | Effort |
+|------------|------|----------|--------|
+| FEAT-17-00 | SSG-Migration & Grundgeruest | P0 | M |
+| FEAT-17-01 | User Guide -- Informationsarchitektur & Content | P0 | L |
+| FEAT-17-02 | Vault Operator Doku-Skill | P0 | S |
+| FEAT-17-03 | Developer Docs -- Update & Erweiterung | P1 | M |
+| FEAT-17-04 | Homepage -- Roadmap & Versions-Log | P1 | S |
+| FEAT-17-05 | Homepage -- Hero & Messaging Update | P1 | S |
+| FEAT-17-06 | Design-Ueberarbeitung (Best-in-Class) | P2 | M |
+| FEAT-17-07 | DE Uebersetzung | P2 | M |
 
 **Priority:** P0-Critical (ohne geht MVP nicht), P1-High (wichtig), P2-Medium (wertsteigernd)
 **Effort:** S (1-2 Tage), M (3-5 Tage), L (1-2 Wochen)

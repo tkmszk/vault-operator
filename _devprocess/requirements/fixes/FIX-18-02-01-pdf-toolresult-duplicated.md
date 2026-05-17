@@ -2,14 +2,14 @@
 id: FIX-18-02-01
 feature: FEAT-18-02
 epic: EPIC-18
-adr-refs: [ADR-063]
+adr-refs: [ADR-63]
 plan-refs: []
 depends-on: []
 created: 2026-05-08
 issue: https://github.com/pssah4/vault-operator-dev/issues/62
 ---
 
-# FIX-18-02-01: PDF tool_result mehrfach im Hauptkontext, Context Externalization (ADR-063) greift bei PDF-Attachments nicht
+# FIX-18-02-01: PDF tool_result mehrfach im Hauptkontext, Context Externalization (ADR-63) greift bei PDF-Attachments nicht
 
 ## Symptom
 
@@ -32,7 +32,7 @@ Hauptkontext steigt waehrend der Session auf 138k Tokens.
 
 ## Root cause -- Hypothese (zu validieren)
 
-ADR-063 (Context Externalization) verlangt, dass grosse Tool-Result-Bloecke
+ADR-63 (Context Externalization) verlangt, dass grosse Tool-Result-Bloecke
 in eine Temp-Datei ausgelagert werden und im Kontext nur eine kompakte
 Referenz steht. Fuer PDF-Attachments scheint einer von zwei Pfaden zu
 greifen:

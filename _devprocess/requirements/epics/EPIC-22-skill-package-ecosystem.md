@@ -28,14 +28,13 @@ UNSERE LOESUNG macht Vault Operator rueckwaerts-kompatibel zu bestehenden Single
 - Skill-Ordner mit mehr als nur SKILL.md (Scripts, References)
 - Coordinator-Skills die erfolgreich Sub-Rollen delegieren
 
-## MVP Features
-
-| Feature ID | Name | Typ | Priority | Effort | Status |
-|------------|------|-----|----------|--------|--------|
-| FEAT-22-01 | Skill-Folder-Struktur (SKILL.md + Subfolders) | Infra | P0 | M | Geplant |
-| FEAT-22-02 | `.skill` Zip-Import | UI + Infra | P0 | S | Geplant |
-| FEAT-22-03 | Scripts-im-Skill (Sandbox-Aufruf) | Feature | P1 | M | Geplant |
-| FEAT-22-04 | Coordinator-Skill (Multi-Rolle in einem Ordner) | Feature | P1 | M | Geplant |
+## MVP Scope (Features)
+| Feature ID | Name | Typ | Priority | Effort |
+|------------|------|-----|----------|--------|
+| FEAT-22-01 | Skill-Folder-Struktur (SKILL.md + Subfolders) | Infra | P0 | M |
+| FEAT-22-02 | `.skill` Zip-Import | UI + Infra | P0 | S |
+| FEAT-22-03 | Scripts-im-Skill (Sandbox-Aufruf) | Feature | P1 | M |
+| FEAT-22-04 | Coordinator-Skill (Multi-Rolle in einem Ordner) | Feature | P1 | M |
 
 **Priority:** P0-Critical (Kern-Funktionalitaet fuer Anthropic-Kompatibilitaet), P1-High (Vault Operator-spezifische Erweiterungen).
 

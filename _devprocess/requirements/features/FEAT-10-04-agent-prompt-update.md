@@ -1,7 +1,7 @@
 # Feature: Agent Prompt & Skill Update
 
-> **Feature ID**: FEAT-04-04
-> **Epic**: EPIC-04 - Office Document Creation
+> **Feature ID**: FEAT-10-04
+> **Epic**: EPIC-10 - Office Document Creation
 > **Priority**: P1-High
 > **Effort Estimate**: S
 
@@ -89,7 +89,7 @@ gescheiterte Sandbox-Versuche zu unternehmen.
 
 ## Dependencies
 
-- **FEAT-04-00-403**: Die create_*-Tools muessen existieren, bevor Prompts auf sie verweisen
+- **FEAT-10-00 bis FEAT-10-03**: Die create_*-Tools muessen existieren, bevor Prompts auf sie verweisen
 
 ## Assumptions
 

@@ -28,15 +28,14 @@ UNSERE LÖSUNG extrahiert Inhalte lokal, strukturiert und performant -- mit inte
 - **Parsing-Performance**: Durchschnittliche Verarbeitungsdauer pro Datei (Ziel: < 5s für 30-Folien PPTX)
 - **User-Vertrauen**: Nutzer trifft Entscheidungen basierend auf Agent-Output ohne Rückprüfung am Originaldokument
 
-## MVP Features
-
-| Feature ID | Name | Priority | Effort | Status |
-|------------|------|----------|--------|--------|
-| FEAT-06-01 | Document Parsing Pipeline | P0-Critical | L | Implementiert |
-| FEAT-06-02 | File Picker Erweiterung | P0-Critical | S | Implementiert |
-| FEAT-06-03 | Token-Budget-Management | P1-High | M | Geplant |
-| FEAT-06-04 | On-Demand Bild-Extraktion | P1-High | M | Geplant |
-| FEAT-06-05 | Modell-Kompatibilitäts-Check | P1-High | S | Geplant |
+## MVP Scope (Features)
+| Feature ID | Name | Priority | Effort |
+|------------|------|----------|--------|
+| FEAT-06-01 | Document Parsing Pipeline | P0-Critical | L |
+| FEAT-06-02 | File Picker Erweiterung | P0-Critical | S |
+| FEAT-06-03 | Token-Budget-Management | P1-High | M |
+| FEAT-06-04 | On-Demand Bild-Extraktion | P1-High | M |
+| FEAT-06-05 | Modell-Kompatibilitäts-Check | P1-High | S |
 
 **Priority Legend:**
 - P0-Critical: Ohne geht MVP nicht

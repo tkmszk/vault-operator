@@ -18,7 +18,7 @@ Block ziehen, on-demand-Aktivierung via `find_tool` / `enable_mcp_tool`.
 ## Was der Code zeigt
 
 1. **`ToolRegistry.registerMcpTool` ist ein TODO-Stub.**
-   [ToolRegistry.ts:318-322](src/core/tools/ToolRegistry.ts#L318-L322):
+   [ToolRegistry.ts:318-322](../../src/core/tools/ToolRegistry.ts#L318-L322):
    ```typescript
    registerMcpTool(serverName, toolName, tool) {
        // TODO: Phase 6 - MCP integration
@@ -30,19 +30,19 @@ Block ziehen, on-demand-Aktivierung via `find_tool` / `enable_mcp_tool`.
 
 2. **MCP-Bruecke ist ein einziges Built-in.**
    `use_mcp_tool(server_name, tool_name, arguments)` in
-   [UseMcpToolTool.ts](src/core/tools/mcp/UseMcpToolTool.ts) ist als
+   [UseMcpToolTool.ts](../../src/core/tools/mcp/UseMcpToolTool.ts) ist als
    regulaeres Tool registriert. Sein input_schema ist klein und
    generisch (drei String-/Object-Properties). Alle MCP-Tool-Calls
    laufen ueber dieses eine Tool; die echten MCP-Tool-Namen + Argumente
    sind nur Strings im Tool-Call, kein eigenes Schema.
 
 3. **MCP-Tool-Liste liegt bereits im stabilen Cache-Block.**
-   [systemPrompt.ts:194-216](src/core/systemPrompt.ts#L194-L216):
+   [systemPrompt.ts:194-216](../../src/core/systemPrompt.ts#L194-L216):
    Section 4 (TOOLS, inkl. MCP-Listung aus `mcpClient.getAllTools()`)
    liegt **vor** Section 8b (Skill Directory) und damit **vor**
    `CACHE_BREAKPOINT_MARKER` (Section 9 ist der erste volatile Block).
    Die heutige Listung
-   [prompts/sections/tools.ts:38-60](src/core/prompts/sections/tools.ts#L38-L60)
+   [prompts/sections/tools.ts:38-60](../../src/core/prompts/sections/tools.ts#L38-L60)
    rendert pro MCP-Tool eine Zeile `server: tool_name -- description`.
 
 ## Folgerung

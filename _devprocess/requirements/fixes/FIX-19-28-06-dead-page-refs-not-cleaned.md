@@ -41,7 +41,7 @@ Position.
 
 **Bug 1: Regex matched Bullets mit Block-Anchor-Suffix nicht**
 
-[IngestDocumentTool.ts:303](src/core/tools/vault/IngestDocumentTool.ts#L303)
+[IngestDocumentTool.ts:303](../../../src/core/tools/vault/IngestDocumentTool.ts#L303)
 
 ```typescript
 if (/\[\[[^\]]+\|↗\]\]\s*$/.test(line)) {
@@ -68,7 +68,7 @@ bleiben aber".
 
 **Bug 2: Page-Range wird nicht validiert**
 
-[IngestDocumentTool.ts:191-198](src/core/tools/vault/IngestDocumentTool.ts#L191-L198)
+[IngestDocumentTool.ts:191-198](../../../src/core/tools/vault/IngestDocumentTool.ts#L191-L198)
 
 ```typescript
 const markerCheck = checkPositionMarkers(header_content);
@@ -169,7 +169,7 @@ Out-of-Scope (separate FIXes / IMPs):
 
 ## Fix
 
-[IngestDocumentTool.ts:303](src/core/tools/vault/IngestDocumentTool.ts#L303)
+[IngestDocumentTool.ts:303](../../../src/core/tools/vault/IngestDocumentTool.ts#L303)
 -- Regex in `checkPositionMarkers` erweitert um optionalen
 Block-Anchor-Suffix:
 
@@ -181,7 +181,7 @@ Block-Anchor-Suffix:
 /\[\[[^\]]+\|↗\]\](?:\s+\^[A-Za-z0-9_-]+)?\s*$/.test(line)
 ```
 
-[IngestDocumentTool.ts neu](src/core/tools/vault/IngestDocumentTool.ts)
+[IngestDocumentTool.ts neu](../../../src/core/tools/vault/IngestDocumentTool.ts)
 -- `findDeadPageRefs(headerContent, outputBasename, pageCount)` neu.
 Scant die Kernaussagen-Section, parsed alle `[[BASENAME#Page N|↗]]`-
 Refs, meldet Dead-Refs bei zwei Failure-Modi:
@@ -189,7 +189,7 @@ Refs, meldet Dead-Refs bei zwei Failure-Modi:
 - Page-Number > pageCount (Page existiert nicht im Originaltext)
 - Basename matched nicht das Output-File (Ref zeigt auf falsches Note)
 
-[IngestDocumentTool.ts:execute](src/core/tools/vault/IngestDocumentTool.ts)
+[IngestDocumentTool.ts:execute](../../../src/core/tools/vault/IngestDocumentTool.ts)
 -- Tool-Result um Dead-Refs-Section erweitert. Bei `deadRefs > 0` wird
 die Dead-Ref-Liste explizit aufgefuehrt mit konkretem Reason und der
 Anweisung "ENTFERNEN, nicht zusaetzliche Refs ergaenzen". Damit
@@ -197,7 +197,7 @@ laeuft der Agent nicht mehr in das Doppel-Edit-Pattern.
 
 ## Regression test
 
-[IngestDocumentTool.test.ts](src/core/tools/vault/__tests__/IngestDocumentTool.test.ts)
+[IngestDocumentTool.test.ts](../../../src/core/tools/vault/__tests__/IngestDocumentTool.test.ts)
 -- Regression-Test verifiziert via red-green-Cycle am 2026-05-10:
 
 1. Test "zaehlt Marker auch wenn ein Block-Anchor folgt" ergaenzt fuer

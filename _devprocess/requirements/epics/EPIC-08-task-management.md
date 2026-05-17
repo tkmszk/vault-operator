@@ -8,11 +8,10 @@
 
 Task Extraction aus Agent-Antworten: TaskExtractor erkennt Aufgaben in Agent-Responses, TaskSelectionModal ermöglicht Nutzer-Auswahl, TaskNoteCreator erstellt strukturierte Task-Notes mit Frontmatter-Schema (ADR-27).
 
-## Features
-
-| Feature ID | Name | Priority | Status |
-|------------|------|----------|--------|
-| FEAT-08-01 | Task Extraction & Management | P1 | Implementiert |
+## Feature Scope
+| Feature ID | Name | Priority |
+|------------|------|----------|
+| FEAT-08-01 | Task Extraction & Management | P1 |
 
 ## Related ADRs
 

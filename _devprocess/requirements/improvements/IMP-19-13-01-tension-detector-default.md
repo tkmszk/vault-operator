@@ -5,7 +5,7 @@
 
 ## Problem
 
-[IngestDeepTool.ts:153](src/core/tools/vault/IngestDeepTool.ts#L153)
+[IngestDeepTool.ts:153](../../../src/core/tools/vault/IngestDeepTool.ts#L153)
 uebergibt `tensionDetector: undefined` an `DeepIngestPipeline`.
 Code-Kommentar: "TensionDetector mit Cosine-Pre-Filter via Vault-Search
 wuerde echten SemanticIndex-Hook erfordern. Vereinfacht: optional

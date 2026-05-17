@@ -33,20 +33,19 @@ Fuer Obsidian-Nutzer mit aktivem ChatGPT-Plus- oder Pro-Abonnement, die ihre bez
 
 ## Critical Hypotheses
 
-| Ref | Hypothese | Validiert durch | Status |
-|------|-----------|------------------|--------|
-| H-01 | Der Codex-PKCE-Flow funktioniert in Electron mit lokalem Loopback-Server (127.0.0.1:1455) zuverlaessig | FEAT-00-21-001 | Offen |
-| H-02 | Das Token-Schema von `auth.openai.com` (id_token + access_token + refresh_token) bleibt mindestens 6 Monate stabil | FEAT-00-21-001 | Offen |
-| H-03 | Die Codex-Backend-Endpoints akzeptieren Tool-Calls und Streaming im OpenAI-Responses-API-Format | FEAT-00-21-002 | Offen |
-| H-04 | ChatGPT-Plus-Subscriber haben Quota-Zugriff auf `gpt-5-codex` und Folgemodelle ueber diesen Endpoint | FEAT-00-21-002 | Offen |
+| Ref | Hypothese | Validiert durch |
+|------|-----------|------------------|
+| H-01 | Der Codex-PKCE-Flow funktioniert in Electron mit lokalem Loopback-Server (127.0.0.1:1455) zuverlaessig | FEAT-00-21-001 |
+| H-02 | Das Token-Schema von `auth.openai.com` (id_token + access_token + refresh_token) bleibt mindestens 6 Monate stabil | FEAT-00-21-001 |
+| H-03 | Die Codex-Backend-Endpoints akzeptieren Tool-Calls und Streaming im OpenAI-Responses-API-Format | FEAT-00-21-002 |
+| H-04 | ChatGPT-Plus-Subscriber haben Quota-Zugriff auf `gpt-5-codex` und Folgemodelle ueber diesen Endpoint | FEAT-00-21-002 |
 
-## MVP Features
-
-| Feature ID | Name | Prioritaet | Aufwand | Status |
-|----------------|---------------------------------------------|------------|--------|---------|
-| FEAT-00-21-001 | ChatGPT OAuth Lifecycle (PKCE + Loopback + Refresh) | P0 | M | Geplant |
-| FEAT-00-21-002 | Codex Responses-API Handler | P0 | M | Geplant |
-| FEAT-00-21-003 | Settings-UI mit "Mit ChatGPT anmelden" | P0 | S | Geplant |
+## MVP Scope (Features)
+| Feature ID | Name | Prioritaet | Aufwand |
+|----------------|---------------------------------------------|------------|--------|
+| FEAT-00-21-001 | ChatGPT OAuth Lifecycle (PKCE + Loopback + Refresh) | P0 | M |
+| FEAT-00-21-002 | Codex Responses-API Handler | P0 | M |
+| FEAT-00-21-003 | Settings-UI mit "Mit ChatGPT anmelden" | P0 | S |
 
 **Prioritaeten:** P0-Critical (MVP geht ohne nicht), P1-High (wichtig), P2-Medium (wertsteigernd)
 **Aufwand:** S (1 bis 2 Sprints), M (3 bis 5 Sprints), L (6 oder mehr Sprints)

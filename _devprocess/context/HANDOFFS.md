@@ -2462,15 +2462,15 @@ epic: EPIC-24
 feature: FEAT-24-04
 
 Branch: `feature/feat-24-04-subagent-delegation` (off `dev` 00e4516).
-Refs: PLAN-22, ADR-113 (Accepted, Amendment 2026-05-13 additiv zu ADR-090).
+Refs: PLAN-22, ADR-113 (Accepted, Amendment 2026-05-13 additiv zu ADR-90).
 
 ### Critical-Review-Befund vor Implementation (kein Pivot)
 
-ADR-113 in Spannung zu ADR-090 (Tier-4-Eskalation fuer `new_task`).
+ADR-113 in Spannung zu ADR-90 (Tier-4-Eskalation fuer `new_task`).
 Aufloesung im PLAN-22: **additiv, nicht ersetzend**. Neuer optionaler
 `profile`-Parameter auf `new_task`: wenn gesetzt -> Profile-Pfad
 (schlanker subagentRoleOverride + reduzierte Tool-Allowlist + ohne
-Tier-4-Justification); wenn nicht gesetzt -> heutiger ADR-090-Pfad
+Tier-4-Justification); wenn nicht gesetzt -> heutiger ADR-90-Pfad
 voll aktiv. Per-Call-Token-Budget greift fuer beide Pfade. ADR-113
 Status `Proposed` -> `Accepted` mit Amendment im File festgehalten.
 Kein Mid-course-Pivot wie bei ADR-117/118 noetig -- die ADR-Logik
@@ -2629,7 +2629,7 @@ Branch: `feature/feat-24-04-subagent-delegation` (Commit 98ef26d).
 | SC-1 `new_task` akzeptiert profile='research' (optional) | gruen | 5 Profile-Branch-Tests in `newTaskValidation.test.ts` + 2 Profile-Spawn-Tests in `NewTaskTool.test.ts` |
 | SC-2 Profile-Spawn schlank: roleDefinition + reduzierte Tools, rules/mcp/plugin-skills NICHT durchgereicht | gruen | `subagent-profiles.test.ts` (5 Tests) + `modeDefinition.test.ts` (3 Tests) + AgentTask.spawnSubtask code-Diff (rules/mcp/pluginSkillsSection `: undefined` im Profile-Pfad) |
 | SC-3 Per-Call-Token-Budget greift fuer beide Pfade (Default 8000) | gruen | 3 Budget-Tests in `NewTaskTool.test.ts` (Overflow, Edge, Custom-Budget) |
-| SC-4 Non-profile-Pfad unveraendert (ADR-090 Tier-4 bleibt) | gruen | Tier-4-Pfad-Test in `NewTaskTool.test.ts` + alle vorhandenen `newTaskValidation.test.ts`-Tests gruen (keine Regression auf bestehende PARALLEL/SPECIALIST/ESCALATION-Validation) |
+| SC-4 Non-profile-Pfad unveraendert (ADR-90 Tier-4 bleibt) | gruen | Tier-4-Pfad-Test in `NewTaskTool.test.ts` + alle vorhandenen `newTaskValidation.test.ts`-Tests gruen (keine Regression auf bestehende PARALLEL/SPECIALIST/ESCALATION-Validation) |
 | SC-5 Profile-Registry erweiterbar (mind. 1 Profile) | gruen | `listSubagentProfileNames` enthaelt `research` -- assertion in `subagent-profiles.test.ts` |
 | SC-6 Live-Messlauf | `[AWAITING RE]` | Funktionsverifikation in einer Vault-Session: eine Frage, die >3 read/search-Aufrufe braucht, fuehrt zu `new_task(profile='research', ...)`-Call; Parent-Kontext waechst nur um die verdichtete Antwort; `[InputBreakdown]`-Log Beleg. Nicht autonom pruefbar. |
 
@@ -2715,7 +2715,7 @@ Branch: `feature/feat-24-04-subagent-delegation`. Audit-Report:
   attempt_completion required).
 - **Regression-Schutz** via `subagent-profiles.test.ts`: write/edit/
   use_mcp_tool/new_task duerfen nie in der research-Allowlist auftauchen.
-- **Konsistenz zu ADR-090:** non-profile-Pfad voll unveraendert; der
+- **Konsistenz zu ADR-90:** non-profile-Pfad voll unveraendert; der
   Profile-Pfad ergaenzt, ersetzt nicht.
 - **SCA-Baseline unveraendert** gegenueber AUDIT-020.
 

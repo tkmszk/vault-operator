@@ -1,7 +1,7 @@
 # Feature: create_pptx Tool
 
-> **Feature ID**: FEAT-04-00
-> **Epic**: EPIC-04 - Office Document Creation
+> **Feature ID**: FEAT-10-00
+> **Epic**: EPIC-10 - Office Document Creation
 > **Priority**: P0-Critical
 > **Effort Estimate**: M
 
@@ -130,7 +130,7 @@ Node.js-Zugriff und speichert sie im Vault. Kein dynamisch generierter Code, kei
 
 - **Library**: pptxgenjs (npm) -- muss im Plugin-Kontext funktionieren
 - **Vault API**: Binary-Write-Capability
-- **FEAT-04-04**: Agent-Prompt-Update (P1, kann parallel)
+- **FEAT-10-04**: Agent-Prompt-Update (P1, kann parallel)
 
 ## Assumptions
 

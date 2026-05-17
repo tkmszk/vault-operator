@@ -17,21 +17,21 @@ Semantic Index (vectra HNSW), Context Management, 3-Tier Memory, Multi-Agent Orc
 
 ## Features (Phase C, implementiert)
 
-| Feature ID | Name | Priority | Status |
-|------------|------|----------|--------|
-| FEAT-03-01 | Semantic Index & Retrieval | P0 | Implementiert |
-| FEAT-03-02 | Keyword Search Upgrade | P1 | Implementiert |
-| FEAT-03-03 | Context Management | P0 | Implementiert |
-| FEAT-03-04 | Memory & Personalization | P0 | Subsumed by Memory v2 (siehe FEAT-03-15 bis 0321) |
-| FEAT-03-05 | Multi-Agent (new_task) | P1 | Implementiert |
-| FEAT-03-06 | Context Condensing | P1 | Implementiert (orthogonal zu Memory v2) |
-| FEAT-03-07 | Power Steering | P1 | Implementiert |
-| FEAT-03-08 | Tool Repetition Detection | P1 | Implementiert |
-| FEAT-03-09 | Canvas & Bases | P0 | Implementiert |
-| FEAT-03-10 | Global Storage | P1 | Implementiert |
-| FEAT-03-11 | Safe Storage | P1 | Implementiert |
-| FEAT-03-12 | Modular System Prompt | P1 | Implementiert |
-| FEAT-03-13 | Code Import Models | P2 | Implementiert |
+| Feature ID | Name | Priority |
+|------------|------|----------|
+| FEAT-03-01 | Semantic Index & Retrieval | P0 |
+| FEAT-03-02 | Keyword Search Upgrade | P1 |
+| FEAT-03-03 | Context Management | P0 |
+| FEAT-03-04 | Memory & Personalization | P0 |
+| FEAT-03-05 | Multi-Agent (new_task) | P1 |
+| FEAT-03-06 | Context Condensing | P1 |
+| FEAT-03-07 | Power Steering | P1 |
+| FEAT-03-08 | Tool Repetition Detection | P1 |
+| FEAT-03-09 | Canvas & Bases | P0 |
+| FEAT-03-10 | Global Storage | P1 |
+| FEAT-03-11 | Safe Storage | P1 |
+| FEAT-03-12 | Modular System Prompt | P1 |
+| FEAT-03-13 | Code Import Models | P2 |
 
 ## Features (Memory v2 Initiative, Planned)
 
