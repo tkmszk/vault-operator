@@ -27,15 +27,14 @@ UNSERE LOESUNG erzeugt professionelle Dateien in einem einzigen Tool-Call aus de
 - Schema-Akzeptanz: LLM erzeugt valide Tool-Inputs bei >90% der Versuche
 - Bundle-Groesse: Gesamtzuwachs durch Dependencies < 5 MB
 
-## MVP Features
-
-| Feature ID | Name | Priority | Effort | Status |
-|------------|------|----------|--------|--------|
-| FEAT-04-00 | create_pptx Tool | P0 | M | Not Started |
-| FEAT-04-01 | create_docx Tool | P0 | M | Not Started |
-| FEAT-04-02 | create_xlsx Tool | P0 | M | Not Started |
-| FEAT-04-03 | create_pdf Tool | P0 | M | Not Started |
-| FEAT-04-04 | Agent Prompt & Skill Update | P1 | S | Not Started |
+## MVP Scope (Features)
+| Feature ID | Name | Priority | Effort |
+|------------|------|----------|--------|
+| FEAT-10-00 | create_pptx Tool | P0 | M |
+| FEAT-10-01 | create_docx Tool | P0 | M |
+| FEAT-10-02 | create_xlsx Tool | P0 | M |
+| FEAT-10-03 | create_pdf Tool | P0 | M |
+| FEAT-10-04 | Agent Prompt & Skill Update | P1 | S |
 
 **Priority Legend:**
 - P0-Critical: Ohne geht MVP nicht

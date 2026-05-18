@@ -2,6 +2,11 @@
 Scope: Production (Phasen A-F komplett + EPIC-12 bis EPIC-15)
 Date: 2026-04-01 (aktualisiert)
 
+> Historischer Snapshot. Office-Feature-IDs in diesem Dokument wurden
+> 2026-05-17 retroaktiv auf das aktuelle Schema FEAT-10-XX angeglichen
+> (Renumbering von FEAT-04-00/01/02/04 -> FEAT-10-00/01/02/04, siehe
+> BACKLOG DEBT-CC-2026-05-12).
+
 ## Goal
 Local-only, agentic operating layer fuer Obsidian: safe, governed vault operations, multi-provider support, MCP extensibility, semantic search, persistent memory, multi-agent orchestration, and plugin auto-discovery.
 
@@ -127,9 +132,9 @@ Local-only, agentic operating layer fuer Obsidian: safe, governed vault operatio
 ### EPIC-10: Office Document Creation — Implementiert
 | Feature Ref | Feature Name | Priority | Spec | Status |
 |---|---|---|---|---|
-| FEAT-04-00 | create_pptx Tool | P0 | `FEAT-04-00-create-pptx.md` | Implementiert |
-| FEAT-04-01 | create_docx Tool | P0 | `FEAT-04-01-create-docx.md` | Implementiert |
-| FEAT-04-02 | create_xlsx Tool | P0 | `FEAT-04-02-create-xlsx.md` | Implementiert |
+| FEAT-10-00 | create_pptx Tool | P0 | `FEAT-10-00-create-pptx.md` | Implementiert |
+| FEAT-10-01 | create_docx Tool | P0 | `FEAT-10-01-create-docx.md` | Implementiert |
+| FEAT-10-02 | create_xlsx Tool | P0 | `FEAT-10-02-create-xlsx.md` | Implementiert |
 
 ### EPIC-11: PPTX Template Pipeline — Teilweise implementiert
 | Feature Ref | Feature Name | Priority | Spec | Status |

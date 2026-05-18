@@ -539,7 +539,5 @@ Handles different message types:
 
 ## Related Documents
 
-- [System Overview](system-overview.md)
-- [Data Flows](data-flows.md)
-- [Interfaces](interfaces.md)
-- [Implementation Roadmap](implementation-roadmap.md)
+- System Overview, Data Flows, Interfaces: keine separaten Dateien; verteilte Inhalte in [arc42.md](../architecture/arc42.md) Kapitel 3, 5 und 6.
+- Implementation Roadmap: keine separate Datei; Phasen-Stand siehe [BACKLOG.md](../context/BACKLOG.md).

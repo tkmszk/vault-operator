@@ -5,10 +5,10 @@
 
 ## Context
 
-EPIC-04 fuehrt vier neue Built-in Tools ein (create_pptx, create_docx, create_xlsx, create_pdf). Jedes Tool nimmt strukturierten Input vom LLM entgegen und erzeugt die Datei programmatisch. Das Input-Schema ist die kritischste Designentscheidung: Es bestimmt die LLM-Zuverlaessigkeit (einfaches Schema = weniger Fehler) UND die Output-Qualitaet (reiches Schema = bessere Ergebnisse).
+EPIC-10 fuehrt vier neue Built-in Tools ein (create_pptx, create_docx, create_xlsx, create_pdf). Jedes Tool nimmt strukturierten Input vom LLM entgegen und erzeugt die Datei programmatisch. Das Input-Schema ist die kritischste Designentscheidung: Es bestimmt die LLM-Zuverlaessigkeit (einfaches Schema = weniger Fehler) UND die Output-Qualitaet (reiches Schema = bessere Ergebnisse).
 
 **Triggering ASR:**
-- CRITICAL ASR #2 aus FEAT-04-00 bis FEAT-04-03
+- CRITICAL ASR #2 aus FEAT-10-00 bis FEAT-10-03
 - Quality Attribute: Usability, Zuverlaessigkeit
 
 ## Decision Drivers
@@ -153,6 +153,6 @@ User schreibt Markdown, Tool konvertiert:
 
 ## References
 
-- FEAT-04-00 bis FEAT-04-03: Input-Schema-Design als Critical ASR
+- FEAT-10-00 bis FEAT-10-03: Input-Schema-Design als Critical ASR
 - CreateExcalidrawTool: Referenz-Pattern (Labels/Farben → Auto-Layout)
 - GenerateCanvasTool: Referenz-Pattern (strukturierter JSON-Input)

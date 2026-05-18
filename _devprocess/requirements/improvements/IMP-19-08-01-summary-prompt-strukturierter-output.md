@@ -6,7 +6,7 @@
 ## Problem
 
 FEAT-19-08 ist als Done markiert (UI/Setting reif), aber
-`SummaryGenerator` ([SummaryGenerator.ts:42](src/core/ingest/SummaryGenerator.ts#L42)) reduziert den Output via
+`SummaryGenerator` ([SummaryGenerator.ts:42](../../../src/core/ingest/SummaryGenerator.ts#L42)) reduziert den Output via
 Prompt-Wortlaut auf "**einen** Satz, max 25 Woerter, deutsch". Der
 in den Settings konfigurierbare Default-Prompt fragt aber nach
 Keywords, Themen, Konzepten -- diese Felder werden nie strukturiert

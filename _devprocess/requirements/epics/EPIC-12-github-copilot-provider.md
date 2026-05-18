@@ -26,16 +26,15 @@ UNSERE LOESUNG erfordert nur einen einmaligen GitHub-Login statt separater API K
 - Token Refresh Success Rate: Anteil automatischer Token-Erneuerungen die ohne User-Intervention funktionieren
 - Copilot Model Usage: Wie viele Chat-Sessions ueber Copilot-Modelle laufen (vs. BYOK)
 
-## MVP Features
-
-| Feature ID | Name | Priority | Effort | Status |
-|------------|------|----------|--------|--------|
-| FEAT-12-01 | GitHub Copilot Auth & Token Management | P0 | M | Not Started |
-| FEAT-12-02 | Copilot Chat Completions Provider | P0 | M | Not Started |
-| FEAT-12-03 | Settings UI Integration | P0 | M | Not Started |
-| FEAT-12-04 | Copilot Embedding Support | P1 | S | Not Started |
-| FEAT-12-05 | Dynamic Model Listing | P1 | S | Not Started |
-| FEAT-12-06 | Modern Model Compatibility (max_completion_tokens) | P1 | XS | Implementiert v2.5.0 (BUG-015, Issue #28) |
+## MVP Scope (Features)
+| Feature ID | Name | Priority | Effort |
+|------------|------|----------|--------|
+| FEAT-12-01 | GitHub Copilot Auth & Token Management | P0 | M |
+| FEAT-12-02 | Copilot Chat Completions Provider | P0 | M |
+| FEAT-12-03 | Settings UI Integration | P0 | M |
+| FEAT-12-04 | Copilot Embedding Support | P1 | S |
+| FEAT-12-05 | Dynamic Model Listing | P1 | S |
+| FEAT-12-06 | Modern Model Compatibility (max_completion_tokens) | P1 | XS |
 
 **Priority Legend:**
 - P0-Critical: Ohne geht MVP nicht

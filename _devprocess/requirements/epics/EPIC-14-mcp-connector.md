@@ -29,22 +29,21 @@ UNSERE LOESUNG bietet Agent-Intelligence (semantische Suche, Memory, Plugin Skil
 - **Retention nach 7 Tagen**: Connector-User die nach Erstaktivierung weiterhin aktiv sind
 - **Error-Rate**: Fehlgeschlagene Tool Calls / Gesamt Tool Calls (Ziel: <5%)
 
-## MVP Features
-
-| Feature ID | Name | Priority | Effort | Status |
-|------------|------|----------|--------|--------|
-| FEAT-14-00 | MCP Server Core (stdio) | P0 | M | Not Started |
-| FEAT-14-01 | Tool-Tier-Mapping | P0 | M | Not Started |
-| FEAT-14-02 | MCP Server Settings UI | P0 | S | Not Started |
-| FEAT-14-03 | Remote Transport (Streamable HTTP) | P1 | L | Not Started |
-| FEAT-14-04 | Remote Authentication | P1 | M | Not Started |
-| FEAT-14-05 | MCP Resources | P1 | S | Not Started |
-| FEAT-14-06 | MCP Prompts | P1 | M | Not Started |
-| FEAT-14-07 | Plugin Skill Discovery | P2 | M | Not Started |
-| FEAT-14-08 | Remote Approval Pipeline | P2 | S | Deferred (approval in Claude) |
-| FEAT-14-09 | Connectors Directory Submission | P2 | S | Not Started |
-| FEAT-14-10 | Sandbox Exposure via MCP | P1 | M | Not Started |
-| FEAT-14-11 | Memory Transparency (Agent vs. Human) | P1 | S | Implemented |
+## MVP Scope (Features)
+| Feature ID | Name | Priority | Effort |
+|------------|------|----------|--------|
+| FEAT-14-00 | MCP Server Core (stdio) | P0 | M |
+| FEAT-14-01 | Tool-Tier-Mapping | P0 | M |
+| FEAT-14-02 | MCP Server Settings UI | P0 | S |
+| FEAT-14-03 | Remote Transport (Streamable HTTP) | P1 | L |
+| FEAT-14-04 | Remote Authentication | P1 | M |
+| FEAT-14-05 | MCP Resources | P1 | S |
+| FEAT-14-06 | MCP Prompts | P1 | M |
+| FEAT-14-07 | Plugin Skill Discovery | P2 | M |
+| FEAT-14-08 | Remote Approval Pipeline | P2 | S |
+| FEAT-14-09 | Connectors Directory Submission | P2 | S |
+| FEAT-14-10 | Sandbox Exposure via MCP | P1 | M |
+| FEAT-14-11 | Memory Transparency (Agent vs. Human) | P1 | S |
 
 **Priority:** P0-Critical (ohne geht MVP nicht), P1-High (wichtig), P2-Medium (wertsteigernd)
 **Effort:** S (1-2 Sprints), M (3-5 Sprints), L (6+ Sprints)

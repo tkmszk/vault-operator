@@ -13,7 +13,7 @@ Die vier neuen Office-Tools (create_pptx, create_docx, create_xlsx, create_pdf) 
 Dieses Pattern ist bereits in `SandboxBridge.ts:89-104` implementiert und bewaehrt. Die Frage ist, wie dieses Pattern in den neuen Built-in Tools konsistent angewendet wird.
 
 **Triggering ASR:**
-- Binary Write (MODERATE aus FEAT-04-00, 401, 402, 403)
+- Binary Write (MODERATE aus FEAT-10-00, FEAT-10-01, FEAT-10-02, FEAT-10-03)
 - Quality Attribute: Zuverlaessigkeit, Datensicherheit
 
 ## Decision Drivers

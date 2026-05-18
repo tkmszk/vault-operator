@@ -35,24 +35,23 @@ OUR SOLUTION combines graph-theoretic analysis with an LLM agent that explains f
 
 ## Critical Hypotheses (from BA)
 
-| BA Ref | Hypothesis | Validated by Feature | Status |
-|--------|-----------|---------------------|--------|
-| H-01 | Louvain on Wikilink+Frontmatter graphs produces meaningful clusters | FEAT-20-02 | Validiert |
-| H-02 | Batch ingest reduces token cost per note by 50% | FEAT-20-05 | Validiert |
-| H-03 | God-node warning (degree >50) correlates with user-perceived overload | FEAT-20-03 | Validiert |
-| H-04 | Users accept emergent clusters as reflection of their thinking | FEAT-20-02 | Validiert |
-| H-05 | Confidence-weighted graph expansion improves top-5 retrieval precision | FEAT-20-04 | Validiert |
+| BA Ref | Hypothesis | Validated by Feature |
+|--------|-----------|---------------------|
+| H-01 | Louvain on Wikilink+Frontmatter graphs produces meaningful clusters | FEAT-20-02 |
+| H-02 | Batch ingest reduces token cost per note by 50% | FEAT-20-05 |
+| H-03 | God-node warning (degree >50) correlates with user-perceived overload | FEAT-20-03 |
+| H-04 | Users accept emergent clusters as reflection of their thinking | FEAT-20-02 |
+| H-05 | Confidence-weighted graph expansion improves top-5 retrieval precision | FEAT-20-04 |
 
-## MVP Features
-
-| Feature ID | Name | Priority | Effort | Status |
-|------------|------|----------|--------|--------|
-| FEAT-20-01 | Confidence scoring | P0 | S | Implementiert (2026-04-12) |
-| FEAT-20-02 | Community detection (Louvain) | P0 | M | Implementiert (2026-04-12) |
-| FEAT-20-03 | God-node analysis | P1 | S | Implementiert (2026-04-12) |
-| FEAT-20-04 | Retrieval quality improvements | P0 | M | Implementiert (2026-04-12) |
-| FEAT-20-05 | Batch ingest | P1 | L | Implementiert (2026-04-12) |
-| FEAT-20-06 | Knowledge freshness | P1 | M | Implementiert (2026-04-12) |
+## MVP Scope (Features)
+| Feature ID | Name | Priority | Effort |
+|------------|------|----------|--------|
+| FEAT-20-01 | Confidence scoring | P0 | S |
+| FEAT-20-02 | Community detection (Louvain) | P0 | M |
+| FEAT-20-03 | God-node analysis | P1 | S |
+| FEAT-20-04 | Retrieval quality improvements | P0 | M |
+| FEAT-20-05 | Batch ingest | P1 | L |
+| FEAT-20-06 | Knowledge freshness | P1 | M |
 
 **Priority:** P0-Critical (MVP does not work without it), P1-High (important), P2-Medium (value-adding)
 **Effort:** S (1-2 sprints), M (3-5 sprints), L (6+ sprints)

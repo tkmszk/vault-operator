@@ -57,9 +57,9 @@ plugin:obsilo-agent:301886 [AgentTask] Tool error in read_document: Error: No ch
 
 ## Root Cause
 
-[src/ui/AgentSidebarView.ts:1442-1443](src/ui/AgentSidebarView.ts#L1442-L1443) snapshottet `pending` und ruft dann `clear()`. [src/ui/sidebar/AttachmentHandler.ts:263-270](src/ui/sidebar/AttachmentHandler.ts#L263-L270) `clear()` leert sowohl `pending.length = 0` als auch `fullDocTexts.length = 0`.
+[src/ui/AgentSidebarView.ts:1442-1443](../../../src/ui/AgentSidebarView.ts#L1442-L1443) snapshottet `pending` und ruft dann `clear()`. [src/ui/sidebar/AttachmentHandler.ts:263-270](../../../src/ui/sidebar/AttachmentHandler.ts#L263-L270) `clear()` leert sowohl `pending.length = 0` als auch `fullDocTexts.length = 0`.
 
-270 Zeilen weiter unten in derselben `handleSendMessage`-Methode liest [src/ui/AgentSidebarView.ts:1713](src/ui/AgentSidebarView.ts#L1713) `getFullDocTexts()` und uebergibt das Ergebnis an `setAttachmentTexts()` ([src/ui/AgentSidebarView.ts:1714-1721](src/ui/AgentSidebarView.ts#L1714-L1721)). Weil `clear()` davor lief, ist `docTexts` immer `[]`, der `if (docTexts.length > 0)`-Guard greift, und `setAttachmentTexts` wird nie aufgerufen.
+270 Zeilen weiter unten in derselben `handleSendMessage`-Methode liest [src/ui/AgentSidebarView.ts:1713](../../../src/ui/AgentSidebarView.ts#L1713) `getFullDocTexts()` und uebergibt das Ergebnis an `setAttachmentTexts()` ([src/ui/AgentSidebarView.ts:1714-1721](../../../src/ui/AgentSidebarView.ts#L1714-L1721)). Weil `clear()` davor lief, ist `docTexts` immer `[]`, der `if (docTexts.length > 0)`-Guard greift, und `setAttachmentTexts` wird nie aufgerufen.
 
 `ReadDocumentTool.attachmentTexts` (initialisiert auf `[]`) bleibt damit fuer den ganzen Turn leer, obwohl der User gerade ein PDF angehaengt hat.
 
