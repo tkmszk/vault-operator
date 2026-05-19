@@ -131,4 +131,45 @@ Service-Methode; der zweite Implementer wired sie nur ein.
 
 ## Status
 
-Planned. Siehe BACKLOG-Zeile in `_devprocess/context/BACKLOG.md`.
+Done 2026-05-19. Siehe BACKLOG-Zeile in `_devprocess/context/BACKLOG.md`.
+
+## Implementation Notes
+
+Umgesetzt auf Branch `feat/checkpoint-agent-access` in zwei Commits:
+
+- `59edeb8c` -- Service: `loadCheckpointsForTask`, `getCheckpointByOid`,
+  geteilter Helfer `parseNewFilesFromMessage` + `checkpointInfoFromCommit`.
+  Die existierende `restoreLatestForTask`-Schleife nutzt jetzt
+  `parseNewFilesFromMessage`, die NewFiles-Regex-Duplizierung ist
+  entfernt.
+- `1c0f256c` -- Tools + Service: `listAllCheckpoints(limit=50)` (newest
+  first, global ueber alle tasks), vier neue Tool-Dateien unter
+  `src/core/tools/vault/` (List/Read/Diff/RestoreCheckpointTool.ts),
+  ToolRegistry-Wiring nach `move_file`, TOOL_GROUP_META erweitert
+  (read += list/read/diff_checkpoint, edit += restore_checkpoint),
+  i18n-Labels in `en.ts`, ToolName-Type erweitert.
+
+Pre-Restore-Snapshot: `restore_checkpoint` ruft selbst
+`service.snapshot('restore-<ts>', affected, 'restore_checkpoint')` VOR
+dem Restore, weil der automatische Pipeline-Snapshot nur
+`toolCall.input.path` abdeckt -- in `mode='task'` ist der path
+undefined, dann waere ohne den expliziten Snapshot kein Undo des
+Restores moeglich.
+
+Tool-Group-Drift-Memory beachtet (`feedback_tool_group_drift.md`): alle
+vier neuen Tools sind explizit in `TOOL_GROUP_META`. Ohne den Eintrag
+faellt der Agent silent auf Workarounds zurueck.
+
+Tests: 26 vitest-cases in
+`src/core/tools/__tests__/checkpoint-tools.test.ts` -- definitions,
+listing order / filtering / verbose mode, read-unknown-oid,
+path-traversal-Rejection an jedem Tool-Boundary, mode='file' verlangt
+path. Restore wird nicht end-to-end gegen den Vault getestet (vault
+adapter ist Electron-only); die Stubs decken refuse-paths und
+unknown-oid ab. Live-Verifikation siehe Status der Welle.
+
+Token-Bloat-Mitigation: `list_checkpoints` rendert eine Zeile pro
+Eintrag im default-Mode, verbose=true ist opt-in. `read_checkpoint`
+truncatet auf 50k chars (ReadFileTool-Budget). `diff_checkpoint`
+truncatet auf 4k chars mit Verweis auf read_checkpoint fuer den vollen
+Inhalt.

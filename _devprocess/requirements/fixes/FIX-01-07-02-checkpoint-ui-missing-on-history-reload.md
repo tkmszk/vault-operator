@@ -118,5 +118,38 @@ sind unabhaengig planbar.
 
 ## Status
 
-See the backlog row for FIX-01-07-02 in `_devprocess/context/BACKLOG.md`
-(status, phase, claim, commit SHA).
+Done 2026-05-19. Siehe BACKLOG-Zeile in `_devprocess/context/BACKLOG.md`.
+
+## Implementation Notes
+
+Branch `feat/checkpoint-agent-access`, Commit `7112c049`.
+
+- `UiMessage` (ConversationStore.ts) bekommt optionales `taskId?: string`,
+  beide assistant-Push-Stellen in `AgentSidebarView.ts` (line 2108-2113
+  askQuestion-Pause + line 2293-2298 taskCompleted) stempeln den taskId.
+- Neuer Helfer `rehydrateCheckpointMarkers(msgs)` iteriert die unique
+  taskIds einer wiedereroeffneten Conversation, ruft
+  `service.loadCheckpointsForTask` (eingefuehrt mit IMP-01-07-01 in
+  `59edeb8c`), berechnet die unique-files-count, rendert `showUndoBar`
+  pro Task. Aufruf am Ende von `loadConversation` nach dem
+  Render-Loop.
+
+Plan-Abweichung: Beim History-Reload wird **nicht** automatisch
+`showPostTaskReview` (DiffReviewModal) ausgeloest -- bei N Tasks haette
+das N Modals beim Oeffnen einer alten Konversation produziert. Statt
+dessen rendert der Helper nur die `showUndoBar`. Das DiffReviewModal
+laesst sich vom User aus der Undo-Bar deliberately oeffnen, falls
+gewuenscht (oder spaeter als separater "Review changes"-Button
+nachgeruestet werden, falls Bedarf besteht).
+
+Backwards Compatibility: alte Conversations ohne `taskId` in den
+uiMessages bleiben blind -- das ist akzeptabel und dokumentiert im
+UiMessage-Doc-Kommentar. Neu erzeugte Conversations rendern korrekt.
+
+Live-Verifikation (manuell, durch den User):
+1. Neue Konversation, write_file auf Test-Notiz, Task laeuft durch.
+2. Plugin reloaden (`Developer: Reload App without Saving`).
+3. Konversation aus History wieder oeffnen -> Undo-Bar erscheint
+   unten in der Chat-View, Klick auf Undo restored die Datei.
+4. Alte (vor 2026-05-19 erfasste) Konversationen werfen keine
+   Console-Fehler, rendern aber auch keine Undo-Bar.
