@@ -137,7 +137,7 @@ Phase: Building | Status: Active
 
 | ID | Type | Title | Status | Phase | Refs | Source | Commit | Claim | Last change | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
-| FEAT-10-00 | Feature | create_pptx Tool | Done | Released | EPIC-10 | BA |  |  |  | Renumbered 2026-05-17 (war FEAT-04-00, DEBT-CC-2026-05-12).  Issue: https://github.com/pssah4/vault-operator-dev/issues/187 |
+| FEAT-10-00 | Feature | create_pptx Tool | Done | Released | EPIC-10 | BA |  |  |  | Renumbered 2026-05-17 (former FEAT-id under EPIC-04, DEBT-CC-2026-05-12).  Issue: https://github.com/pssah4/vault-operator-dev/issues/187 |
 | FEAT-10-01 | Feature | create_docx Tool | Done | Released | EPIC-10 | BA |  |  |  | Renumbered 2026-05-17 (war FEAT-04-01, DEBT-CC-2026-05-12).  Issue: https://github.com/pssah4/vault-operator-dev/issues/188  Issue: https://github.com/pssah4/vault-operator-dev/issues/189 |
 | FEAT-04-01 | Feature | MCP Client & Tools | Done | Released | EPIC-04 | BA |  |  |  |  |
 | FEAT-10-02 | Feature | create_xlsx Tool | Done | Released | EPIC-10 | BA |  |  |  | Renumbered 2026-05-17 (war FEAT-04-02, DEBT-CC-2026-05-12).  Issue: https://github.com/pssah4/vault-operator-dev/issues/190  Issue: https://github.com/pssah4/vault-operator-dev/issues/191 |
@@ -720,7 +720,7 @@ Verwandt: Reaktion auf Obsidian-Plugin-Scanner-Findings auf v2.11.0 (5 Behavior-
 | PLAN-06 | Plan | - Memory v2 Phase 3 Dynamic Context Composition | Draft | Building | FEAT-03-17, ADR-77, ADR-78, ADR-80 | ARCH |  |  |  |  |
 | PLAN-07 | Plan | - Memory v2 Phase 4 Single-Call Update | Draft | Building | FEAT-03-18, ADR-76, ADR-77, ADR-83 | ARCH |  |  |  |  |
 | PLAN-08 | Plan | - Memory v2 Phase 4.5 Agent-Self Layer | Draft | Building | FEAT-03-19, ADR-77, ADR-85 | ARCH |  |  |  |  |
-| PLAN-09 | Plan | - ChatGPT OAuth Provider (EPIC-21) | Draft | Building | FEAT-00-21, ADR-88, ADR-89 | ARCH |  |  |  |  |
+| PLAN-09 | Plan | - ChatGPT OAuth Provider (EPIC-21) | Draft | Building | FEAT-21-01, FEAT-21-02, FEAT-21-03, ADR-88, ADR-89 | ARCH |  |  |  |  |
 | PLAN-10 | Plan | BA-25 Phase 1 Foundation | Draft | Building | FEAT-15-09, FEAT-15-10, FEAT-15-11, FEAT-15-12 | ARCH |  |  |  |  |
 | PLAN-11 | Plan | BA-25 Phase 2 Lint-Foundation | Draft | Building | FEAT-19-16, FEAT-19-17, FEAT-19-18, ADR-94 | ARCH |  |  |  |  |
 | PLAN-12 | Plan | BA-25 Phase 3 Ingest-Foundation | Draft | Building | FEAT-19-12, FEAT-19-22, FEAT-19-24, FEAT-19-25 | ARCH |  |  |  |  |
