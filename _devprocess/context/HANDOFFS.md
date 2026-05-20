@@ -3662,3 +3662,43 @@ plan-context-epic29.md ist konsistent mit allen 7 ADRs. Performance- und Securit
 `/coding` starten, Welle 1 zuerst. PLAN-Item pro Welle, jede Welle mit eigenem Build-Deploy-Cycle. Welle 1 (FEAT-29-01 plus FEAT-29-02) ist Foundation und muss vor allem anderen ausgeliefert sein. Welle 2 (FEAT-29-03 plus FEAT-29-04) kann direkt danach. Welle 3 und Welle 4 brauchen die Foundation.
 
 
+
+## EPIC-29 -- /coding Welle 1 (FEAT-29-01) (2026-05-20)
+
+### Scope
+
+FEAT-29-01 Folder-Konsolidierung implementiert nach PLAN-27 (11 Tasks). Erste Welle von EPIC-29 abgeschlossen. Alle drei Storage-Drift-Quellen (.obsidian-agent, .obsilo-vault, obsilo-shared im vault-parent) plus die Legacy-.vault-operator-Spur sind in ein konsolidiertes vault-lokales `.vault-operator/{data,cache}/`-Layout gefuehrt. iCloud-Sync greift jetzt erstmals einheitlich auf alles Plugin-State. Plugin-Verzeichnis im Vault wechselt von der parallelen Anordnung auf zwei Sub-Folder mit klarer Semantik (data = persistente Nutzerdaten, cache = regenerierbarer Build-State).
+
+### Artefakt-Bericht
+
+- `src/core/utils/agentFolder.ts`: status-aware Helper-Layer (`getAgentDataDir`, `getAgentCacheDir`, `getPluginSkillsDir`, `getTmpRoot`, `getVaultDnaPath`, `getSelfAuthoredSkillsDir`). Vor Migration -> flach im root, nach Migration -> Sub-Folder. 18 Tests gruen.
+- `src/core/utils/migrateAgentLayout.ts`: 10-Phasen-Service mit idempotentem Resume via `_layoutMigrationStatus`-Settings-Flag. Safety-Belt gegen rekursive Backup-Quellen, Drift-Resolve fuer skills/ mit mtime-Precedence und `.versions/`-Archiv, `isEffectivelyEmpty()`-Helper fuer Phase-7-Cleanup. 26 Tests gruen.
+- `src/core/utils/restoreLayoutFromBackup.ts`: Restore-Service als Sicherheitsnetz fuer den User. Liest Backup-Folder unter `{vault}/.obsidian/plugins/<id>/layout-migration-backups/`, restored die vier Legacy-Roots, raeumt `.vault-operator/{data,cache}/` weg. `isDirEmptyIgnoringConsolidated`-Helper fuer den .vault-operator-Target. 5 Tests gruen.
+- `src/core/storage/GlobalFileService.ts`: `useVaultLocalRoot()` switcht den Service-Root nach erfolgter Migration auf `{vault}/.vault-operator/data/`.
+- `src/main.ts`: Migration-Trigger mit Opt-in-Gate, sicheres Backup-Verzeichnis ausserhalb der Quell-Pfade, Debug-Notices und console.debug-Logging, Phase 8 inline (`agentFolderPath` -> `.vault-operator`, `_chatHistoryFolderLegacy` capture), Post-Migration-Hooks (useVaultLocalRoot, Recompute der Cache-Pfade fuer Checkpoints/Dev-Env), Modal-Trigger fuer `legacyChatHistoryFolder` via `app.workspace.onLayoutReady`. KnowledgeDB nutzt jetzt `getAgentDataDir(this)`.
+- `src/ui/settings/VaultTab.ts`: neue `buildLayoutMigrationSection` (komplett englisch, ohne Feature-IDs). Status-Anzeige, drei Action-Buttons (Activate migration / Reset to default / Restore from backup), inline-Hinweis zur chatHistoryFolder-Removal. Konsistentes Button-Styling via globale CSS-Regel (opacity 0.65, hover -> 1.0, disabled -> 0.45).
+- `src/ui/modals/ChatHistoryFolderRemovedModal.ts`: one-shot Modal nach Migration fuer User, die zuvor `chatHistoryFolder` konfiguriert hatten. Zeigt Legacy-Pfad an, weist auf Manual-Cleanup hin.
+- `src/types/settings.ts`: drei neue optionale Felder (`_layoutMigrationStatus`, `_layoutMigrationOptIn`, `_chatHistoryFolderLegacy`).
+- `styles.css`: globale Settings-Button-Opacity-Regel.
+- `esbuild.config.mjs`: vault-deploy detected jetzt `{plugin}/.vault-operator/cache/` und schreibt Optional Assets in `cache/assets/` statt Legacy-Pfad.
+- `src/ARCHITECTURE.map`: Wayfinder gepflegt fuer alle neuen Entry-Points.
+
+### Was wurde gegen den initialen Plan geaendert
+
+- **Backup-Pfad ausserhalb der Quell-Pfade**: erste Variante schrieb in `obsilo-shared/.layout-migration-backup/` -> rekursive Path-Explosion (14 GB / ENAMETOOLONG nach Tiefe 13). Nach Live-Bug korrigiert auf `{vault}/.obsidian/plugins/<id>/layout-migration-backups/`, plus Safety-Belt im Service.
+- **getAgentDataDir / getAgentCacheDir status-aware** statt unconditional Sub-Folder-Pfad: ein erster Versuch lieferte `{root}/data` immer, das hat pre-migration Plugins kaputtgemacht. Jetzt prueft Helper `_layoutMigrationStatus === 'complete'` und fallt sonst auf flachen Root zurueck.
+- **Phase-7-Cleanup mit recursive empty-check**: skills/-Shell hat anfangs verhindert dass `.obsilo-vault` geloescht wurde. `isEffectivelyEmpty()` rekursive-Helper macht das jetzt sauber.
+- **UI komplett auf Englisch, ohne Internal-IDs**: User-Feedback zur ersten Iteration (deutsche Tooltips, "FEAT-29-01" im Header). Refactor in einer Runde, Memory-Eintrag `feedback_ui_language_and_naming.md` angelegt.
+- **Einheitliche Button-Farbgebung**: User-Feedback zur ersten Iteration (Buttons mit `setCta`/`setWarning` waren visuell inkonsistent). Globale CSS-Regel macht alles dezent grau, disabled wird erst im hover sichtbar.
+- **Reset-Button triggert echte Migration**: erste Variante setzte nur Flags zurueck, der User musste manuell zurueck-migrieren. Jetzt mit echtem `service.migrate()`-Aufruf.
+
+### Bekannte Risiken / Test-Empfehlungen fuer /testing
+
+- **iCloud-Sync-Race**: gross-knowledge.db (288 MB) wurde live ohne Datenverlust migriert, aber unter aktiver iCloud-Sync-Konkurrenz nicht getestet. Empfehlung: Stress-Test mit gleichzeitigem iCloud-Download.
+- **migrateFolderRename-Tests**: 4 pre-existing Failures in `src/core/utils/__tests__/migrateFolderRename.test.ts` (existierten schon vor dieser Welle, sind nicht durch FEAT-29-01 verursacht). Sollten in /testing-Phase trotzdem geprueft werden.
+- **Restore-Pfad**: pre-Migration-User koennen mit Restore-Button die alten Legacy-Roots zurueckholen. Refuse-to-overwrite-Logic verhindert silent Clobber, aber sollte mit drei Szenarien getestet werden (populated Backup + leeres Ziel, populated Backup + populated Ziel, leeres Backup).
+- **chatHistoryFolder-Removal**: User die das Feld bisher genutzt haben sehen einen one-shot Modal. Acknowledge soll `_chatHistoryFolderLegacy` clearen. Sollte mit echtem User-Settings-Dump verifiziert werden.
+
+### Naechster Schritt
+
+Empfehlung: `/testing` fuer Welle 1 starten. Smoke-Tests gegen die fuenf bekannten Risiko-Szenarien plus Regression gegen die 4 pre-existing Failures. Danach `/security-audit` (Migration laedt Userdaten, Backup-Snapshot enthaelt knowledge.db Klartext). Anschliessend Welle 2 starten: FEAT-29-02 Plugin-Skill-Format-Migration.
