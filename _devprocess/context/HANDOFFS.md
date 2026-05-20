@@ -4220,3 +4220,48 @@ Sebastian kann vor dem naechsten /coding optional einen **Live-Test in seinem Va
 ### Optionaler Zwischen-Schritt: BRAT-Release
 
 Welle 1+2+3 als 2.12.0-beta.1 auf vault-operator-dev releasen, BRAT-Tester einbinden. Gibt EPIC-29 einen Stabilitaets-Halt-Punkt mit drei abgeschlossenen Foundation-Wellen.
+
+## EPIC-29 -- /coding Welle 4 Task A (FEAT-29-06) (2026-05-20)
+
+### Scope
+
+Erster Task von Welle 4. TDD-strict per Memory `feedback_tdd_default.md`. Nur Task A von 6 in PLAN-30. Sauberer Commit-Stand, Rest auf frische Session.
+
+### Artefakt-Bericht
+
+- `src/core/tools/agent/RunSkillScriptTool.ts` (NEU): Pure tool implementation. Path-traversal-Guard, EsbuildWasm-Compile + Sandbox-Execute. isWriteOperation=true.
+- `src/core/tools/types.ts` (Modify): `'run_skill_script'` zur ToolName-union ergaenzt.
+- `src/core/tools/agent/__tests__/RunSkillScriptTool.test.ts` (NEU, RED first): 13 Tests fuer input validation, path-traversal guards, file loading, execution, error handling, tool definition.
+- `_devprocess/implementation/plans/PLAN-30-feat-29-06-sandbox-js-first-class.md` (NEU): 6 Tasks, Task A done.
+
+### TDD-Status
+
+**Strikt TDD-Cycle verified:**
+1. RED: Test-Datei geschrieben, Import-Error verified (Tool existiert nicht)
+2. GREEN: Minimal-Implementation, 13/13 Tests passing
+3. REFACTOR: nicht noetig, Code-Pfad direkt sauber
+
+Bewusste Entscheidung diese Welle 4 strikt TDD nach Welle 1-3 non-TDD (siehe `feedback_tdd_default.md` mit Ausnahme-Section).
+
+### Deferred auf naechste Session
+
+- **Task B** Bundle-Cache (in-memory LRU, sha256-key)
+- **Task C** code_modules-Parameter-Removal aus ManageSkillTool (38 Code-Sites)
+- **Task D** CodeModuleCompiler + DynamicToolLoader Deprecation
+- **Task E** ToolRegistry-Wiring + TOOL_METADATA + ARCHITECTURE.map
+- **Task F** Verify gate + final commit
+
+**Wichtig:** Task E muss vor dem Live-Test passieren, sonst kann der Agent das neue Tool nicht aufrufen. Bis dahin ist `run_skill_script` zwar implementiert aber nicht im System-Prompt.
+
+### Test-Stand
+
+| Stand | Pass | Fail |
+|---|---|---|
+| Welle-3-Ende | 1838 | 21 (alle pre-existing) |
+| Welle-4 Task A | **1851** | 21 (identisch pre-existing) |
+
++13 neue Tests (alle TDD-rot-zuerst geschrieben), alle gruen. Build green.
+
+### Naechster Schritt
+
+Frische Session mit FEAT-29-06 Tasks B-F. Anschliessend FEAT-29-05 (Skill-Creator-Builtin baut auf run_skill_script auf).
