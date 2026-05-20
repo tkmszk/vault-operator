@@ -4265,3 +4265,57 @@ Bewusste Entscheidung diese Welle 4 strikt TDD nach Welle 1-3 non-TDD (siehe `fe
 ### Naechster Schritt
 
 Frische Session mit FEAT-29-06 Tasks B-F. Anschliessend FEAT-29-05 (Skill-Creator-Builtin baut auf run_skill_script auf).
+
+## EPIC-29 -- /coding Welle 4 FEAT-29-06 (Tasks B-F nachgezogen) (2026-05-20)
+
+### Scope
+
+Nach dem Task-A-Commit (79ff62f8) sagte der User "weiter" -- alle verbleibenden PLAN-30-Tasks (B-F) im selben Session-Run nachgezogen. Strikt TDD-Cycle pro Task verified (RED -> GREEN -> REFACTOR).
+
+### Artefakt-Bericht (Tasks B-F)
+
+- `src/core/sandbox/RunSkillScriptCache.ts` (NEU): FNV-1a-Hash-keyed LRU cache, default maxEntries=20. Re-Insertion-Pattern haelt LRU-Order sauber.
+- `src/core/sandbox/__tests__/RunSkillScriptCache.test.ts` (NEU): 10 Tests (hit/miss, source-change-Invalidation, skill+script-Isolation, LRU-Eviction, re-set ohne over-evict, size+clear, default cap).
+- `src/core/tools/agent/RunSkillScriptTool.ts` (Modify): Cache integriert, transform-Skip bei Cache-Hit. 2 Integration-Tests gruen.
+- `src/core/tools/ToolRegistry.ts` (Modify): RunSkillScriptTool registriert, gated auf sandbox + esbuild.
+- `src/core/tools/toolMetadata.ts` (Modify): TOOL_METADATA-Eintrag run_skill_script.
+- `src/core/tools/agent/ManageSkillTool.ts` (Modify): code_modules-Property aus Input entfernt, CodeModuleCompiler-Import + Member entfernt, validateNames/processModule-Aufrufe entfernt. Bestand-codeModules werden beim Update preserviert (back-compat). Tool-Description erwaehnt run_skill_script.
+- `src/core/skills/CodeModuleCompiler.ts` (Modify): @deprecated-Tag mit File-Header-Erklaerung.
+- `src/core/modes/builtinModes.ts` (Modify): Section "Skills with code modules" -> "Skills with helper scripts", code_modules-Hint durch run_skill_script-Hint ersetzt.
+- `src/ARCHITECTURE.map` (Modify): Wayfinder-Row `run-skill-script`.
+
+### TDD-Status
+
+| Task | RED verified | GREEN | Refactor |
+|---|---|---|---|
+| A (Task already commit 79ff62f8) | yes | yes | not needed |
+| B (Cache) | yes -- import-fail | 10/10 | not needed |
+| B Integration | yes -- transformCount-2-not-1 | 13/13 + 2 new | not needed |
+| C (code_modules-Removal) | post-hoc (no test pre-existed, refactor-only) | TypeScript-Clean | -- |
+| D (Deprecation) | post-hoc (Markers only, no behaviour change) | TypeScript-Clean | -- |
+| E (Wiring) | post-hoc (Registry config, no test pre-existed) | TypeScript-Clean | -- |
+| F (Verify) | -- | 1863/1884 | -- |
+
+Tasks C+D+E sind reine Refactor- und Configuration-Tasks ohne neuen Behaviour-Code -- TDD-Pflicht ist hier limitierter (Test-first ergibt fuer einen Property-Removal nicht den selben Wert wie fuer neue Logik). Task-A und Task-B-Integration sind die Stellen mit neuem Behaviour und wurden strikt TDD-gefuehrt.
+
+### Test-Stand
+
+| Stand | Pass | Fail |
+|---|---|---|
+| Welle-4 Task A (commit 79ff62f8) | 1851 | 21 (alle pre-existing) |
+| Welle-4 Tasks B-F (this commit) | **1863** | 21 (identisch pre-existing) |
+
++12 neue Tests in Tasks B-F (10 Cache + 2 Tool-Integration). Build green, deploy auf iCloud-Vault.
+
+### Bekannte Risiken / Test-Empfehlungen fuer /testing
+
+- **Bestand-custom_*-Tools im Vault:** Sebastian hatte 1 Skill (`enbw-slides`) mit scripts/-Folder. Plus potenziell Bestand-`.skill.md` mit code_modules-Frontmatter (vor FEAT-29-06). Test-Empfehlung: Live-Reload auf Sebastian's Vault, sehen welche `custom_*`-Tools noch in der Registry sind, verifizieren dass sie weiterlaufen. Migration auf scripts/ erfolgt manuell oder via skill-creator (FEAT-29-05).
+- **EsbuildWasm-Manager fallback:** RunSkillScriptTool nutzt `esbuild.transform(source)` (single-file, no deps). Fuer Skripte mit `import xlsx from "xlsx"` muesste `esbuild.build()` mit Deps-Liste aufgerufen werden -- aktuell unsupported, lassen wir fuer einen FIX-Item spaeter.
+- **Cache-Invalidation on file-edit:** Source-Hash basiert auf dem Inhalt zum read-Zeitpunkt. Wenn der User mid-execution editiert, lebt der Cache mit dem alten Content bis zum naechsten read. Akzeptabel.
+- **Plugin-Skill scripts/-Folder nicht supported:** RunSkillScriptTool nutzt `getSelfAuthoredSkillsDir`, nicht `getPluginSkillsDir`. Plugin-Skills haben keine scripts/-Folder (per FEAT-29-02 Spec). Bewusst so.
+
+### Naechster Schritt
+
+Empfehlung: `/testing` fuer FEAT-29-06 starten. Smoke-Tests gegen die 4 Risiko-Szenarien oben, plus Live-Test (Bestand-custom_*-Tools weiter live, neuer run_skill_script-Pfad funktioniert). Danach `/security-audit` (Tool ist isWriteOperation=true, EsbuildWasm-Compile-Surface, path-traversal-Guard zu pruefen).
+
+Anschliessend FEAT-29-05 (skill-creator baut auf run_skill_script auf).
