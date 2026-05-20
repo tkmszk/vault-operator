@@ -3,7 +3,7 @@
 > Single source of truth for state and the artifact relation graph.
 > Status fields live HERE, not in artifact frontmatter.
 
-Last update: 2026-05-20 by coding (EPIC-29 Welle 4 erstes Feature FEAT-29-06 abgeschlossen, alle 6 PLAN-30-Tasks done: Task A RunSkillScriptTool (TDD red-green-refactor, 13 Tests), Task B RunSkillScriptCache (FNV-1a LRU, 10 Tests + 2 Integration), Task C code_modules-Removal aus ManageSkillTool, Task D CodeModuleCompiler @deprecated + builtinModes-Hint-Update, Task E ToolRegistry-Wiring + TOOL_METADATA + Wayfinder, Task F Build green. 1838 -> 1863 Tests gruen (+25 Welle-4-erste-Welle), 21 pre-existing Failures unveraendert. Strikt TDD per Memory feedback_tdd_default.md. Naechster Schritt: /testing + /security-audit fuer FEAT-29-06, danach FEAT-29-05 (skill-creator baut auf run_skill_script auf).)
+Last update: 2026-05-20 by testing (EPIC-29 Welle 4 FEAT-29-06 /testing-Pass: 1868/1889 Tests gruen (+5 neue gap-Tests: 1 Cache maxEntries=1 edge case, 4 ManageSkillTool back-compat post code_modules-Removal). Coverage-Gaps geschlossen: ManageSkillTool create+update ohne code_modules, codeModules-Preservation beim Update fuer Bestand, code_modules nicht im input_schema, stray code_modules-Input wird silently ignored. 21 pre-existing Failures unveraendert. Naechster Schritt: /security-audit fuer FEAT-29-06.)
 
 ---
 

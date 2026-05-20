@@ -4319,3 +4319,52 @@ Tasks C+D+E sind reine Refactor- und Configuration-Tasks ohne neuen Behaviour-Co
 Empfehlung: `/testing` fuer FEAT-29-06 starten. Smoke-Tests gegen die 4 Risiko-Szenarien oben, plus Live-Test (Bestand-custom_*-Tools weiter live, neuer run_skill_script-Pfad funktioniert). Danach `/security-audit` (Tool ist isWriteOperation=true, EsbuildWasm-Compile-Surface, path-traversal-Guard zu pruefen).
 
 Anschliessend FEAT-29-05 (skill-creator baut auf run_skill_script auf).
+
+## EPIC-29 -- /testing Welle 4 FEAT-29-06 (2026-05-20)
+
+### Scope
+
+Coverage-Gap-Closure nach dem TDD-strict /coding-Pass. Welle-4-erste-Welle hat 25 Tests aus /coding (Task A: 13, Task B: 10 + 2 Integration). /testing schliesst zusaetzliche Gaps die durch die Refactor-Tasks C+D+E entstanden waren.
+
+### Artefakt-Bericht
+
+- `src/core/tools/agent/__tests__/ManageSkillTool.test.ts` (NEU, 4 Tests): back-compat-Tests nach code_modules-Removal:
+  - create-Skill ohne code_modules-Input (positive Pfad)
+  - codeModules-Preservation in Frontmatter beim Update fuer Bestand (Welle-pre-29-06-Skills mit custom_*-Tools)
+  - code_modules nicht im input_schema
+  - stray code_modules-Input wird silently ignored (legacy-caller-tolerance)
+- `src/core/sandbox/__tests__/RunSkillScriptCache.test.ts` (+1 Test): maxEntries=1 edge case (jede neue Entry evictet die vorige)
+
+### Test-Ergebnis-Tabelle
+
+| Test-File | /coding-Ende | /testing-Ende |
+|---|---|---|
+| RunSkillScriptTool.test.ts | 15 | 15 |
+| RunSkillScriptCache.test.ts | 10 | 11 (+1) |
+| ManageSkillTool.test.ts | - | 4 (neu) |
+| **Welle-4 erste Welle** | 25 | **30** |
+| **Suite-Total** | 1863 | **1868** (+5) |
+
+21 verbleibende Failures unveraendert pre-existing pre-Welle-1.
+
+### Risiko-Szenarien aus /coding-Handoff -- Abdeckungsstatus
+
+1. **Bestand-custom_*-Tools im Vault**: Nicht unit-testbar -- Live-Verhalten von DynamicToolLoader auf User-Vault. Bleibt als manual smoke test (Sebastian's Vault, enbw-slides-Skill + ggf. weitere Bestand-skills mit code_modules-Frontmatter).
+2. **EsbuildWasm-Manager Deps-Fallback**: Nicht unit-testbar im jetzigen Stub-Modell -- braucht echten Esbuild-Lauf um zu sehen ob ein Script mit `import xlsx from "xlsx"` zur Runtime einen "module not found"-Error wirft. Defer auf Live-Smoke.
+3. **Cache-Invalidation on file-edit**: bereits gepinned in Task-B-Integration-Test "re-bundles when the script source changes".
+4. **Plugin-Skill scripts/-Folder nicht supported**: gepinned via Pfad-Aufbau-Tests in Task A (`.vault-operator/data/skills/{skill}/scripts/{name}.js`).
+
+### Brittle-Test-Warnung
+
+`ManageSkillTool.test.ts` nutzt einen schlanken `SelfAuthoredSkillLoader`-Stub mit nur den Methods die der Test braucht (`getSkillsDir`, `getSkill`, `loadAll`, `removeSkill`). Wenn ManageSkillTool zukuenftig weitere Loader-Methods aufruft (z.B. eine neue Validate-API), wird der Stub-Cast `as unknown as SelfAuthoredSkillLoader` das Compile-Time uebersehen und der Test bricht erst zur Test-Runtime. Akzeptables Trade-off, weil ein voller Loader-Mock viel Boilerplate ist.
+
+### Open Items fuer /security-audit
+
+- **RunSkillScriptTool path-traversal-Guard**: SAFE_NAME_PATTERN ist Whitelist-Regex `^[A-Za-z0-9][A-Za-z0-9._-]*$`. Pruefen ob das ausreichend ist (z.B. Punkt-Punkt-Sequenzen `a..b` matched aber sind harmlos im Filesystem -- Defense-in-Depth sollte explicit `..`-Segments rejecten).
+- **Sandbox-Execute Trust Boundary**: RunSkillScriptTool gibt Script-Code an Sandbox-Executor weiter. Sandbox ist iframe/child_process-isoliert per ADR-021, aber pruefen ob args-JSON ueber die Bridge sicher serialisiert wird (kein prototype pollution via __proto__ keys).
+- **Bundle-Cache In-Memory**: Cache lebt im Tool-Instance, geht beim Plugin-Reload verloren. Persistenz pending fuer eine spaetere Iteration. Sicherheits-Implikation: keine, weil Cache nichts persistiert.
+- **ManageSkillTool back-compat-Loose-Input**: stray `code_modules`-Input wird ignored, nicht rejected. Vermeidet false errors fuer legacy callers, aber heisst auch dass ein boeser Caller arbitrary input ohne Warnung mitschickt. Aktuell akzeptabel, dokumentieren.
+
+### Naechster Schritt
+
+Empfehlung: `/security-audit` fuer FEAT-29-06 starten. Anschliessend Live-Test auf Sebastian's Vault, dann FEAT-29-05 (skill-creator baut auf run_skill_script auf).
