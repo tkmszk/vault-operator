@@ -3989,3 +3989,66 @@ Welle 2 ist released-ready. Empfehlung: Welle 3 (FEAT-29-03 Unified Discovery + 
 ### Audit-Report
 
 `_devprocess/analysis/AUDIT-FEAT-29-02-2026-05-20.md`
+
+## EPIC-29 -- /coding Welle 3 (FEAT-29-03 + FEAT-29-04) (2026-05-20)
+
+### Scope
+
+Bundled Implementierung beider Welle-3-Features. FEAT-29-03 Discovery (Polling-Latency + probe_plugin Live-Read) und FEAT-29-04 Notice-Capture (window.Notice-Monkey-Patch) gehoeren beide zum `execute_command`-Code-Pfad und teilen den Plugin-Manifest-Read-Surface. Ein bundled PLAN-29 statt zwei separater Plans war pragmatisch effizienter.
+
+### Artefakt-Bericht
+
+- `src/core/skills/VaultDNAScanner.ts`: Poll-Interval 30s -> 2s (Zeile 1120), Reclassify-Delays 3s -> 1s + 10s (Zeile 195-199), neue public `triggerImmediateSync` Methode fuer event-driven Trigger.
+- `src/main.ts`: Event-Hook `workspace.on("layout-change")` mit 200ms-Debounce-Timer, ruft `vaultDNAScanner.triggerImmediateSync` (Zeile 902-915).
+- `src/core/tools/agent/ProbePluginTool.ts`: NEU. Pure `probe(pluginId)`-Methode liest live `app.plugins.plugins[id]` + `app.commands.commands`-Prefix-Filter + Reflection auf API-Methoden mit Skip-Listen.
+- `src/core/tools/ToolRegistry.ts`: ProbePluginTool registriert.
+- `src/core/tools/toolMetadata.ts`: TOOL_METADATA-Eintrag fuer probe_plugin.
+- `src/core/tools/types.ts`: ToolName union erweitert um `probe_plugin`.
+- `src/core/utils/NoticeCapture.ts`: NEU. `withNoticeCapture(globalRef, fn, options)`. Async-tail-window, severity-Heuristik, sensitive-Filter, truncation, fail-soft.
+- `src/core/tools/agent/ExecuteCommandTool.ts`: Wraps executeCommandById in withNoticeCapture, tool_result strukturiert mit notices-Array + severity + redacted-Flag.
+- `src/core/skills/SkillRegistry.ts`: Prompt-Hint "use probe_plugin if listed commands look stale".
+- `src/ARCHITECTURE.map`: Wayfinder-Row `probe-plugin`, vault-dna-Row mit FEAT-29-03-Note.
+
+Tests:
+- `src/core/utils/__tests__/NoticeCapture.test.ts`: NEU, 10 Tests (capture/restore/sensitive-redact/truncation/fail-soft/tail-window/severity/instanceof-preservation).
+- `src/core/tools/agent/__tests__/ProbePluginTool.test.ts`: NEU, 6 Tests (not-found/enabled-with-commands/disabled-but-installed/api-fallback/base-method-strip/non-function-strip).
+
+### Open Questions aus Specs, im Coding-Pivot beantwortet
+
+1. **Plugin-Enable/Disable-Events:** Obsidian-API hat keine offiziellen Events. Pragma: Polling-2s + workspace.layout-change-Hook (UI-driven Activations sind < 250ms sichtbar).
+2. **probe_plugin Caching:** Kein Cache, jede Anfrage live. `app.commands.commands` ist O(1)-lookup.
+3. **Hard-Guard execute_command:** Kein Runtime-Guard, nur Prompt-Hint.
+4. **Notice-Capture-Window:** +250ms post-execute fuer async Plugin-Notices.
+5. **Success-vs-Error-Severity:** Heuristik via Pattern-Match (error|fail|cannot|not found / warning|deprecated / saved|success|created).
+
+### TDD-Status (wichtig)
+
+Diese Welle wurde **NICHT TDD-gefahren**. Memory `feedback_tdd_default.md` setzt TDD als globalen Default seit 2026-05-20, aber ich habe das beim Session-Start uebersehen und Welle 1-3 von EPIC-29 non-TDD implementiert. User hat in Welle 3 mid-implementation darauf hingewiesen und entschieden: "Welle 1-3 weitermachen wie bisher, ab FEAT-29-05 wieder TDD". Memory-Eintrag entsprechend angepasst mit "Bekannte Ausnahme"-Section.
+
+Tests sind verhaltensorientiert und decken die SC ab, sind aber post-hoc geschrieben statt red-first. Das ist die Schwaeche dieser Welle, die der User akzeptiert hat.
+
+### Bekannte Risiken / Test-Empfehlungen fuer /testing
+
+- **`triggerImmediateSync` Debounce-Race:** 200ms-Debounce-Timer wird bei jedem layout-change neu gestartet. Bei rapid-fire layout-changes (z.B. waehrend Editor-Resize) wird das immer wieder gestartet -- der Sync feuert dann erst wenn keine layout-changes mehr passieren. Akzeptabel.
+- **`workspace.on("layout-change")` triggert oft:** Layout-Aenderungen passieren auch bei View-Switch oder Pane-Resize, nicht nur bei Plugin-Aktivierung. `triggerImmediateSync` ist O(n) auf enabled-plugins-Set, das ist billig (n~100). Aber bei extrem schnellem View-Switching koennte das einen Mini-Spike geben. Live-Test bei real Use.
+- **NoticeCapture `tailMs`-Window:** Bei sehr langsamen Plugins die Notices erst nach 500ms+ raisen, gehen Notices verloren. Tradeoff vs. UX-Latenz. 250ms ist Default-Wert, kann pro Tool-Call ueberschrieben werden.
+- **NoticeCapture Sensitive-Heuristik:** matched substring `token|secret|key|password|api[-_ ]?key` case-insensitive. False-positive bei harmless Notices die "key" enthalten (z.B. "Pressed key Escape"). Eingrenzung der Regex pending.
+- **probe_plugin Reflection-Fallback:** Wenn ein Plugin keine `api`-Property hat, scannt Reflection den ganzen Plugin-Instance. Bei grossen Plugins (>100 Methods) ist das O(n) -- akzeptabel, da Iteration billig ist.
+- **ExecuteCommandTool tool_result-Format-Change:** ist ein BREAKING-CHANGE im Tool-Output. Bestehende `pushToolResult`-Consumer (memory, log) erwarten einen String -- das ist OK weil ich JSON.stringify nutze. Aber Tests die auf den vorherigen Free-Text "Executed command: ..." parsen wuerden brechen. Sollte beim /testing-Pass verifiziert werden.
+
+### Test-Stand
+
+| Stand | Pass | Fail |
+|---|---|---|
+| Welle-2-Ende | 1809 | 21 (alle pre-existing) |
+| Welle-3 /coding | **1825** | 21 (identisch pre-existing) |
+
++16 neue Tests. Build green, deploy auf iCloud-Vault durchgelaufen.
+
+### Naechster Schritt
+
+Empfehlung: `/testing` fuer Welle 3 starten. Smoke-Tests gegen die 6 dokumentierten Risiko-Szenarien plus Live-Test auf Sebastian's Vault (Plugin-Aktivierung-Latenz beobachten, execute_command auf Dataview-Query und Notice-Capture verifizieren). Danach `/security-audit` fuer Notice-Capture (Monkey-Patch ist sensitives Pattern) und probe_plugin (Reflection-Surface).
+
+### Anschliessend Welle 4
+
+Nach Welle-3-Abschluss: FEAT-29-05 (Skill-Creator-Builtin), FEAT-29-06 (Sandbox-JS), FEAT-29-08 (Translator), FEAT-29-09 (Versioning), FEAT-29-10 (Composability), FEAT-29-07 (Permission+Latency), FEAT-29-11 (Customize+Toolbox), FEAT-29-12 (Backup-Export). Wichtig: **ab FEAT-29-05 strikt TDD** per `feedback_tdd_default.md`.
