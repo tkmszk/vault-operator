@@ -3566,7 +3566,7 @@ v2.11.5 ist bereits public (shipped Yellow vor dem Fix-Loop). Die in diesem Audi
 
 ### Scope
 
-EPIC-29 Skills-Konsolidierung und Plugin-as-Skill Reliability angelegt: 11 Features in 4 Wellen. Schliesst EPIC-22-Luecke (Plugin-Skill-Migration auf Anthropic-Folder-Format) und addressiert Plugin-as-Skill-Reliability sowie Skill-Authoring-Toolkit. EPIC-30 (Skills-Marketplace) und EPIC-31 (Workflow-Builder plus Rules-Merge) als Skeleton-Epics angelegt (Phase Candidates, volle Specs nach EPIC-29 Welle 2 bzw. Welle 3).
+EPIC-29 Skills-Konsolidierung und Plugin-as-Skill Reliability angelegt: 11 Features in 4 Wellen. Schliesst EPIC-22-Luecke (Plugin-Skill-Migration auf Anthropic-Folder-Format) und addressiert Plugin-as-Skill-Reliability sowie Skill-Authoring-Toolkit. EPIC-30 (Workflow-Builder plus Rules-Merge) und EPIC-31 (Skills-Marketplace) als Skeleton-Epics angelegt (Phase Candidates). Reihenfolge bewusst: erst Workflow-Builder bauen, dann Marketplace, damit der Marketplace beide Asset-Typen (Skills und Workflows) zum Anbieten hat.
 
 ### Artifacts produced
 

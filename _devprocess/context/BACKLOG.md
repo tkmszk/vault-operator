@@ -3,7 +3,7 @@
 > Single source of truth for state and the artifact relation graph.
 > Status fields live HERE, not in artifact frontmatter.
 
-Last update: 2026-05-20 by re (EPIC-29 Skills-Konsolidierung und Plugin-as-Skill Reliability angelegt: 11 Features (FEAT-29-01 bis FEAT-29-11) in 4 Wellen. EPIC-30 (Skills-Marketplace) und EPIC-31 (Workflow-Builder + Rules-Merge) als Skeleton-Epics angelegt, volle Specs nach EPIC-29-Welle-2 bzw. Welle-3. architect-handoff-epic-29.md mit 21 ASRs ready.)
+Last update: 2026-05-20 by re (EPIC-29 Skills-Konsolidierung und Plugin-as-Skill Reliability angelegt: 11 Features (FEAT-29-01 bis FEAT-29-11) in 4 Wellen. EPIC-30 (Workflow-Builder + Rules-Merge) und EPIC-31 (Skills-Marketplace) als Skeleton-Epics angelegt. Reihenfolge bewusst: erst Workflows bauen, dann Marketplace hat beide Asset-Typen zum Anbieten. Volle Specs nach EPIC-29 bzw. EPIC-30. architect-handoff-epic-29.md mit 21 ASRs ready.)
 
 ---
 
@@ -609,20 +609,20 @@ Verwandt: Schliesst EPIC-22-Luecke (Plugin-Skill-Migration auf Anthropic-Folder-
 | FEAT-29-09 | Feature | Skill-Versionierung mit Snapshot und Restore | Planned | Planned | EPIC-29, FEAT-29-02, FEAT-29-05 | USER |  |  | 2026-05-20 | P1 Welle 4. Automatischer Snapshot bei jeder Skill-Aenderung. Diff-basiert, Restore unter 2 Sekunden. Tagging gegen Retention. Spec: `_devprocess/requirements/features/FEAT-29-09-skill-versioning.md` |
 | FEAT-29-10 | Feature | Composability (Skill-zu-Skill und Skill-zu-MCP) | Planned | Planned | EPIC-29, FEAT-29-03, FEAT-29-06 | USER |  |  | 2026-05-20 | P1 Welle 4. Skill-Body kann andere Skills und MCP-Server aufrufen. Cycle-Detection, Max-Depth-Limit. MCP-Approval-Kette respektiert. Spec: `_devprocess/requirements/features/FEAT-29-10-composability-skill-to-skill-and-mcp.md` |
 
-### EPIC-30: Skills-Marketplace (GitHub-basiert)
+### EPIC-30: Workflow-Builder und Settings-Vereinfachung
 
-Source: `_devprocess/requirements/epics/EPIC-30-skills-marketplace.md`
+Source: `_devprocess/requirements/epics/EPIC-30-workflow-builder-and-settings-simplification.md`
 Phase: Candidates | Status: Draft
-Verwandt: Skeleton-Epic. Volle Specs nach Abschluss EPIC-29 Welle 1+2. GitHub-Repo als Marketplace, MIT-Lizenz-Pflicht, PR-Workflow fuer Submissions, Anthropic-Bridge.
+Verwandt: Skeleton-Epic. Volle Specs nach Abschluss EPIC-29 Welle 3. Workflow-Builder (n8n-aehnlich), Rules-zu-Additional-Instructions Migration, Modes endgueltig entfernen.
 
 | ID | Type | Title | Status | Phase | Refs | Source | Commit | Claim | Last change | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
 
-### EPIC-31: Workflow-Builder und Settings-Vereinfachung
+### EPIC-31: Skills-Marketplace (GitHub-basiert)
 
-Source: `_devprocess/requirements/epics/EPIC-31-workflow-builder-and-settings-simplification.md`
+Source: `_devprocess/requirements/epics/EPIC-31-skills-marketplace.md`
 Phase: Candidates | Status: Draft
-Verwandt: Skeleton-Epic. Volle Specs nach Abschluss EPIC-29 Welle 3. Workflow-Builder (n8n-aehnlich), Rules-zu-Additional-Instructions Migration, Modes endgueltig entfernen.
+Verwandt: Skeleton-Epic. Volle Specs nach Abschluss EPIC-29 (Skills-Konsolidierung) und EPIC-30 (Workflow-Builder). GitHub-Repo als Marketplace, MIT-Lizenz-Pflicht, PR-Workflow fuer Submissions, Anthropic-Bridge. Mit EPIC-30 zuerst hat der Marketplace beide Asset-Typen (Skills und Workflows) zum Anbieten.
 
 | ID | Type | Title | Status | Phase | Refs | Source | Commit | Claim | Last change | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|

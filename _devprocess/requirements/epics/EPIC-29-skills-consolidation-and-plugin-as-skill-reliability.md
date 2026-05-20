@@ -62,11 +62,11 @@ Fuer Power-User des Vault Operators, die heute auf drei parallele Daten-Ordner (
 
 ## Explicit Out-of-Scope
 
-- Eigener Skill-Marketplace oder Online-Registry. Skill-Distribution bleibt Zip-Drop oder Folder-Copy. Folge-Initiative: EPIC-30.
-- GitHub-PR-Workflow fuer Skill-Submissions. Folge-Initiative: EPIC-30.
-- Anthropic-Marketplace-Discovery-UI. Folge-Initiative: EPIC-30.
-- Workflow-Builder fuer Skill-Sequenzen (n8n-artig). Folge-Initiative: EPIC-31.
-- Rules-zu-Additional-Instructions-Migration. Folge-Initiative: EPIC-31.
+- Eigener Skill-Marketplace oder Online-Registry. Skill-Distribution bleibt Zip-Drop oder Folder-Copy. Folge-Initiative: EPIC-31.
+- GitHub-PR-Workflow fuer Skill-Submissions. Folge-Initiative: EPIC-31.
+- Anthropic-Marketplace-Discovery-UI. Folge-Initiative: EPIC-31.
+- Workflow-Builder fuer Skill-Sequenzen (n8n-artig). Folge-Initiative: EPIC-30.
+- Rules-zu-Additional-Instructions-Migration. Folge-Initiative: EPIC-30.
 - Migration der `knowledge.db` zwischen Folder-Pfaden ohne Backup. Migration legt vorher zwingend einen Backup-Snapshot an.
 - Signaturverifikation fuer importierte Skills. Sandbox-Approval bleibt der Schutzmechanismus.
 - Aenderungen am laufenden EPIC-22-Code-Pfad fuer User-Skills jenseits der Migration. EPIC-29 nutzt die EPIC-22-Foundation unveraendert und schliesst nur die Plugin-Luecke.
