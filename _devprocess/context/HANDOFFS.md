@@ -3760,3 +3760,61 @@ Diese 21 Failures werden NICHT von /testing fuer FEAT-29-01 adressiert. Sie sind
 ### Naechster Schritt
 
 Empfehlung: `/security-audit` fuer FEAT-29-01 starten. Anschliessend Welle 2 (FEAT-29-02 Plugin-Skill-Format-Migration).
+
+## EPIC-29 -- /security-audit Welle 1 (FEAT-29-01) (2026-05-20)
+
+### Scope
+
+Security-Audit auf die Welle-1-Aenderungen (Commits 9e215af6 + f0e1d2e3). 5 Audit-Foki aus dem /testing-Handoff systematisch geprueft, plus OWASP A01-A10 Quickcheck, plus SCA (KEINE neuen Deps -> SCA nicht erforderlich).
+
+### Findings vor Fix-Loop
+
+| ID | Severity | Title | Status |
+|---|---|---|---|
+| M-1 | Medium | Backup-Snapshot landet im iCloud-Sync-Bereich | Resolved |
+| L-1 | Low | Keine Retention-Policy fuer Backup-Snapshots | Resolved |
+| L-2 | Low | Backup-Files mit Default-Permissions (0644) | Resolved |
+| L-3 | Low | listBackupFolders ohne path-containment-Check | Resolved |
+| L-4 | Low | copyRecursive folgt Symlinks | Resolved |
+| I-1 | Info | Code-Kommentar "outside the vault" widerspricht Pfad-Wahl | Resolved |
+
+### Findings nach Fix-Loop
+
+**Alle 6 Findings resolved.** Verbleibende Architecture-Concerns sind als ADR-Iterations-Themen dokumentiert, nicht als blockierende Findings.
+
+### Verdict-Wechsel
+
+Initial: Medium-Risk / Yellow.
+Nach Fix-Loop: **Low-Risk / Green.** Welle 1 ist release-ready.
+
+### Code-Aenderungen im Fix-Loop
+
+1. **M-1 + I-1 Bundle:** Backup-Pfad zeigt jetzt auf `{homedir}/.vault-operator-migration-backups/{vault-md5-hash-12}/`. MD5-Hash der vaultBasePath trennt Vaults auf derselben Maschine. Code-Aenderungen in `src/main.ts:736-757` (Migration-Trigger), `src/ui/settings/VaultTab.ts:847-862` (Restore-Trigger), `src/core/utils/migrateAgentLayout.ts:124-130` (Doc-Kommentar). Test-Helper in `restoreLayoutFromBackup.test.ts:33-37` an neue Pfad-Struktur angepasst.
+2. **L-1:** Neuer `pruneOldBackups`-Helper in `migrateAgentLayout.ts`. Lauft am Ende von `phaseBackup` automatisch. Loescht alle Snapshots ausser den `BACKUP_RETENTION = 3` neuesten (inkl. dem just-written-Snapshot). Neuer Test "prunes older snapshots, keeping only the most recent BACKUP_RETENTION (3)" gruen.
+3. **L-2:** `copyRecursive` chmodet jeden kopierten File auf `0o600` (best-effort, try-catch fuer Windows).
+4. **L-3:** `listBackupFolders` filtert jetzt zusaetzlich per `pathModule.resolve(...).startsWith(resolvedRoot + sep)`. Malicious-Symlink-Hebel geschlossen.
+5. **L-4:** `lstat` ersetzt `stat` in `copyRecursive` (sowohl in `migrateAgentLayout.ts` als auch in `restoreLayoutFromBackup.ts`). Symlinks werden uebersprungen.
+
+### Test-Stand
+
+| Stand | Pass | Fail |
+|---|---|---|
+| /testing-Ende | 1774 | 21 (alle pre-existing) |
+| /security-audit-Ende | 1775 | 21 (alle pre-existing, identisch) |
+
++1 neuer Retention-Test. Build green, deploy auf iCloud-Vault durchgelaufen.
+
+### Architecture Concerns fuer naechste ADR-Iteration
+
+Diese gehen NICHT als FIX-Items in den Backlog, sondern als Architecture-Vorschlaege:
+
+- **iCloud-Sync-Awareness im Plugin-State-Management:** `getSafeLocalStorageRoot()`-Helper, der out-of-sync Pfade fuer alle State-Schreib-Operationen zurueckliefert. Wuerde die ad-hoc-Pfad-Wahl in Welle 1 strukturieren.
+- **Symlink-Handling-Konvention als Code-Rule:** alle `copyFile`-Operationen ueber Vault-Inhalte sollten `lstat` zuerst nutzen und bewusst entscheiden ob Symlinks gefolgt werden. Defensive-Default-Patern.
+
+### Naechster Schritt
+
+Welle 1 ist released-ready. Empfehlung: Welle 2 (FEAT-29-02 Plugin-Skill-Format-Migration).
+
+### Audit-Report
+
+`_devprocess/analysis/AUDIT-FEAT-29-01-2026-05-20.md`

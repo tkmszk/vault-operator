@@ -3,7 +3,7 @@
 > Single source of truth for state and the artifact relation graph.
 > Status fields live HERE, not in artifact frontmatter.
 
-Last update: 2026-05-20 by testing (EPIC-29 Welle 1 /testing-Pass abgeschlossen: 1774/1795 Tests green. Welle-1-Regression in migrateFolderRename gefunden + behoben (DEFAULT_AGENT_FOLDER-Umschaltung haette ohne Opt-in automatisch auf .vault-operator umbenannt -> pre-Welle-1-Default als harte Konstante geheartet). Drift-Updates in GlobalFileService-Tests (obsilo-shared -> vault-operator-shared) und searchHistory-Tests (obsilo-chat -> vault-operator-chat URI). +2 Gap-Tests fuer Restore-Service (blocked .vault-operator mit User-Files, removeConsolidated=false respected). Verbleibende 21 Failures alle pre-existing pre-Welle-1: 13x "window is not defined" (Node-Env vs Browser-Code), 4x deferredToolLoading (FEATURE-1600 Drift), 2x VaultHealthService.checkGodNodes, 1x executeVaultOp+toolMetadataConsistency. Naechster Schritt: /security-audit, dann Welle 2 (FEAT-29-02).)
+Last update: 2026-05-20 by security-audit (EPIC-29 Welle 1 /security-audit-Pass abgeschlossen: 1 Medium + 4 Low + 1 Info Findings, alle 6 im Audit-Pass resolved. Release-readiness: GREEN. Fixes: (a) Backup-Pfad aus iCloud-Sync nach {homedir}/.vault-operator-migration-backups/{vault-md5-hash}/ (M-1+I-1), (b) Retention-Policy BACKUP_RETENTION=3 mit pruneOldBackups-Helper (L-1), (c) chmod 0600 auf Backup-Files (L-2), (d) Defense-in-depth path-containment-Check in listBackupFolders (L-3), (e) lstat statt stat in copyRecursive um Symlinks zu skippen (L-4). 1775/1796 Tests gruen (+1 neuer Retention-Test). Naechster Schritt: Welle 2 (FEAT-29-02 Plugin-Skill-Format-Migration). Audit-Report: _devprocess/analysis/AUDIT-FEAT-29-01-2026-05-20.md)
 
 ---
 
