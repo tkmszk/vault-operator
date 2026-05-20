@@ -4108,3 +4108,78 @@ Smoke-Tests gegen die 6 Risiko-Szenarien aus dem /coding-Handoff. Neue Test-Date
 ### Naechster Schritt
 
 Empfehlung: `/security-audit` fuer Welle 3 starten. Fokus auf 4 Open-Items oben.
+
+## EPIC-29 -- /security-audit Welle 3 (FEAT-29-03 + FEAT-29-04) (2026-05-20)
+
+### Scope
+
+Security-Audit auf Welle 3 (Commits 27834308 coding + d046f9a3 testing). 4 Audit-Foki aus /testing-Handoff systematisch geprueft (NoticeCapture-Race, probe_plugin-Getter-Tolerance, JSON-Bloat, Sensitive-Heuristik) plus OWASP-Quickcheck. KEINE neuen Deps -> SCA n/a.
+
+### Findings vor Fix-Loop
+
+| ID | Severity | Title | Status |
+|---|---|---|---|
+| M-1 | Medium | NoticeCapture Monkey-Patch Race-Condition (Memory-Leak-Risiko) | Resolved |
+| L-1 | Low | probe_plugin reflectApiMethods bricht bei Getter-Throw | Resolved |
+| L-2 | Low | NoticeCapture per-Notice keine Laengen-Begrenzung -> tool_result-Bloat | Resolved |
+| I-1 | Info | Sensitive-Heuristik deckt nur Wort-Keywords ab, nicht Token-Formate | Resolved |
+
+### Verdict-Wechsel
+
+Initial: Low-Medium-Risk / Yellow.
+Nach Fix-Loop: **Low-Risk / Green.** Welle 3 ist release-ready.
+
+### Code-Aenderungen im Fix-Loop
+
+1. **M-1 NoticeCapture Race-Protection:**
+   - Module-level `activePatch`-Singleton mit Symbol-Token
+   - Nested-Caller waehrend tailMs-Window laufen fail-soft (`patchSkipped=true`)
+   - Cleanup in finally checked `ownToken === activePatch.token` vor reset
+
+2. **L-1 probe_plugin Getter-Tolerance:**
+   - try/catch um `apiHolder[key]`-Access in reflectApiMethods
+   - Bei Getter-Throw: Property wird skipped, Probe laeuft weiter
+
+3. **L-2 Per-Notice-Truncation:**
+   - Konstante `MAX_NOTICE_TEXT_CHARS = 500`
+   - Long-Notice wird mit `... [truncated]`-Marker gekappt
+
+4. **I-1 Sensitive-Pattern erweitert:**
+   - `SENSITIVE_PATTERN_KEYWORDS` um `bearer`, `pat`, `auth(orization)?` erweitert
+   - `SENSITIVE_PATTERN_TOKEN_FORMATS` neu fuer naked Token-Strings:
+     - `ghp_*`, `gho_*`, `github_pat_*` (GitHub PAT-Formate)
+     - `sk-*` (OpenAI-Style)
+     - `eyJ*` (JWT)
+     - `[0-9a-f]{32+}` (generische lange Hex-Strings, z.B. MD5/SHA-Hashes die als Token verwendet werden)
+   - Zentraler `isSensitiveText()`-Helper
+
+### Test-Stand
+
+| Stand | Pass | Fail |
+|---|---|---|
+| /testing-Ende | 1833 | 21 (alle pre-existing) |
+| /audit-Ende | **1838** | 21 (identisch pre-existing) |
+
++5 neue Tests:
+- 2 fuer M-1 (nested fail-soft, activePatch-Cleanup)
+- 1 fuer L-1 (getter-throw skip)
+- 1 fuer L-2 (per-notice truncation)
+- 1 fuer I-1 (token-format detection)
+
+Build green, deploy auf iCloud-Vault durchgelaufen.
+
+### Architecture Concerns fuer naechste ADR-Iteration
+
+Nicht-blocking, aber wert zu notieren:
+
+- **NoticeCapture als Singleton:** Das Fail-Soft-Pattern fuer Nested-Caller koennte spaeter zu einem geteilten Notice-Bus erweitert werden, der allen Aufrufern parallel Notices liefert. Aktuell ist das nicht noetig (sequential tool-execution), aber bei eingefuehrter Parallelitaet (z.B. Multi-Agent-Subtasks) wuerde der Singleton zu eng.
+
+- **probe_plugin Reflection-Surface:** Wir reflektieren reine Properties; Methoden ohne `function`-Type filtern wir aus. Plugin-instanzen koennten aber Methoden ueber Symbol-Keys oder Prototype-Chain expose'n. Aktuell uebersehen wir die. Vorschlag: spaeter Reflection.ownKeys + Prototype-Walk + Symbol-Filter.
+
+### Naechster Schritt
+
+Welle 3 ist released-ready. Empfehlung: **Welle 4 (FEAT-29-05 Skill-Creator-Builtin) mit strikt TDD** per `feedback_tdd_default.md`. Welle 4 ist die letzte Welle von EPIC-29 (Skill-Authoring, Sandbox-JS, Translator, Versioning, Composability, Permission-Polish, Customize+Toolbox-Icon, Backup-Export).
+
+### Audit-Report
+
+`_devprocess/analysis/AUDIT-FEAT-29-03-FEAT-29-04-2026-05-20.md`

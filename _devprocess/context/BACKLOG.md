@@ -3,7 +3,7 @@
 > Single source of truth for state and the artifact relation graph.
 > Status fields live HERE, not in artifact frontmatter.
 
-Last update: 2026-05-20 by testing (EPIC-29 Welle 3 /testing-Pass abgeschlossen: 1833/1854 Tests gruen (+8 neue Tests fuer Risiko-Szenarien: out-of-tail-window-Notice, sensitive-Heuristik false-positive-Pinning, probe_plugin-large-plugin-Performance, ExecuteCommandTool-JSON-Format-Change). Neue Test-Datei `src/core/tools/agent/__tests__/ExecuteCommandTool.test.ts` mit 5 Tests pinned das BREAKING-CHANGE-JSON-Format. 21 pre-existing Failures unveraendert. Build green. Naechster Schritt: /security-audit fuer Welle 3.)
+Last update: 2026-05-20 by security-audit (EPIC-29 Welle 3 /security-audit-Pass abgeschlossen: 1 Medium + 2 Low + 1 Info Findings, alle 4 im Audit-Pass resolved. Release-readiness: GREEN. Fixes: (M-1) NoticeCapture Race-Protection via Singleton+Symbol-Token, Nested-Caller fail-soft. (L-1) try/catch um Property-Access in probe_plugin reflectApiMethods. (L-2) Per-Notice-Truncation MAX_NOTICE_TEXT_CHARS=500. (I-1) Sensitive-Pattern erweitert um Token-Formate (ghp_, gho_, github_pat_, sk-, eyJ JWT, 32+ hex) + Keywords bearer/pat/auth. 1838/1859 Tests gruen (+5 Audit-Resolution-Tests). 21 pre-existing Failures unveraendert. Audit-Report: _devprocess/analysis/AUDIT-FEAT-29-03-FEAT-29-04-2026-05-20.md. Welle 3 ist release-ready. Naechster Schritt: Welle 4 (FEAT-29-05 ff., strikt TDD).)
 
 ---
 
