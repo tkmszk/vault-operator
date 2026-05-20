@@ -3,7 +3,7 @@
 > Single source of truth for state and the artifact relation graph.
 > Status fields live HERE, not in artifact frontmatter.
 
-Last update: 2026-05-19 by coding (Checkpoints fuer Agent umgesetzt: IMP-01-07-01 (4 Tools list/read/diff/restore_checkpoint) + FIX-01-07-02 (UI-Rehydration via loadCheckpointsForTask + rehydrateCheckpointMarkers). 4 Commits auf feat/checkpoint-agent-access: 026727b5 docs, 59edeb8c service-rehydration, 7112c049 ui-fix, 1c0f256c tools. 36 neue Tests gruen, tsc clean.)
+Last update: 2026-05-20 by re (EPIC-29 Skills-Konsolidierung und Plugin-as-Skill Reliability angelegt: 11 Features (FEAT-29-01 bis FEAT-29-11) in 4 Wellen. EPIC-30 (Skills-Marketplace) und EPIC-31 (Workflow-Builder + Rules-Merge) als Skeleton-Epics angelegt, volle Specs nach EPIC-29-Welle-2 bzw. Welle-3. architect-handoff-epic-29.md mit 21 ASRs ready.)
 
 ---
 
@@ -11,15 +11,15 @@ Last update: 2026-05-19 by coding (Checkpoints fuer Agent umgesetzt: IMP-01-07-0
 
 | Status | Count | | Phase | Count | | Type | Count |
 |---|---|-|---|---|-|---|---|
-| Planned | 29 | Released | 358 | Epic | 24 |
-| Active | 26 | Building | 64 | Feature | 212 |
-| Done | 257 | Planned | 25 | Fix | 60 |
-| Accepted | 110 | Candidates | 0 | Improvement | 19 |
-| Draft | 12 |  |  | ADR | 117 |
+| Planned | 40 | Released | 358 | Epic | 27 |
+| Active | 27 | Building | 64 | Feature | 223 |
+| Done | 257 | Planned | 36 | Fix | 60 |
+| Accepted | 110 | Candidates | 2 | Improvement | 19 |
+| Draft | 14 |  |  | ADR | 117 |
 | Open | 5 |  |  | Plan | 15 |
 | Proposed | 7 |  |  |  |  |
 
-Total artifacts: 447
+Total artifacts: 461
 
 ---
 
@@ -587,6 +587,45 @@ Verwandt: Reaktion auf Obsidian-Plugin-Scanner-Findings auf v2.11.0 (5 Behavior-
 | FIX-28-00-01 | Fix | execSync mit Template-Literal -> spawnSync mit shell:false (ProcessSandboxExecutor.findNodeBinary + McpBridge.startTunnel) | Done | Released | EPIC-28, AUDIT-027 | SEC |  |  | 2026-05-16 | P2 Defensive Hygiene. Beide Stellen verwendeten `${which}` als Template-Literal in execSync. Heute nicht exploitierbar (which/where sind plattform-konstant), aber Anti-Pattern. Wird mit v2.11.2 ausgespielt; redundant zu FEAT-28-02 sobald die Call-Site-Migration durch ist. |
 | FIX-28-00-02 | Fix | GitCheckpointService -- isomorphic-git haengt indefinit mit safeFs-Wrapper als fs-Plugin (Reload-Hang auf iCloud-Vault) | Done | Released | EPIC-28, FIX-28-00-01 | BUG |  |  | 2026-05-16 | P0 Live-Hang. EPIC-28 hatte `getFs()` von `import fs from 'fs'` auf `safeFs` umgestellt; isomorphic-git `git.resolveRef` mit `fs: safeFs` liefert eine Promise, die nie resolved (kein Throw, kein Reject). DevTools-Console blieb nach `Loading Vault Operator plugin` stumm, Plugin-onload terminierte nie. Genauer Trigger im Library-internen Property-Probing nicht final isoliert (vermutlich `typeof fs.X` Verhalten anders zwischen Object-Literal `export const promises` und nativem `fs.promises` Proxy). Fix: Genau ein Call-Site (`GitCheckpointService.getFs()`) auf `require('fs')` zurueck, scripts/check-safe-fs-imports.sh um 5. Ausnahme erweitert. Schreibumfang von isomorphic-git ist durch `dir`-Parameter aller `git.X()`-Calls auf `<vault>/.obsidian/plugins/<id>/checkpoints/` beschraenkt -- Threat-Model bleibt korrekt. Detailfile: `_devprocess/requirements/fixes/FIX-28-00-02-isomorphic-git-safefs-hang.md`. |
 | FIX-28-00-03 | Fix | iCloud-Sync stalls Obsidian Mobile beim Vault-Open: 196 MB / 3632 Dateien in `<vault>/.obsidian/plugins/<id>/checkpoints/` + 11 MB in `dev-env/` werden auf alle Geraete syncen, Mobile haengt im "restart in safe mode"-Dialog | Done | Released | EPIC-28, FIX-28-00-02 | BUG |  | e01f71dd |  | 2026-05-19 | P0 Live-Stall auf iPhone gemeldet 2026-05-19. Beide Caches nach `{vault-parent}/obsilo-shared/checkpoints/` bzw. `.../dev-env/` verschoben (analog zum GlobalFileService-Root). One-shot Migration auf plugin-onload via `migratePluginDataDirs.ts`: `fs.rename` (atomar), copy+delete-Fallback fuer EXDEV / EPERM / EBUSY. Idempotent ueber `_pluginDataDirsMigrated` Settings-Flag. `GitCheckpointService` Constructor nimmt jetzt `repoAbsPath: string`, alle `vault.adapter.mkdir`-Calls in `initialize()` auf `rawFs.promises.mkdir` migriert. `EsbuildWasmManager` Constructor nimmt `cacheAbsDir: string`, fuenf `vault.adapter`-I/O-Sites auf `rawFs` migriert. Plugin bleibt `isDesktopOnly: true` -- Mobile-Plugin-Loading ist BA-23 / EPIC-23. Detailfile: `_devprocess/requirements/fixes/FIX-28-00-03-icloud-sync-stall-mobile.md`. |
+
+### EPIC-29: Skills-Konsolidierung und Plugin-as-Skill Reliability
+
+Source: `_devprocess/requirements/epics/EPIC-29-skills-consolidation-and-plugin-as-skill-reliability.md`
+Handoff: `_devprocess/requirements/handoff/architect-handoff-epic-29.md`
+Phase: RE | Status: Active
+Verwandt: Schliesst EPIC-22-Luecke (Plugin-Skill-Migration auf Anthropic-Folder-Format) und addressiert Plugin-as-Skill-Reliability sowie Skill-Authoring-Toolkit. 11 Features in 4 Wellen: Welle 1 Cleanup-Foundation, Welle 2 Reliability, Welle 3 Authoring, Welle 4 Polish + Bridge.
+
+| ID | Type | Title | Status | Phase | Refs | Source | Commit | Claim | Last change | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|
+| FEAT-29-01 | Feature | Folder-Konsolidierung (.vault-operator als kanonisch) | Planned | Planned | EPIC-29 | USER |  |  | 2026-05-20 | P0 Welle 1. Drei aktive Plugin-Daten-Ordner (.obsilo-vault, .obsidian-agent, .vault-operator) auf einen einzigen .vault-operator/ migrieren. Doppel-Lesen-Fenster, Backup-Snapshot vor Schreiben. Spec: `_devprocess/requirements/features/FEAT-29-01-folder-consolidation.md` |
+| FEAT-29-02 | Feature | Plugin-Skill-Format-Migration (File zu Folder/SKILL.md) | Planned | Planned | EPIC-29, FEAT-29-01 | USER |  |  | 2026-05-20 | P0 Welle 1. 138 Plugin-Skill-Files auf Anthropic-konformes Folder-Format umstellen. Frontmatter strikt name + description. Spec: `_devprocess/requirements/features/FEAT-29-02-plugin-skill-format-migration.md` |
+| FEAT-29-03 | Feature | Unified Discovery und probe_plugin-Tool | Planned | Planned | EPIC-29, FEAT-29-02 | USER |  |  | 2026-05-20 | P0 Welle 2. Event-driven Discovery statt 5-Sekunden-Polling, neues probe_plugin-Tool fuer Live-Commands und API-Methoden. Spec: `_devprocess/requirements/features/FEAT-29-03-unified-discovery-and-probe-plugin.md` |
+| FEAT-29-04 | Feature | Execution Visibility (Notice-Capture) | Planned | Planned | EPIC-29 | USER |  |  | 2026-05-20 | P0 Welle 2. window.Notice waehrend execute_command patchen um silent Command-Failures sichtbar zu machen. Spec: `_devprocess/requirements/features/FEAT-29-04-execution-visibility.md` |
+| FEAT-29-05 | Feature | Skill-Creator-Builtin-Skill | Planned | Planned | EPIC-29, FEAT-29-02, FEAT-29-06 | USER |  |  | 2026-05-20 | P1 Welle 3. manage_skill-Tool wird entfernt, ersetzt durch skill-creator als Builtin-Skill analog Anthropic canonical. Flagship-Routing. Spec: `_devprocess/requirements/features/FEAT-29-05-skill-creator-builtin.md` |
+| FEAT-29-06 | Feature | Sandbox-JS als First-Class-Skill-Pattern | Planned | Planned | EPIC-29 | USER |  |  | 2026-05-20 | P1 Welle 3. code_modules-Mechanismus durch generisches run_skill_script-Tool ersetzen. Spec: `_devprocess/requirements/features/FEAT-29-06-sandbox-js-first-class.md` |
+| FEAT-29-11 | Feature | Customize-Section Refinement und Lucide Toolbox Icon | Planned | Planned | EPIC-29, FEAT-29-05 | USER |  |  | 2026-05-20 | P2 Welle 3. Edit-Button oeffnet Skill-Folder statt SKILL.md. lucide toolbox als Customize-Tab-Icon. Spec: `_devprocess/requirements/features/FEAT-29-11-customize-section-and-toolbox-icon.md` |
+| FEAT-29-07 | Feature | Permission und Latency Polish | Planned | Planned | EPIC-29, FEAT-29-03 | USER |  |  | 2026-05-20 | P2 Welle 4. Adaptive Timeouts pro Plugin, Auto-Promotion-Heuristik fuer Tier-2-Allowlist. Spec: `_devprocess/requirements/features/FEAT-29-07-permission-and-latency-polish.md` |
+| FEAT-29-08 | Feature | Skill-Translator-Builtin-Skill | Planned | Planned | EPIC-29, FEAT-29-02, FEAT-29-05, FEAT-29-06 | USER |  |  | 2026-05-20 | P1 Welle 4. Anthropic-Skills mit Python-Skripten in Sandbox-taugliches JavaScript uebersetzen. Dry-Run-Pass mit User-Modal bei partial translation. Flagship-Routing. Spec: `_devprocess/requirements/features/FEAT-29-08-skill-translator-builtin.md` |
+| FEAT-29-09 | Feature | Skill-Versionierung mit Snapshot und Restore | Planned | Planned | EPIC-29, FEAT-29-02, FEAT-29-05 | USER |  |  | 2026-05-20 | P1 Welle 4. Automatischer Snapshot bei jeder Skill-Aenderung. Diff-basiert, Restore unter 2 Sekunden. Tagging gegen Retention. Spec: `_devprocess/requirements/features/FEAT-29-09-skill-versioning.md` |
+| FEAT-29-10 | Feature | Composability (Skill-zu-Skill und Skill-zu-MCP) | Planned | Planned | EPIC-29, FEAT-29-03, FEAT-29-06 | USER |  |  | 2026-05-20 | P1 Welle 4. Skill-Body kann andere Skills und MCP-Server aufrufen. Cycle-Detection, Max-Depth-Limit. MCP-Approval-Kette respektiert. Spec: `_devprocess/requirements/features/FEAT-29-10-composability-skill-to-skill-and-mcp.md` |
+
+### EPIC-30: Skills-Marketplace (GitHub-basiert)
+
+Source: `_devprocess/requirements/epics/EPIC-30-skills-marketplace.md`
+Phase: Candidates | Status: Draft
+Verwandt: Skeleton-Epic. Volle Specs nach Abschluss EPIC-29 Welle 1+2. GitHub-Repo als Marketplace, MIT-Lizenz-Pflicht, PR-Workflow fuer Submissions, Anthropic-Bridge.
+
+| ID | Type | Title | Status | Phase | Refs | Source | Commit | Claim | Last change | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|
+
+### EPIC-31: Workflow-Builder und Settings-Vereinfachung
+
+Source: `_devprocess/requirements/epics/EPIC-31-workflow-builder-and-settings-simplification.md`
+Phase: Candidates | Status: Draft
+Verwandt: Skeleton-Epic. Volle Specs nach Abschluss EPIC-29 Welle 3. Workflow-Builder (n8n-aehnlich), Rules-zu-Additional-Instructions Migration, Modes endgueltig entfernen.
+
+| ID | Type | Title | Status | Phase | Refs | Source | Commit | Claim | Last change | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|
 
 ## Cross-cutting (ADRs, Plans, no Epic)
 

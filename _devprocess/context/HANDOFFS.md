@@ -3562,4 +3562,62 @@ v2.11.5 ist bereits public (shipped Yellow vor dem Fix-Loop). Die in diesem Audi
 - openai v5 Streaming-Verhalten unter Real-API-Load testen (Type-Check + Unit-Tests sagen kompatibel, aber Integration-Test mit echtem Stream waere wertvoll)
 - LLM01 Prompt-Injection-Surface (Tool-Result -> Model verbatim): mittel-fristig Marker `[USER-AUTHORED]` vs `[TOOL-OUTPUT]` evaluieren
 
+## EPIC-29 -- /requirements-engineering (2026-05-20)
+
+### Scope
+
+EPIC-29 Skills-Konsolidierung und Plugin-as-Skill Reliability angelegt: 11 Features in 4 Wellen. Schliesst EPIC-22-Luecke (Plugin-Skill-Migration auf Anthropic-Folder-Format) und addressiert Plugin-as-Skill-Reliability sowie Skill-Authoring-Toolkit. EPIC-30 (Skills-Marketplace) und EPIC-31 (Workflow-Builder plus Rules-Merge) als Skeleton-Epics angelegt (Phase Candidates, volle Specs nach EPIC-29 Welle 2 bzw. Welle 3).
+
+### Artifacts produced
+
+- `_devprocess/requirements/epics/EPIC-29-skills-consolidation-and-plugin-as-skill-reliability.md` (vollstaendig)
+- `_devprocess/requirements/epics/EPIC-30-skills-marketplace.md` (Skeleton)
+- `_devprocess/requirements/epics/EPIC-31-workflow-builder-and-settings-simplification.md` (Skeleton)
+- 11 Feature-Specs unter `_devprocess/requirements/features/FEAT-29-01.md` bis `FEAT-29-11.md`
+- `_devprocess/requirements/handoff/architect-handoff-epic-29.md` mit 21 ASRs
+- `_devprocess/context/BACKLOG.md` aktualisiert: EPIC-29/30/31 plus 11 Feature-Rows, Dashboard counts auf 461 Total / 27 Epics / 223 Features
+
+### NFR summary fuer Architekten
+
+- **Performance**: Skill-Discovery unter 100 ms, probe_plugin unter 50 ms, Notice-Capture-Overhead unter 5 ms, Folder-Migration unter 60s fuer 300 MB Vault, Snapshot-Anlage unter 100 ms, Restore unter 2s.
+- **Security**: Sandbox- und MCP-Approval-Ketten nicht umgehbar bei Skill-zu-Skill und Skill-zu-MCP. Backup-Pfad ausserhalb iCloud-Sync. Frontmatter-Validator wirft non-konforme Skills im Discovery-Layer raus.
+- **Reliability**: silent failures bei execute_command unter 2%, 0 NONE-klassifizierte Plugins nach Bootstrap, Migration idempotent und resumable.
+- **Storage**: Versions-Overhead pro Skill unter 5%, Diff-basiert.
+- **Compatibility**: Plugin-Skills portabel nach Claude Code, Cross-Platform Folder-Open (macOS, Windows, Linux).
+
+### Kritische ASRs (Architekten-Aufmerksamkeit)
+
+21 ASRs aggregiert im Handoff. Die kritischen:
+
+- **ASR-29-01, ASR-29-02**: Doppel-Lesen-Fenster und Backup vor Folder-Migration (FEAT-29-01). Daten-Integritaet steht und faellt damit.
+- **ASR-29-05, ASR-29-06**: Live-Probe-Modell und event-driven Discovery statt Polling (FEAT-29-03). Architektonischer Bruch mit dem heutigen Snapshot-Pattern.
+- **ASR-29-08**: Notice-Capture darf Plugin-Internals nicht brechen (FEAT-29-04). Fail-soft erforderlich.
+- **ASR-29-10, ASR-29-11**: Skill statt Tool fuer Erstellung, Validator als Discovery-Layer (FEAT-29-05). manage_skill-Tool wird entfernt.
+- **ASR-29-13**: Generisches run_skill_script statt code_modules-Tool-Registrierung (FEAT-29-06). Tool-Registry-Sprawl verhindert.
+- **ASR-29-15, ASR-29-16**: Dry-Run-Pass und Mapping-Tabelle bei Translation (FEAT-29-08). User-Trust-Anker.
+- **ASR-29-17**: Diff-basierte Snapshots statt voller Kopien (FEAT-29-09). Storage-Effizienz.
+- **ASR-29-19, ASR-29-20**: Cycle-Detection und MCP-Approval-Kette nicht umgehbar (FEAT-29-10). Sicherheit.
+
+Voller Liste im Handoff-Dokument.
+
+### Open architecture questions
+
+24 offene Architektur-Fragen aggregiert (siehe Handoff Sektion 5). Schwerpunkte: Backup-Pfad-Lokation, probe_plugin-Caching, Routing-Override-Mechanik, Bundle-Cache-Persistenz, Snapshot-Format, Sub-Skill-Kontext-Frame.
+
+### Constraints
+
+- TypeScript strict, Obsidian-Plugin-API, esbuild-Build, Electron-Renderer.
+- Sandbox via EsbuildWasmManager (ESM-Bundles vom CDN).
+- iCloud-Sync ist aktiv, Migration darf keine Sync-Konflikte ausloesen.
+- Bestehender MCP-Client wird wiederverwendet, kein paralleles Subsystem.
+- Single-Maintainer, sequenzielle Wellen-Entwicklung.
+
+### Forbidden-terms check
+
+Spec-Dateien wurden auf Tech-Begriffe in Success Criteria geprueft. Folgende Tech-Begriffe sind ausschliesslich in den Technical-NFR-Sections und Architecture-considerations vorhanden, nicht in Success Criteria: TypeScript, esbuild, CDN, ESM, MCP, JSON, electron, iCloud, JavaScript, npm, GitHub. SC-Eintraege bleiben tech-agnostisch und User-Outcome-fokussiert.
+
+### Naechster Schritt
+
+Empfehlung: `/architecture` starten. ADR-Vorschlaege werden gebraucht fuer Folder-Konsolidierung, Plugin-as-Skill Discovery, Skill-Authoring-Mechanik (skill-creator), Python-zu-JS-Translation, Skill-Versionierung, Composability-Modell. Alternativ vor dem Architecture-Pass eine Pause fuer User-Review der RE-Artefakte einlegen.
+
 
