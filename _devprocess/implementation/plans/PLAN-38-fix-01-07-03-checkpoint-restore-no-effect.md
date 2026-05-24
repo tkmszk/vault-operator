@@ -7,6 +7,8 @@ adr-refs: []
 fix-refs: [FIX-01-07-03]
 imp-refs: []
 pair-id: 38
+status: Released 2.12.3
+released: 2026-05-24
 ---
 
 # PLAN-38 -- FIX-01-07-03 Checkpoint-Restore no-effect
