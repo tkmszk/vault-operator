@@ -3,9 +3,11 @@ id: FIX-01-07-03
 feature: FEAT-01-07
 epic: EPIC-01
 adr-refs: []
-plan-refs: []
+plan-refs: [PLAN-38]
 depends-on: []
 created: 2026-05-22
+status: Resolved in 2.12.3
+resolved: 2026-05-24
 ---
 
 # FIX-01-07-03: Editor-View-Cache uebermalt vault.modify (restore + edit/write/append)
