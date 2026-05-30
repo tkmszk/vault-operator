@@ -4506,3 +4506,43 @@ Issue #38 abwarten -- User-Verifikation fuer DeepSeek-Passback steht. Wenn posit
 
 Report: `_devprocess/analysis/AUDIT-032-v2.12.5-2026-05-29.md`.
 
+
+## 2026-05-30 -- /security-audit AUDIT-033 (v2.12.6 ESLint-Cleanup + i18n Delta)
+
+**Scope:** targeted audit auf den schmalen Delta seit AUDIT-032. Zwei Trigger: (1) der nicht-gemergte Branch `chore/review-bot-score-pass` (commit fef39401) mit 16 Files in einem Review-Bot-Score-Pass (22 ESLint-Errors auf 0, 1 CSS-Duplikat entfernt), (2) i18n-Strings aus FIX-04-03-40-Follow-up (commits 3051f823 + 09419cf8, kosmetisches `modal.modelConfig.noModelsUrl` Update).
+
+**Verdict:** Green. 0 H/M/L, 1 Info (i18n-kosmetisch). `npm audit` 0 Findings (Baseline unveraendert von AUDIT-032).
+
+### Cleanup-Pass Review
+
+Alle 16 Cleanup-Aenderungen pro Kategorie geprueft:
+
+- **Removed type assertions (5 Stellen):** alle waren no-ops (Compiler hatte den Typ bereits inferiert oder ein vorgeschalteter defensiver Guard sichert die Annahme ab). `BackupTab.ts` non-null-assert: 5 Zeilen vor der Read-Site steht `if (!settings.backup) settings.backup = {...}`.
+- **Added narrowing casts (5 Stellen):** alle wiederholen Typen, die die Boundary bereits zusagt (`Map<string, string>` Iterator-Value, `bind()`-Result auf `AdapterLike['write']`, Constructor-Type mit `& { prototype: object }`). Kein widening, kein Boundary-Bypass.
+- **String coercion in BackupExportService:225:** `String(manifest.schemaVersion)` defensiv im Error-Template; schema-version ist getypter numeric literal, kein User-Input. Kein Injection-Vektor.
+- **eslint-disable Position-Fixes (GitCheckpointService.ts + EsbuildWasmManager.ts):** Direktive lag vorher zwischen Multi-Line-Kommentar und Code (matched Kommentarzeile, nicht Code). Jetzt direkt vor der `require('fs')`-Zeile. Die `require('fs')`-Aufrufe selbst sind seit AUDIT-030 etablierte Ausnahmen (isomorphic-git + cache-folder ausserhalb des Vaults, Plugin ist `isDesktopOnly:true`). Kein neuer Pfad.
+- **File-level disable RerankerService.ts:** Pattern-B-konform, schliesst `no-explicit-any` explizit aus (Bot verbietet das). Boundary ist untyped transformers.js / onnxruntime-web. Inputs validated by callers, Outputs als plain numbers coerced.
+- **Arrow-function Rewrite SkillWriteInterceptor:** semantisch identisch zum `const self = this` Pattern. Monkey-Patch-Reihenfolge (`await maybeSnapshot` vor delegated write) unveraendert.
+- **`async () => {}` zu `() => {}` in ExecuteCommandTool:** `withNoticeCapture` Signatur akzeptiert `() => Promise<T> | T`. NoticeCapture-Controls (AUDIT-FEAT-29-03+04: Token-Format-Redaction, max-captures Cap, 500-char per-notice Cap, M-1 module-level Singleton) unberuehrt.
+- **CSS Pattern-N-Merge in styles.css:** Union der Properties identisch zur Cascade-Reihenfolge davor. Reines Styling.
+
+### i18n Delta
+
+Einziger geaenderter String in `en.ts:1255`: "Model ID field" wird zu "field". Render via `setText` auf `<p>`, kein `innerHTML`, keine User-Input-Interpolation. Reine UI-Klarstellung.
+
+### Open Concerns
+
+- **Trust-boundary Pattern in BackupExportService.readManifest** ist unveraendert pre-existing. Die Manifest-Schema-Validierung steht in `unpackZip` (Zeile 224, ungeaendert) -- nur dort wird `manifest.schemaVersion !== 1` enforced. `readManifest` ist UI-Inspection-Helper (Public-API fuer "ZIP-Vorschau"). Wenn die UI in Zukunft handelt bevor `unpackZip` lief, muss der schema-version-Check dorthin gezogen werden. Aktuell kein Problem, weil UI nur die Manifest-Felder anzeigt.
+- **24 outdated NPM packages,** keine mit offenen Advisories. Routine-Maintenance, kein Audit-Finding. SDK-Updates (`@anthropic-ai/sdk`, `@aws-sdk/*`, `@typescript-eslint/*`) sammeln sich; im naechsten Maintenance-Window batchen.
+
+### Release Recommendation
+
+`chore/review-bot-score-pass` nach dev mergen, regulaer mit v2.12.6 raus. Keine separate Security-Note in den Release Notes, da kein Advisory geschlossen wurde -- Review-Bot-Score-Pass und i18n-Klarstellung reichen als Beschreibung.
+
+Naechster periodischer Full-Audit wird etwa 2026-06-19 faellig (ein Monat nach AUDIT-030). Bis dahin targeted per-release, sobald ein Dependabot-Alert aufgeht oder ein nicht-trivialer Feature landet.
+
+### Naechster Schritt
+
+`chore/review-bot-score-pass` ueber `scripts/merge-to-dev.sh` nach dev mergen, dann den naechsten dev-zu-main-Schwung anstossen. Audit-Branch `feature/audit-2026-05-30` kann nach Review geloescht werden (Report ist der einzige Deliverable und liegt unter `_devprocess/analysis/`).
+
+Report: `_devprocess/analysis/AUDIT-033-v2.12.6-2026-05-30.md`.
