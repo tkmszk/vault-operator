@@ -1535,6 +1535,7 @@ export class SemanticIndexService {
         const response = await client.embeddings.create({
             model: model.name,
             input: texts,
+            encoding_format: 'float',
         });
 
         const sorted = response.data.sort((a, b) => a.index - b.index);
