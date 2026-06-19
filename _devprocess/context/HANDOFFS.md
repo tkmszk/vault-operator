@@ -4798,3 +4798,56 @@ Keine. Tests laufen deterministisch in <200ms, kein async-Waiting, kein Timer-Mo
 **Live-Verifikation ausstehend:**
 
 oMLX + Qwen3 + Toggle OFF gegen lokales Setup von User arkham000 -- erst nach Merge in dev und Release. Dieser Test laeuft nicht im Plugin-CI, sondern beim User.
+
+---
+
+## 2026-06-19 -- RE -> Architecture: IMP-20-06-01 Claim Check + Review Hints
+
+**Phase:** Requirements Engineering (RE) complete.
+**Item:** IMP-20-06-01 (`_devprocess/requirements/improvements/IMP-20-06-01-claim-check-review-hints.md`)
+**Parent feature:** FEAT-20-06 (Knowledge Freshness, released; Stages 0-3 active in code, Stages 4-5 implementiert in diesem IMP).
+**Epic:** EPIC-20 Graph Intelligence.
+
+### Was wurde uebergeben
+
+10 Bauteile, 12 Akzeptanzkriterien, 12 binding Constraints (C-01 bis C-12) aus zwei voraufgehenden Audits. Volle Spec im IMP-File.
+
+### Quantifizierte NFRs
+
+- **Performance**: Stage-4-Cost pro Run unter 0.10 USD (1000-Note-Vault, alignt mit FEAT-20-06 Section "Cost Per Scan"). Hard cap im bestehenden `Stufe3PeriodicJob.spendTokens`-Mechanismus, kein paralleler Budget-Pot.
+- **Throughput**: Mid-Tier-Call pro Note 5000 Input + 500 Output Token als Ceiling. NoteSelector limitiert auf Top-N pro Cluster, default N = 5.
+- **Scheduling**: volatile Notes werden bevorzugt selektiert. `freshness_class` ist Scheduling-Signal, Default-Frequenzen: volatile woechentlich, evolving monatlich, stable quartalsweise.
+- **Retention**: `note_freshness_history` haelt maximal 5 Runs ODER 90 Tage pro Note, was zuerst eintritt.
+- **Availability**: Aging-knowledge-Tab muss innerhalb des bestehenden VaultHealthRepairModal in weniger als 250 ms laden, auch bei 200 geflaggten Notes. Virtual scroll oder Cluster-Grouping als Pflicht.
+
+### Kritische ASRs (jede braucht eine ADR)
+
+1. **Hook-Schema-Erweiterung**: `UpdateFinding.notes?: NoteVerdict[]` als additive Erweiterung von [Stufe3PeriodicJob.ts:24-30](../../src/core/health/Stufe3PeriodicJob.ts#L24-L30). Trade-off zwischen additive Erweiterung und Breaking-Schema-Change. Mehrere Caller, einschliesslich [main.ts:1481-1491](../../src/main.ts#L1481-L1491) `notificationSink`. ADR notwendig.
+2. **Verifier-Pipeline-Platzierung**: Stage 4+5 laufen innerhalb `webUpdatePass`, nicht parallel. Bedeutet Token-Aggregation pro Cluster, nicht pro Note. ADR pin-pointed das Pattern und die Test-Implikation an [Stufe3Plan14.test.ts:109-117](../../src/core/health/__tests__/Stufe3Plan14.test.ts#L109-L117).
+3. **Frontmatter-Write-Pattern**: zentraler `FrontmatterWriter` mit `WriterLock` pro Pfad, geteilt mit ingest-deep, mark_as_memory_source, update_frontmatter. ADR pinned die WriterLock-API und das Conflict-Resolution-Verhalten.
+4. **External-Source-Adapter-Pattern**: WebSearchProvider-Interface aus ADR-104 erweitern um eine `verifierQuery(note): Promise<SearchResult[]>`-Methode mit harter Query-Cap (400 Zeichen, builder-side enforced). ADR begruendet die Cap und die Sanitizer-Pflicht.
+5. **Frontier-Eskalation-Gating**: ZDR / no-logging Pflicht beim Frontier-Provider. ADR definiert die Fail-closed-Semantik und das Provider-Capability-Schema.
+
+### Offene Architektur-Fragen fuer /architecture
+
+- Wie genau wird `dismissed_freshness` aktiviert? Neuer Read-Pfad allein in `NoteSelector`, oder zentraler `DismissedHintsRepository` der von mehreren Hooks gelesen wird?
+- ResolveConflictModal: erbt vom existierenden Modal-Pattern oder eigenes Pattern (das aktuelle Modal hat Tabs, neues Modal ist Diff-zentriert)?
+- BatchResolveModal Abort+Resume: Resume-State in der DB (eigene Tabelle) oder in-memory bis Plugin-Reload? Trade-off zwischen Robustheit und Komplexitaet.
+- `freshness.excludePaths` Default-Liste: vorgeschlagen `Private/`, `Personal/`, `Medical/`, `Clients/`. Ob diese Defaults aktiviert oder nur dokumentiert werden, ist UX-Entscheidung mit Privacy-Implikation.
+
+### Constraints
+
+- Budget: Stage-4-Pipeline darf das bestehende 2-USD-pro-Woche-Cluster-Budget nicht um Faktor 10 ueberschreiten. NoteSelector ist die Cost-Stellschraube.
+- Compliance: BA-25 Anti-Definition (line 386): "Kein automatischer Vault-Modus, der ohne User-Zustimmung Frontmatter aendert." Heisst: Frontmatter-Write default OFF.
+- Mobile: Aging-knowledge-Tab muss auf iOS und Android read-only laden. Stage-4-Run nur Desktop, Sync bringt Verdicts auf Mobile.
+- Schema-Migration: additive (CREATE IF NOT EXISTS, ALTER ADD COLUMN nullable). WriterLock vor ALTER (Lesson aus FIX-12).
+
+### Forbidden-terms check
+
+Akzeptanzkriterien (AC-01 bis AC-12) sind tech-agnostisch formuliert mit Ausnahme der ID-Referenzen auf konkrete Files. Tech-Details (sql.js, Mid-Tier-Modell-IDs, Provider-Spezifika) sind im Tech-Stack-Block und im Konsolidierungs-Constraints-Block lokalisiert, also in den Sektionen, die explizit Tech zulassen.
+
+### Naechster Schritt
+
+`/architecture` mit Anker IMP-20-06-01.
+Erwarteter Output: ADRs zu den fuenf ASRs oben, plus arc42-Updates fuer Stage-4-Pipeline und Modal-Surface.
+Danach: PLAN-Item, das die zehn Bauteile in Build-Wellen aufteilt.
