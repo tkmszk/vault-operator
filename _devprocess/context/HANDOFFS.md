@@ -4851,3 +4851,64 @@ Akzeptanzkriterien (AC-01 bis AC-12) sind tech-agnostisch formuliert mit Ausnahm
 `/architecture` mit Anker IMP-20-06-01.
 Erwarteter Output: ADRs zu den fuenf ASRs oben, plus arc42-Updates fuer Stage-4-Pipeline und Modal-Surface.
 Danach: PLAN-Item, das die zehn Bauteile in Build-Wellen aufteilt.
+
+---
+
+## 2026-06-19 -- Architecture -> Coding: IMP-20-06-01 ADRs + Amendments
+
+**Phase:** Architecture complete.
+**Item:** IMP-20-06-01.
+**Branch:** feature/imp-20-06-01-claim-check-review-hints (unchanged from RE phase).
+
+### Tech-stack justification
+
+Note-Verifier-Pipeline laeuft INNERHALB der bestehenden Stufe-3-Pipeline (`webUpdatePass` Hook). Token-Budget, Pause-Detection und Cooldown-Logik werden uebernommen aus ADR-105 ohne Sondercode. Mid-tier-Default plus optionale Frontier-Eskalation halten die Per-Run-Kosten innerhalb der existierenden 2-USD-pro-Woche-Decke.
+
+Frontmatter-Write geht durch den existierenden zentralen Writer aus ADR-95 mit einer harten Allowlist genau auf den Schluessel `freshness`. Verdict-Summaries, Source-Links und Konfidenz-Werte leben in der DB, nicht im Vault. Diese Trennung schuetzt Vault-Sync-Surfaces (iCloud, Obsidian Sync, Git-Mirrors) vor LLM-erzeugtem Inhalt.
+
+Externe Suche nutzt den existierenden `WebSearchService` aus ADR-104, ergaenzt um eine neue `verifierQuery`-Form mit harter 400-Zeichen-Schranke. Ein separater Toggle `freshness.externalSources.enabled` (default off) entkoppelt die Verifier-Pipeline von der Chat-Recherche; User, die im Chat einen API-Key hinterlegt haben, eskalieren nicht still in Background-Search.
+
+Frontier-Eskalation erfordert eine ZDR-Capability, die der Provider melden muss. Fail-closed: wenn ZDR nicht aktiv setzbar ist, bleibt es beim Mid-tier-Verdict mit `confidence_low`-Marker in der UI.
+
+### ADR-Konsolidierung
+
+**Eine neue ADR plus vier Amendments**, statt fuenf neuer ADRs. Begruendung: die ASRs aus IMP-20-06-01 erweitern Patterns, die in bestehenden ADRs schon dokumentiert sind. Inflation vermeiden.
+
+- ADR-135 (neu, Proposed): Verdict-Confidence-Routing und ZDR-Pflicht.
+- ADR-95 (amended): Allowlist-Filter im FrontmatterWriter.
+- ADR-104 (amended): `verifierQuery`-Form mit 400-Char-Cap.
+- ADR-105 (amended): `UpdateFinding.notes?[]` additive Hook-Erweiterung, Verifier inside `webUpdatePass`, `NoteSelector` liest `freshness_class`.
+- ADR-106 (amended): Aging-knowledge-Tab plus `ResolveConflictModal` und `BatchResolveModal`, Verdict-zu-Severity-Mapping.
+
+### Rejected alternatives
+
+- Immer-Frontier-Modell: Kosten sprengen das Budget um Faktor 30 (ADR-135 Option 1).
+- Immer-Mid-tier ohne Eskalation: schwierige Faelle bekommen schlechtere Verdicts und der User-Trust leidet (ADR-135 Option 2).
+- Confidence-basierte Eskalation ohne ZDR-Pflicht: Privacy-Versprechen ist schwammig; sensible Notes wandern still in den nicht-ZDR-Pfad (ADR-135 Option 3).
+- Neue note-scoped Hook neben den existierenden Cluster-Hooks: bricht das Token-Budget-Modell aus ADR-105 und verdoppelt die Wartungsoberflaeche.
+- Separate Tabelle `note_freshness_verdict` neben dem existierenden `note_freshness`: bricht die `VaultRenameHandler.PATH_TABLES`-Konvention und ist unnoetiger Schema-Wildwuchs.
+- Inbox-Note-Output gemaess urspruenglicher FEAT-20-06-Spec: ersetzt durch Modal-UI per User-Entscheidung 2026-06-19, im FEAT-20-06-Body als superseded markiert.
+- Model-native Web Search: out-of-scope dieses ADR. Wenn relevant, eigene ADR-Erweiterung von ADR-104.
+
+### Known risks
+
+- Provider aendert seine ZDR-Garantie still in der Praxis. Mitigation: Plugin-Update kann die Capability-Default-Liste anpassen.
+- sql.js-Memory-Cap durch `note_freshness_history` bei sehr grossen Vaults. Mitigation: harte Retention 5 runs ODER 90 Tage, summary und sources_json opt-in.
+- Verdict-Reads im NoteSelector koennen mit gleichzeitigen Writes aus Stage 0 (`storeFreshnessClass`) konkurrieren. Mitigation: WriterLock-Pflicht aus FIX-12 gilt fuer den ALTER, und Reads sind tolerant gegen leere Spalten.
+- BatchResolveModal Resume-State kann beim Plugin-Crash verloren gehen, wenn er nur in-memory ist. Mitigation: DB-persistierter Resume-State (Architektur-Vorschlag), Coding kann auf in-memory mit Onunload-Save reduzieren wenn intra-session Resume reicht.
+
+### Open items handed to Coding
+
+- Provider-Capability-Schema fuer ZDR pro Provider: Architektur-Vorschlag steht (Anthropic ZDR, Bedrock no-logging, OpenAI no-training). Coding pruefe gegen den aktuellen Provider-Klassen-Layer.
+- Schema-Migration v10 nach v11: konkrete WriterLock-Sequenz fuer ALTER nach FIX-12-Pattern. Coding entscheidet die genaue Reihenfolge in `KnowledgeDB.applyMigration`.
+- Settings-UI fuer die vier neuen Toggles: Defaults stehen, Tooltips und Capability-Status-Indicator sind Coding-Entscheidung.
+- `dismissed_freshness`-Reader: zentral oder direkt im NoteSelector. Architektur-Vorschlag ist zentral, Coding pruefe Aufwand-Nutzen.
+- BatchResolveModal Resume-State Persistenz-Strategie: DB-Tabelle vs in-memory mit Onunload-Save. Coding entscheidet basierend auf konkretem UI-Verhalten.
+
+### Consistency check
+
+plan-context-imp-20-06-01.md ist konsistent mit ADR-135, ADR-95 (amended), ADR-104 (amended), ADR-105 (amended), ADR-106 (amended). Tech-Stack im plan-context matcht die Decision in ADR-135 und die Amendments. arc42 Section 9 hat ADR-135 in der Tabelle. arc42 Section 10 hat drei neue Qualitaetsszenarien fuer ZDR-fail-closed, Frontmatter-Allowlist-Filter und Query-Cap. `src/ARCHITECTURE.map` hat sieben neue Wayfinder-Rows, je ein Eintrag pro ADR-relevante Komponente.
+
+### Naechster Schritt
+
+`/coding` mit Anker IMP-20-06-01. Erwartete Coding-Phase: Schema-Migration v10 nach v11, FreshnessVerifier, NoteSelector, FreshnessQueryBuilder, UI-Komponenten (`VaultHealthRepairModal`-Tab + Sub-Modale), Settings-UI, Allowlist-Test, Char-Cap-Test. PLAN-Item splittet die zehn Bauteile aus IMP-20-06-01 in Build-Wellen, voraussichtlich vier (Schema + Verifier-Core, NoteSelector + QueryBuilder, UI-Welle, Settings + Tests).

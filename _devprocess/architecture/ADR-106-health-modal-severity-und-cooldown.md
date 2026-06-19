@@ -98,3 +98,25 @@ Modal-Layout (UI):
 - Body: gruppiert nach Kategorie innerhalb Severity.
 - Pro Finding: Title, Cluster-/Note-Ref, kontext-spezifische Action-Buttons (siehe FEAT-19-18).
 - Footer: Bulk-Dismiss-Action plus Settings-Link.
+
+## Amendment 2026-06-19 (IMP-20-06-01)
+
+Das `VaultHealthRepairModal` aus diesem ADR bekommt einen weiteren Tab namens `Aging knowledge`, der die Note-Verdicts aus IMP-20-06-01 visualisiert. Der Tab folgt der bestehenden Severity-Konvention dieses ADR; Verdict-Werte aus dem Verifier mappen auf die ADR-106-Severity-Stufen wie folgt:
+
+- `outdated` mappt auf Critical
+- `widerspricht` mit hoher Confidence mappt auf Critical
+- `widerspricht` mit niedriger Confidence mappt auf Warning
+- `ergaenzt` mappt auf Hint
+- `verified` wird nicht im Modal angezeigt, sondern nur ueber das `last_checked_at`-Feld dokumentiert.
+
+Severity-Filter und Tab-Logik aus ADR-106 gelten unveraendert; der neue Tab folgt denselben Sortier- und Cooldown-Regeln wie die anderen Tabs.
+
+Zwei neue sub-modale Komponenten gehoeren in die Surface dieses ADR und werden hier mit-verantwortet, nicht in einer neuen UI-ADR ausgelagert:
+
+`ResolveConflictModal` ist ein Single-Note-Auflösungs-Modal, das aus dem Aging-knowledge-Tab geoeffnet wird. Es zeigt einen Diff zwischen aktueller Note und dem vom Verifier vorgeschlagenen `suggestedPatch`, plus die Action-Buttons Apply, Edit, Mark verified, Delete (mit Bestaetigung), Open in chat. Apply geht durch das bestehende `EditFileTool`-Boundary mit Checkpoint; Delete geht durch `FileManager.trashFile` mit explizitem Bestaetigungs-Modal.
+
+`BatchResolveModal` ist ein Bulk-Modal mit Filter (Severity, Confidence-Schwelle), Auswahl mehrerer Notes, sequentiellem Anwenden, Abort waehrend Lauf und Resume nach Fehler. Resume-State persistiert in einer kleinen DB-Tabelle (Schluessel: Run-ID, Index der naechsten Note), damit der Plugin-Reload den Bulk-Run nicht killt.
+
+Mobile-Klausel: beide sub-modalen Komponenten sind read-only auf iOS und Android. Apply, Delete und Bulk-Run sind dort ausgeblendet; die UI zeigt einen `synced from desktop`-Hinweis.
+
+User-Quittierung via Mark verified schreibt einen Eintrag in die existierende `dismissed_freshness`-Tabelle mit `hint_type='verdict'`. Der bestehende Aging-Tab-Aufruf liest diese Tabelle und unterdrueckt quittierte Notes, bis sich `mtime` der Note aendert.
