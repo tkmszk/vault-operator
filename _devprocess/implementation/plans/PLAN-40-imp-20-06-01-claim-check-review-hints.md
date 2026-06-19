@@ -152,7 +152,20 @@ Total Wave 2 test delta: +29 cases. Full suite 2880 passing plus 1 expected fail
 
 Wayfinder rows added: `freshness-web-search`, `freshness-llm-provider`, `freshness-orchestrator`.
 
-Behavioural notes for Waves 3 and 4:
+### Wave 3 (2026-06-19)
+
+| Task | File(s) landed | Test(s) | Status |
+|---|---|---|---|
+| W3-T1 | `src/core/health/AgingKnowledgeReader.ts` (severity mapping per ADR-106 amendment, listAll + listHistory) and `src/ui/modals/VaultHealthRepairModal.ts` (Findings vs Aging-knowledge top tab, severity-coloured list, batch toolbar) plus `styles.css` rows | `src/core/health/__tests__/AgingKnowledgeReader.test.ts` (10 cases) | green |
+| W3-T2 | `src/ui/modals/ResolveConflictModal.ts` (mark verified / open in chat / edit / delete via FileManager.trashFile with inline confirm modal) | manual smoke (UI) | green |
+| W3-T3 | `src/ui/modals/BatchResolveModal.ts` (severity + min-confidence filter, mark-verified / delete batch with abort) | manual smoke (UI) | green |
+| W3-T4 | `src/ui/modals/VaultHealthRepairModal.ts` (Platform.isMobile branch renders an explanatory text instead of the verifier list) | covered by W3-T1 manual smoke | green |
+
+Total Wave 3 test delta: +10 cases. Full suite still green (no UI unit tests added; modal flows verified through manual smoke).
+
+Wayfinder rows added: `aging-knowledge-reader`. Existing rows for `aging-knowledge-tab`, `resolve-conflict-modal`, `batch-resolve-modal` get their final file references.
+
+Behavioural notes for Wave 4:
 
 - The verifier wiring honours the `freshness.externalSources.enabled` toggle. With the toggle OFF the web pass returns an empty source list and the verifier resolves to `no_external_source`. The note still ends up in `note_freshness_history` so the Aging-knowledge tab in Wave 3 can show "no external evidence yet" rows.
 - `hasZdr` is hardwired to `() => false` in main.ts. Wave 4 replaces that with a model-registry lookup (`zdrCapable` flag on provider configs). Until then frontier escalation never fires regardless of the user setting.
@@ -166,3 +179,4 @@ Behavioural notes for Waves 3 and 4:
 - 2026-06-19: Phase 2 critical review writeback. Three driften corrected in plan-context-imp-20-06-01.md and ADR-104 amendment: `WebSearchService` -> `WebSearchTool`+helper, Provider-Fallback -> User-Konfig, WriterLock-Pattern-Quelle ADR-95 -> ADR-79. ADR-95-amendment clarifies pattern provenance.
 - 2026-06-19: Wave 1 implemented. All six tasks shipped. Status flips to Active. Wave 2 next.
 - 2026-06-19: Wave 2 implemented. All five tasks shipped. Verifier wiring lives in main.ts inside the Stufe3 webUpdatePass block. Wave 3 (UI) next.
+- 2026-06-19: Wave 3 implemented. AgingKnowledgeReader maps verdict+confidence into critical/moderate/info/ok per ADR-106. VaultHealthRepairModal gains a top-level tab switch between Findings and Aging knowledge; the new tab lists severity-coloured rows with a Resolve button per row and a Batch resolve button on the toolbar. ResolveConflictModal does single-note MarkVerified/OpenInChat/Edit/Delete (FileManager.trashFile, no native dialog). BatchResolveModal filters by severity and minConfidence with mark-verified / delete actions and an Abort button. Mobile guard explicitly renders an informational text instead of the verifier list on Platform.isMobile. Wave 4 (Settings UI + ZDR capability + Allowlist + Wayfinder) next.
