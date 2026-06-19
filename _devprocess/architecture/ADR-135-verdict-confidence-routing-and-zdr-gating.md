@@ -19,7 +19,7 @@ Die Note-Verifier-Pipeline aus IMP-20-06-01 erzeugt pro Kandidat-Note ein Verdic
 
 Die erste Achse betrifft die Modell-Wahl. Ein billiges Mid-Tier-Modell schafft die meisten Faelle gut: einfache Fakten, gut formulierte Quellen, klare temporale Marker. Ein Frontier-Modell ist genauer bei mehrdeutigen oder strittigen Faellen, kostet aber pro Aufruf zehn bis dreissig Mal mehr. Eine Strategie, die immer Frontier laeuft, ist unbezahlbar bei den Token-Mengen der Stufe-3-Pipeline. Eine Strategie, die nie Frontier laeuft, liefert bei den schwierigen Faellen schlechtere Verdicts, gerade dort wo der User die Verlaesslichkeit am meisten braucht.
 
-Die zweite Achse betrifft Privacy. Die Verifier-Pipeline schickt Note-Inhalte und Kontextfragmente an einen Modell-Provider. Bei einem allgemein-Tier-Modell ist das ein Trade-off, den der User schon bei der Plugin-Einrichtung eingegangen ist. Bei einer Eskalation zu Frontier eskaliert auch der Datentyp: das Frontier-Modell sieht nicht nur die Note, sondern auch die externen Quellen und die Begruendung des Mid-Tier-Modells. Genau die Notes, bei denen Frontier eskaliert wird, sind die mit `widerspricht` oder `outdated` Verdicts, also die mit hoher Wahrscheinlichkeit sensible Inhalte (medizinische Notizen, juristische Notizen, persoenliche Praeferenzen). Ein Provider-Breach oder eine richterliche Anordnung erschliesst dem Angreifer einen kuratierten Index "Saetze, bei denen der User privat anderer Meinung ist als die externe Welt".
+Die zweite Achse betrifft Privacy. Die Verifier-Pipeline schickt Note-Inhalte und Kontextfragmente an einen Modell-Provider. Bei einem allgemein-Tier-Modell ist das ein Trade-off, den der User schon bei der Plugin-Einrichtung eingegangen ist. Bei einer Eskalation zu Frontier eskaliert auch der Datentyp: das Frontier-Modell sieht nicht nur die Note, sondern auch die externen Quellen und die Begruendung des Mid-Tier-Modells. Genau die Notes, bei denen Frontier eskaliert wird, sind die mit `contradicts` oder `outdated` Verdicts, also die mit hoher Wahrscheinlichkeit sensible Inhalte (medizinische Notizen, juristische Notizen, persoenliche Praeferenzen). Ein Provider-Breach oder eine richterliche Anordnung erschliesst dem Angreifer einen kuratierten Index "Saetze, bei denen der User privat anderer Meinung ist als die externe Welt".
 
 Beide Achsen brauchen daher eine gemeinsame Entscheidung. Confidence allein reicht nicht, Privacy allein reicht nicht. Triggering ASR aus IMP-20-06-01 HANDOFFS-Block: Item 5 (Frontier-Eskalation mit ZDR-Pflicht, fail-closed).
 
@@ -46,18 +46,18 @@ Pro Note ein Frontier-Call.
 Pro Note ein Mid-Tier-Call. Kein Frontier, egal wie unsicher die Antwort.
 
 - **Pro**: billig, schnell, Privacy-Surface ist niedrig und konstant. Keine Provider-Capability-Pruefung noetig.
-- **Con**: bei mehrdeutigen Quellen liefert Mid-Tier oft `widerspricht` mit niedriger Confidence, ohne dass die UI das verbessern kann. User-Trust leidet, weil das System "ich bin mir nicht sicher" zu oft sagt.
+- **Con**: bei mehrdeutigen Quellen liefert Mid-Tier oft `contradicts` mit niedriger Confidence, ohne dass die UI das verbessern kann. User-Trust leidet, weil das System "ich bin mir nicht sicher" zu oft sagt.
 
 ### Option 3: Confidence-basierte Eskalation, ZDR optional
 
-Mid-Tier-Call zuerst. Bei `confidence < 0.7` UND `verdict in {widerspricht, outdated}` Frontier nachschalten. ZDR wird angefragt, wenn der Provider es unterstuetzt, ist aber nicht harte Voraussetzung.
+Mid-Tier-Call zuerst. Bei `confidence < 0.7` UND `verdict in {contradicts, outdated}` Frontier nachschalten. ZDR wird angefragt, wenn der Provider es unterstuetzt, ist aber nicht harte Voraussetzung.
 
 - **Pro**: spart Kosten in den einfachen Faellen, holt Qualitaet zurueck wo es wirklich noetig ist.
 - **Con**: Privacy-Versprechen ist schwammig. Provider ohne ZDR liefern trotzdem Verdict, User weiss nicht woran er ist. Genau die sensiblen Notes wandern stillschweigend in den nicht-ZDR-Pfad.
 
 ### Option 4: Confidence-basierte Eskalation mit fail-closed ZDR-Pflicht (gewaehlt)
 
-Mid-Tier-Call zuerst. Frontier nur wenn `confidence < 0.7` UND `verdict in {widerspricht, outdated}` UND der konfigurierte Frontier-Provider eine garantierte Zero-Data-Retention-Konfiguration anbietet, die der Plugin-Code erkennen und aktiv setzen kann. Wenn ZDR nicht setzbar: kein Frontier-Call. Stattdessen bleibt das Mid-Tier-Verdict bestehen, der Verdict-Eintrag traegt `verifier_tier: mid` und `confidence_low: true`. Die UI macht das sichtbar mit einem "Mid-tier verdict, low confidence" Hinweis.
+Mid-Tier-Call zuerst. Frontier nur wenn `confidence < 0.7` UND `verdict in {contradicts, outdated}` UND der konfigurierte Frontier-Provider eine garantierte Zero-Data-Retention-Konfiguration anbietet, die der Plugin-Code erkennen und aktiv setzen kann. Wenn ZDR nicht setzbar: kein Frontier-Call. Stattdessen bleibt das Mid-Tier-Verdict bestehen, der Verdict-Eintrag traegt `verifier_tier: mid` und `confidence_low: true`. Die UI macht das sichtbar mit einem "Mid-tier verdict, low confidence" Hinweis.
 
 - **Pro**: harte Privacy-Garantie ohne stille Downgrade-Pfade. Token-Kosten bleiben kalkulierbar. User sieht in der UI welches Modell ein Verdict produziert hat. Default-Setting ist konservativ.
 - **Con**: User mit Provider ohne ZDR (heute z.B. lokale Inferenz ohne explizites no-logging-Flag) sehen einen permanent "low confidence" Bucket. Mitigation: explizite Einstellung pro Provider, ob no-logging als ausreichende Garantie zaehlt; Default-Liste erlaubt Anthropic ZDR, Bedrock no-logging, OpenAI no-training.
@@ -66,7 +66,7 @@ Mid-Tier-Call zuerst. Frontier nur wenn `confidence < 0.7` UND `verdict in {wide
 
 Option 4. Eskalation folgt drei Bedingungen mit AND-Verknuepfung: Confidence-Schwelle, Severity-Filter, ZDR-Verfuegbarkeit. Default-Schwelle ist 0.7. Default-Schwelle und Default-Severity-Liste sind in Settings konfigurierbar; ZDR-Pflicht ist NICHT konfigurierbar und ist Plugin-Konvention.
 
-Die Verifier-Pipeline schreibt pro Verdict eine `verifier_tier` Spalte mit `mid` oder `frontier`. Die UI mappt diese Spalte auf ein visuelles Tier-Label im Aging-knowledge-Tab. Bei `verifier_tier: mid` mit niedriger Confidence zeigt die UI einen kleinen "Mid-tier" Marker und einen "Re-check with Frontier" Button, der aber ausgeblendet ist solange `freshness.allowFrontierEscalation` aus ist oder das Provider-Capability-Schema kein ZDR meldet.
+Die Verifier-Pipeline schreibt pro Verdict eine `verifier_tier` Spalte mit `mid` oder `frontier`. Die UI mappt diese Spalte auf ein visuelles Tier-Label im Knowledge-review-Tab. Bei `verifier_tier: mid` mit niedriger Confidence zeigt die UI einen kleinen "Mid-tier" Marker und einen "Re-check with Frontier" Button, der aber ausgeblendet ist solange `freshness.allowFrontierEscalation` aus ist oder das Provider-Capability-Schema kein ZDR meldet.
 
 Die Confidence-Skala ist 0.0 bis 1.0 REAL, konsistent mit `edges.confidence` aus FEAT-20-01.
 
@@ -74,7 +74,7 @@ Default-Settings:
 
 - `freshness.allowFrontierEscalation`: false
 - `freshness.frontierConfidenceThreshold`: 0.7
-- `freshness.frontierSeverityFilter`: ["widerspricht", "outdated"]
+- `freshness.frontierSeverityFilter`: ["contradicts", "outdated"]
 
 ZDR-Capability-Schema: jeder Provider exponiert eine Funktion, die `true` liefert, wenn der konkret konfigurierte Endpoint und API-Key garantiert no-training und no-logging im Sinne der Plugin-Konvention erfuellt. Diese Funktion ist die einzige Stelle, an der die Eskalation einen Frontier-Call freigibt. Sie verweigert by default; positive Antwort verlangt explizite Konfiguration durch User oder Anbieter.
 
@@ -99,6 +99,6 @@ ZDR-Capability-Schema: jeder Provider exponiert eine Funktion, die `true` liefer
 
 ## Implementation Notes
 
-Die Confidence-Schwelle und der Severity-Filter sind in `FreshnessVerifier` zentralisiert. Provider-Capability-Schema wird im bestehenden Provider-Klassen-Layer ergaenzt, ohne neue Klassenhierarchie. Verdict-Persistenz erweitert die ALTER-TABLE-Migration aus IMP-20-06-01 (`note_freshness.last_verifier_tier`).
+Die Confidence-Schwelle und der Severity-Filter sind in `FreshnessVerifier` zentralisiert. Provider-Capability-Schema wird im bestehenden Provider-Klassen-Layer extends, ohne neue Klassenhierarchie. Verdict-Persistenz erweitert die ALTER-TABLE-Migration aus IMP-20-06-01 (`note_freshness.last_verifier_tier`).
 
-Aging-knowledge-Tab-UI rendert das Mid-tier-Verdict mit einem dezenten Marker; Frontier-Verdicts haben kein zusaetzliches Label, weil sie der Default-erwartete Fall sind, wenn Eskalation aktiv ist.
+Knowledge-review-Tab-UI rendert das Mid-tier-Verdict mit einem dezenten Marker; Frontier-Verdicts haben kein zusaetzliches Label, weil sie der Default-erwartete Fall sind, wenn Eskalation aktiv ist.

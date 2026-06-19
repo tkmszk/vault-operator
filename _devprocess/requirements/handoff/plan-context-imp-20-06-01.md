@@ -28,7 +28,7 @@ This document is the context bridge from Architecture into PLAN and Coding for I
 | ADR-95 (amend) | Frontmatter-Write Conflict-Detection | Accepted, amended 2026-06-19 | Verifier nutzt denselben Helper und denselben Lock; neuer Allowlist-Filter pro Aufruf |
 | ADR-104 (amend) | Web-Search-Provider BYOK | Accepted, amended 2026-06-19 | Neue `verifierQuery`-Aufruf-Form, 400-Zeichen-Cap, separater `freshness.externalSources.enabled`-Toggle |
 | ADR-105 (amend) | Stufe-3 Job-Runner und Token-Budget | Accepted, amended 2026-06-19 | `UpdateFinding.notes?[]` additive Hook-Erweiterung, Verifier inside `webUpdatePass`, NoteSelector reads `freshness_class` |
-| ADR-106 (amend) | Health-Modal-Severity und Cooldown | Accepted, amended 2026-06-19 | Aging-knowledge-Tab plus `ResolveConflictModal` und `BatchResolveModal` als Sub-Modale, Verdict-zu-Severity-Mapping |
+| ADR-106 (amend) | Health-Modal-Severity und Cooldown | Accepted, amended 2026-06-19 | Knowledge-review-Tab plus `ResolveConflictModal` und `BatchResolveModal` als Sub-Modale, Verdict-zu-Severity-Mapping |
 
 ## Data model: core entities und ihre Veraenderungen
 
@@ -50,7 +50,7 @@ This document is the context bridge from Architecture into PLAN and Coding for I
 - Stage-4-Run pro 1000-Note-Vault: unter 0.10 USD, alignt mit FEAT-20-06 Section "Cost Per Scan".
 - Mid-tier-Call pro Note: 5000 Input + 500 Output Token Ceiling.
 - NoteSelector default Top-N=5 pro Cluster.
-- Aging-knowledge-Tab Load-Zeit: unter 250 ms bei bis zu 200 geflaggten Notes (virtual scroll oder cluster grouping als Pflicht).
+- Knowledge-review-Tab Load-Zeit: unter 250 ms bei bis zu 200 geflaggten Notes (virtual scroll oder cluster grouping als Pflicht).
 - Retention im History-Table: 5 runs ODER 90 Tage pro Note, oldest dropped on insert.
 
 ## Security envelope
@@ -65,7 +65,7 @@ This document is the context bridge from Architecture into PLAN and Coding for I
 ## Mobile envelope
 
 - Stage-4-Run nur Desktop.
-- Aging-knowledge-Tab read-only auf iOS und Android. Apply, Delete, Bulk-Run sind ausgeblendet; UI zeigt `synced from desktop` Hinweis.
+- Knowledge-review-Tab read-only auf iOS und Android. Apply, Delete, Bulk-Run sind ausgeblendet; UI zeigt `synced from desktop` Hinweis.
 - Persistierte Verdicts werden via knowledge.db-Sync auf Mobile gespiegelt (Storage-Mode `obsidian-sync`).
 
 ## Implementation entry points (Wayfinder)

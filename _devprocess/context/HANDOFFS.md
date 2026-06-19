@@ -4818,7 +4818,7 @@ oMLX + Qwen3 + Toggle OFF gegen lokales Setup von User arkham000 -- erst nach Me
 - **Throughput**: Mid-Tier-Call pro Note 5000 Input + 500 Output Token als Ceiling. NoteSelector limitiert auf Top-N pro Cluster, default N = 5.
 - **Scheduling**: volatile Notes werden bevorzugt selektiert. `freshness_class` ist Scheduling-Signal, Default-Frequenzen: volatile woechentlich, evolving monatlich, stable quartalsweise.
 - **Retention**: `note_freshness_history` haelt maximal 5 Runs ODER 90 Tage pro Note, was zuerst eintritt.
-- **Availability**: Aging-knowledge-Tab muss innerhalb des bestehenden VaultHealthRepairModal in weniger als 250 ms laden, auch bei 200 geflaggten Notes. Virtual scroll oder Cluster-Grouping als Pflicht.
+- **Availability**: Knowledge-review-Tab muss innerhalb des bestehenden VaultHealthRepairModal in weniger als 250 ms laden, auch bei 200 geflaggten Notes. Virtual scroll oder Cluster-Grouping als Pflicht.
 
 ### Kritische ASRs (jede braucht eine ADR)
 
@@ -4839,7 +4839,7 @@ oMLX + Qwen3 + Toggle OFF gegen lokales Setup von User arkham000 -- erst nach Me
 
 - Budget: Stage-4-Pipeline darf das bestehende 2-USD-pro-Woche-Cluster-Budget nicht um Faktor 10 ueberschreiten. NoteSelector ist die Cost-Stellschraube.
 - Compliance: BA-25 Anti-Definition (line 386): "Kein automatischer Vault-Modus, der ohne User-Zustimmung Frontmatter aendert." Heisst: Frontmatter-Write default OFF.
-- Mobile: Aging-knowledge-Tab muss auf iOS und Android read-only laden. Stage-4-Run nur Desktop, Sync bringt Verdicts auf Mobile.
+- Mobile: Knowledge-review-Tab muss auf iOS und Android read-only laden. Stage-4-Run nur Desktop, Sync bringt Verdicts auf Mobile.
 - Schema-Migration: additive (CREATE IF NOT EXISTS, ALTER ADD COLUMN nullable). WriterLock vor ALTER (Lesson aus FIX-12).
 
 ### Forbidden-terms check
@@ -4878,7 +4878,7 @@ Frontier-Eskalation erfordert eine ZDR-Capability, die der Provider melden muss.
 - ADR-95 (amended): Allowlist-Filter im FrontmatterWriter.
 - ADR-104 (amended): `verifierQuery`-Form mit 400-Char-Cap.
 - ADR-105 (amended): `UpdateFinding.notes?[]` additive Hook-Erweiterung, Verifier inside `webUpdatePass`, `NoteSelector` liest `freshness_class`.
-- ADR-106 (amended): Aging-knowledge-Tab plus `ResolveConflictModal` und `BatchResolveModal`, Verdict-zu-Severity-Mapping.
+- ADR-106 (amended): Knowledge-review-Tab plus `ResolveConflictModal` und `BatchResolveModal`, Verdict-zu-Severity-Mapping.
 
 ### Rejected alternatives
 
@@ -4933,7 +4933,7 @@ plan-context-imp-20-06-01.md ist konsistent mit ADR-135, ADR-95 (amended), ADR-1
 **Coverage-Hinweise und akzeptierte Luecken:**
 
 - `extractUrlsFromText` in `src/main.ts` (file-private Regex + Set-Dedup) bleibt ohne Direkttest, da die Funktion file-private ist und ein Export-Refactor mehr Komplexitaet bringen wuerde als das Trivial-Code rechtfertigt. Strong-Signal-Pfad ist indirekt durch die orchestrator-Pipeline abgedeckt.
-- UI-Modale (`VaultHealthRepairModal`-Aging-Tab, `ResolveConflictModal`, `BatchResolveModal`, `VaultTab.buildFreshnessSection`, `ProviderDetailModal`-ZDR-Toggle) sind bewusst nicht unit-getestet. Das Projekt hat fuer Modal-Code keinen vorhandenen Test-Pattern; Verhalten ist durch manuelle Smoke-Tests gesichert. Datalayer (AgingKnowledgeReader, FreshnessFrontmatterPatcher, ZdrCapabilityResolver) ist unit-getestet.
+- UI-Modale (`VaultHealthRepairModal`-Knowledge-review-Tab, `ResolveConflictModal`, `BatchResolveModal`, `VaultTab.buildFreshnessSection`, `ProviderDetailModal`-ZDR-Toggle) sind bewusst nicht unit-getestet. Das Projekt hat fuer Modal-Code keinen vorhandenen Test-Pattern; Verhalten ist durch manuelle Smoke-Tests gesichert. Datalayer (KnowledgeReviewReader, FreshnessFrontmatterPatcher, ZdrCapabilityResolver) ist unit-getestet.
 - Coverage-Tool laeuft im default vitest-Setup nicht; konkrete line/branch/function-Prozente daher nicht gemeldet. Anzahl Tests pro Komponente ist im Plan-40 Implementation-Notes-Block je Welle gelistet.
 
 **Sicherheits-relevante Beobachtungen fuer Security-Audit:**
@@ -4994,3 +4994,33 @@ plan-context-imp-20-06-01.md ist konsistent mit ADR-135, ADR-95 (amended), ADR-1
 ### Naechster Schritt
 
 `/dia-orchestrator` Phase 7 (Release-Closure) -- oder direkter Release-Path via `/release` mit Version-Bump. PLAN-40 Released, IMP-20-06-01 Done, 2 P3-FIX im Backlog gequeued. Empfohlener Tagline-Kandidat fuer das naechste Release: "Knowledge freshness, with note-level verifier."
+
+---
+
+## 2026-06-19 -- Live-Test-Feedback: Vocabulary + Tab-Rename IMP-20-06-01
+
+**Phase:** Post-live-test follow-up auf das IMP-20-06-01-Coding. Manuelles Smoke-Testing nach Wave 4 hat drei Probleme aufgedeckt, die in dieser Rename-Pass adressiert wurden.
+
+**Befunde aus dem Live-Test:**
+
+1. Der "Aging knowledge"-Tab zeigte deutsche Verdict-Tokens (widerspricht, ergaenzt) in der UI. Das Plugin-UI ist Englisch-only per [[feedback-ui-language-and-naming]]; die deutschen TriageCard-Tokens haben sich von FEAT-19-12 in IMP-20-06-01 weitervererbt.
+2. "Cluster freshness (Karpathy-Lint)" wurde unter "Findings" gerendert, semantisch gehoert es aber in den selben Topf wie die Note-Level-Verdicts.
+3. Der Tab-Name "Aging knowledge" trifft den Inhalt nicht: er enthaelt nicht nur Aging-Faelle sondern auch Contradictions und Outdated-Markierungen.
+
+**Behoben in diesem Pass:**
+
+- **Verdict-Vokabular von Deutsch auf Englisch:** `deckt-sich` -> `matches`, `ergaenzt` -> `extends`, `widerspricht` -> `contradicts`. `outdated` und `no_external_source` waren von Anfang an englisch und bleiben unveraendert. Quellen-Files: types.ts, LlmVerifierProvider (Prompt + Whitelist), KnowledgeReviewReader (mapSeverity), settings.ts (DEFAULT_FRESHNESS_SETTINGS.frontierSeverityFilter), alle Health-Test-Files.
+- **DB-Schema-Migration v11 -> v12:** rewrite-in-place der drei deutschen Verdict-Werte in `note_freshness.last_verdict` und `note_freshness_history.verdict`. Idempotent (English-canon + outdated + no_external_source + NULL passieren unveraendert). Extrahiert als pure Helper `migrateVerdictVocabularyV11ToV12` mit eigenem Migration-Test (4 cases, alle gruen).
+- **Tab-Rename Aging knowledge -> Knowledge review:** TopTab `'aging'` -> `'review'`. Klassennamen `.vault-health-aging-*` -> `.vault-health-knowledge-review-*` (10 Klassen). Methoden `showAgingKnowledge` -> `showKnowledgeReview`. Reader umbenannt: `AgingKnowledgeReader` -> `KnowledgeReviewReader`, ebenso `AgingRow` -> `ReviewRow`, `AgingSeverity` -> `ReviewSeverity`. Datei-Rename via `git mv` (history bleibt erhalten).
+- **Cluster-Freshness in den Knowledge-review-Tab verschoben:** neuer Filter `KNOWLEDGE_REVIEW_CHECKS = {'cluster_freshness'}` filtert die Finding aus `showFindings` raus und `renderClusterFreshnessSection` rendert sie im Knowledge-review-Tab als eigene Sektion (oben, ueber den per-note-Verdicts). Bisheriger "Discuss freshness update"-Button bleibt erhalten und gibt jetzt einen vorbereiteten Chat-Prompt an `onDiscuss` weiter.
+- **User-faced Display-Labels:** Verdict-Literals bleiben in Storage und Code in der englischen Kurzform (matches/extends/contradicts/outdated/no_external_source); die UI mappt das ueber eine `VERDICT_LABELS`-Konstante auf lesbare Phrasen: `matches` -> "Matches sources", `extends` -> "Could extend", `contradicts` -> "Contradicted by sources", `outdated` -> "Outdated", `no_external_source` -> "No external evidence yet". Same Mapping doppelt im VaultHealthRepairModal und ResolveConflictModal (Inline, kein zentraler Helper notwendig).
+
+**ARCHITECTURE.map:** zwei Zeilen umbenannt (`aging-knowledge-tab` + `aging-knowledge-reader`), eine neue Zeile `verdict-vocab-migration` ergaenzt.
+
+**Doku-Sync:** PLAN-40, IMP-20-06-01, ADR-135, ADR-106-Amendments, plan-context, AUDIT-Report alle auf das neue Vokabular gezogen. BACKLOG-Rows PLAN-40 / ADR-135 / IMP-20-06-01 auf "Knowledge-review-Tab" und English-Verdicts angepasst.
+
+**Risiko fuer existierende Installs:** Self-Build-User, die vor dem Migration-Bump eine DB mit deutschen Verdict-Werten geschrieben haben, kriegen die Werte beim naechsten Plugin-Load automatisch uebersetzt. KEINE manuelle Aktion noetig. Test deckt drei Faelle ab: deutsche Verdicts werden gemappt, englische bleiben unveraendert, NULL bleibt NULL, doppelte Anwendung ist no-op.
+
+### Naechster Schritt
+
+Adversarial Verify-Workflow + Full-Suite-Lauf. Wenn clean: commit der Rename-Wellen unter `chore: IMP-20-06-01 vocabulary + tab rename + cluster freshness move`.

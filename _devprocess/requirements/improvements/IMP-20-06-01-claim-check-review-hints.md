@@ -34,7 +34,7 @@ Diese Implementierung realisiert Stage 4 und Stage 5 als zusammenhaengende Pipel
 2. **Stage 5 Review-Hint-Output**. Strukturierte Vorschlaege pro Severity: Section-Replacement, Section-Append, Inline-Caveat oder Delete-Pointer. Persistiert in der erweiterten `note_freshness`-Tabelle.
 3. **`note_freshness` ALTER TABLE**. Additive Spalten fuer `last_verdict`, `last_confidence`, `last_summary`, `last_sources_json`, `last_checked_at`, `last_verifier_tier`. Migration v10 nach v11. WriterLock vor ALTER.
 4. **`note_freshness_history`**. Neue 1:N-Tabelle mit Retention von 5 Runs oder 90 Tagen, summary und sources_json opt-in. Path-Spalte verweist auf `note_freshness.path`.
-5. **Aging-knowledge-Tab** im bestehenden [VaultHealthRepairModal](../../../src/ui/modals/VaultHealthRepairModal.ts). Liste der geflaggten Notes mit Severity-Badge, kurzem Summary, Source-Link.
+5. **Knowledge-review-Tab** im bestehenden [VaultHealthRepairModal](../../../src/ui/modals/VaultHealthRepairModal.ts). Liste der geflaggten Notes mit Severity-Badge, kurzem Summary, Source-Link.
 6. **ResolveConflictModal**. Single-Note-Auflösung mit Diff-View, Apply, Edit, Mark verified, Delete (mit Bestaetigung) und Open-in-Chat-Handover an den Default-Agent.
 7. **BatchResolveModal**. Bulk-Apply mit Filter nach Severity und Confidence, sequentielles Anwenden mit Progress, Abort und Resume nach Fehler.
 
@@ -50,7 +50,7 @@ Das Spec-Code-Audit 2026-06-19 hat zwoelf Constraints identifiziert, die in dies
 
 | ID | Constraint | Quelle |
 |---|---|---|
-| C-01 | Vocabulary: `deckt-sich`, `ergaenzt`, `widerspricht` (mit Severity), `outdated`. Alignt mit TriageCard. | FEAT-19-12 |
+| C-01 | Vocabulary: `matches`, `extends`, `contradicts` (mit Severity), `outdated`. Alignt mit TriageCard. | FEAT-19-12 |
 | C-02 | Frontmatter-Write default OFF. Opt-in via Setting analog `vaultIngest.frontmatterWrite.enabled`. | BA-25 Anti-Definition (line 386) |
 | C-03 | Confidence-Skala 0.0 bis 1.0, REAL. | FEAT-20-01 (`edges.confidence`) |
 | C-04 | User-Override geht durch `dismissed_freshness` mit `hint_type='verdict'`. Keine neue Spalte in `note_freshness`. | Audit (Tabelle existiert, kein Reader) |
@@ -67,7 +67,7 @@ Das Spec-Code-Audit 2026-06-19 hat zwoelf Constraints identifiziert, die in dies
 
 | ID | Criterion |
 |---|---|
-| AC-01 | Beim manuellen Trigger eines Vault-Scans landet eine Note mit veralteter Aussage als Eintrag im Aging-knowledge-Tab des Health-Modals, mit Verdict, Confidence und Summary |
+| AC-01 | Beim manuellen Trigger eines Vault-Scans landet eine Note mit veralteter Aussage als Eintrag im Knowledge-review-Tab des Health-Modals, mit Verdict, Confidence und Summary |
 | AC-02 | Eine Note die als `verified` klassifiziert wird, wird im Tab nicht angezeigt und ihr `last_checked_at` ist gesetzt |
 | AC-03 | Single-Note-Resolve erlaubt Apply, Edit, Delete (mit Bestaetigungs-Modal), Mark verified, Open in chat. Apply schreibt atomar ueber den bestehenden FrontmatterWriter und EditFileTool-Pfad mit Checkpoint |
 | AC-04 | BatchResolve erlaubt Filter nach Severity und Confidence, sequentielles Anwenden, Abort waehrend Run und Resume nach Fehler |
@@ -75,7 +75,7 @@ Das Spec-Code-Audit 2026-06-19 hat zwoelf Constraints identifiziert, die in dies
 | AC-06 | Frontmatter-Write des Verifiers ist im Default OFF. Wird die Setting aktiviert, schreibt der Writer ausschliesslich Keys aus der Allowlist; ein Unit-Test verifiziert das |
 | AC-07 | Stage-4-Pipeline laeuft nicht ohne `freshness.externalSources.enabled` UND einen verfuegbaren Tavily- oder Brave-Key. Andernfalls Verdict `no_external_source` |
 | AC-08 | Frontier-Eskalation ist nur aktiv wenn `freshness.allowFrontierEscalation` an ist UND das Provider-Token ZDR oder no-logging unterstuetzt. Fail-closed sonst |
-| AC-09 | Mobile (FEAT-27) zeigt den Aging-knowledge-Tab read-only mit Hinweis "synced from desktop". Run-Buttons sind dort deaktiviert |
+| AC-09 | Mobile (FEAT-27) zeigt den Knowledge-review-Tab read-only mit Hinweis "synced from desktop". Run-Buttons sind dort deaktiviert |
 | AC-10 | Eine Note die der User per `Mark verified` quittiert, taucht beim naechsten Run nicht wieder auf, solange `mtime` der Note konstant bleibt (dismissed_freshness mit `hint_type='verdict'`) |
 | AC-11 | `note_freshness_history` haelt maximal 5 Runs ODER 90 Tage pro Note, was zuerst eintritt. Aelteste Eintraege werden bei Insert verdraengt |
 | AC-12 | Schema-Migration von v10 nach v11 ist additiv. Bestehende Reads auf `freshness_class`, `temporal_marker_count`, `classified_at` brechen nicht |
@@ -88,7 +88,7 @@ Diese Sektion ist explizit Tech-haltig, weil IMP nach FEAT geht und der Architek
 - **Mid-Tier-Modell**: Default `claude-haiku-4-5` oder `gemini-flash`. Token-Budget je Run aggregiert.
 - **Frontier-Modell**: Opt-in, default off. Pro Provider ZDR-Flag pruefen, fail-closed wenn nicht setzbar.
 - **External-Source-Adapter**: WebSearchProvider-Interface aus ADR-104. Erste Implementation Tavily, dann Brave. Model-native Web Search ist OOS dieses IMP.
-- **UI**: VaultHealthRepairModal-Erweiterung, kein neues Top-Level-Modal. Sub-Modale (`ResolveConflictModal`, `BatchResolveModal`) werden vom Aging-knowledge-Tab geoeffnet.
+- **UI**: VaultHealthRepairModal-Erweiterung, kein neues Top-Level-Modal. Sub-Modale (`ResolveConflictModal`, `BatchResolveModal`) werden vom Knowledge-review-Tab geoeffnet.
 - **Mobile**: Read-only. Schreibender Stage-4-Lauf nur auf Desktop. Mobile-Sync bringt persistierte Verdicts auf das Geraet.
 
 ## Performance- und Cost-Schwellen
