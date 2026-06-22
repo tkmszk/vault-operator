@@ -5,6 +5,96 @@ was uebergeben wurde und was der naechste Schritt ist.
 
 ---
 
+## architecture-to-coding 2026-06-22
+
+triage: EPIC-33
+triage_kind: epic
+epic: EPIC-33
+feature: 11 FEATs (FEAT-33-01..11)
+
+**Phase:** Architecture komplett. Ready for Coding.
+
+**Artefakte erzeugt:**
+
+- 7 ADRs ADR-138..144 in `_devprocess/architecture/` (986 Zeilen, Multi-Agent-Workflow parallel)
+- arc42 Section 5.10 (Bausteinsicht Inline-Editor-AI-Layer) + Section 9 (ADR-Tabelle um 7 Rows erweitert)
+- [plan-context-epic-33.md](../requirements/handoff/plan-context-epic-33.md) (232 Zeilen, Tech-Stack + Architecture-Style + ADR-Summary + Module-Layout + Welle-Plan + Test-Plan + Performance/Security + Open Items + Consistency-Check)
+- src/ARCHITECTURE.map: 10 neue Concept-Rows (inline-trigger-resolver, inline-floating-menu, inline-diff-renderer, inline-diff-state, inline-lookup-rag, inline-chat-block, inline-settings-snapshot, inline-skill-filter, inline-telemetry, agent-task-runner) + 7 ADR-Catalog-Rows fuer ADR-138..144
+- BACKLOG-Erweiterung: 7 ADR-Rows in EPIC-33-Sektion (Status Proposed, Phase Building), Dashboard ADR 124 -> 131, Total 484 -> 491
+
+**Spike-Ergebnisse die in die ADRs eingeflossen sind:**
+
+Spike A (Sidebar-Independence-Codebase-Inventory, Explore-Agent):
+- 60% AI-Pfade bereits entkoppelt: API-Provider, AgentTask Callback-Abstrakt, Settings global in main.ts, interne LLM-Calls in PlanPresentationTool (Pattern-Vorbild), SemanticSearchTool HyDE, MemoryService SingleCallProcessor
+- 40% gekoppelt: AgentTask-Konstruktion in AgentSidebarView.ts:1959, Callback-DOM-Manipulation Lines 1963-2250, Mode/Thinking/Effort-Override als Sidebar-Instanz-Variablen
+- Tier-1-Refactor-Aufwand: Medium (1-2 Wochen)
+
+Spike B (CodeMirror-6 Inline-Diff, WebSearch/WebFetch + Code-Analyse):
+- Custom mark+widget-Pattern mit StateField+StateEffect ist SOTA
+- jsdiff bereits transitiv in node_modules
+- 80ms-Debounce auf Token-Strom liefert <100ms Latenz-Budget
+- InlineAI-Plugin (FBarrca/obsidian-inlineAI) als Obsidian-Best-Practice-Vorbild
+- @codemirror/* als external in esbuild Pflicht (Doppelkopie sonst)
+- Latenz-Budget knapp 100ms, Optimierungen Viewport-only Decorations und Partial-Diffing falls noetig
+
+**Critical-ADRs (3):**
+
+- **ADR-138 Sidebar-Independence-Architektur:** Stufenweiser Refactor. Welle 1 Tier 1 (ToolCallbacks-Extract in src/ui/rendering/SidebarMessageRenderer.ts + AgentTaskRunner-Abstraktion in src/core/agent/AgentTaskRunner.ts + Mode/Thinking/Effort-Override-Parameter in AgentTaskRunConfig). Tier 2 (Settings-Source-Dekoppelung + ContextTracker-Extract) nach Welle 1 Beta-Verifikation. Sidebar-Funktionalitaet bleibt waehrend Refactor unveraendert.
+- **ADR-139 CodeMirror-6 Inline-Diff-Renderer:** Custom mark+widget mit StateField+StateEffect. Module unter src/core/inline/diff/. Per-Hunk Cmd+Opt+Y/N (Continue-Pattern). Risiko Latenz-Budget durch Viewport-only Decorations mitigated.
+- **ADR-143 Conversation-Block-Storage-Strategie:** Markdown-Code-Fence mit Language-Tag vault-operator-chat-v1 und JSON-Body. Markdown-konform (lesbar ohne Plugin), Git-versioniert, Cross-Plugin-Compatible. 20-Turn-Cap + Auto-Collapse mitigated Note-Aufblaehung. Indexierung via Phase D markdownIndexer.
+
+**Moderate-ADRs (4):**
+
+- **ADR-140 Settings-Snapshot-Lifecycle:** Hybrid Cache+Frisch. Modell+Provider gecached mit plugin.saveSettings-Invalidation, Skills/Prompts pro Trigger frisch. Per-Action-Pin (FEAT-33-10) ueberschreibt Modell-Anteil.
+- **ADR-141 Skill-Capability-Filter inline-action-eligible:** Capability-Object im Skill-Manifest mit eligible/output_mode/input_format/max_selection_chars. Default null = nicht im Inline-Menu (kein Forced-Migration).
+- **ADR-142 Vault-RAG-Pipeline fuer Lookup:** Synchrone Pipeline mit Confidence-Threshold (default 0.7), Fallback LLM-only. Wiederverwendet SemanticIndex/VectorStore mit ADR-136/137-Schema (domain='note'). A/B-Test-Hook fuer H-07.
+- **ADR-144 Telemetrie-Hook fuer Inline-Actions:** OperationLogger-Extension um 4 Event-Typen. Privacy-Sanitization automatisch (kein Selection-Inhalt persistiert).
+
+**Tech-Stack-Justification (Kurzform fuer plan-context):**
+
+Keine neuen Tech-Schichten. Vault Operator hat alle Bausteine bereits: API-Provider entkoppelt, AgentTask abstrakt, Skills-System, TaskRouter, SemanticIndex (10.783 Vektoren via vectors.domain), OperationLogger, Memory v2, HistoryDB. EPIC-33 ist Surface-Wiring auf existierender Backend-Tiefe plus Sidebar-Independence-Refactor (ADR-138). CodeMirror-6 (von Obsidian bereitgestellt) plus Custom mark+widget Pattern fuer Inline-Diff. jsdiff transitiv vorhanden, kein neuer NPM-Dep noetig.
+
+**Rejected alternatives (damit /coding sie nicht reopened):**
+
+- **Direct-Replace + Undo** fuer Rewrite (FEAT-33-03): verworfen nach Marktrecherche, 6/8 Tools machen Inline-Diff
+- **@codemirror/merge Library** fuer Diff-Renderer: verworfen wegen Streaming-UX-Limitierung
+- **Direkt-Refactor** in einem Schritt (ADR-138 Option 1): verworfen wegen Regressionsrisiko
+- **Adapter-Pattern ohne Refactor** (ADR-138 Option 3): verworfen wegen Code-Smell und Tier-2-Blockade
+- **Boolean-Flag** statt Capability-Object fuer Skill-Inline-Eligibility (ADR-141 Option 1): verworfen wegen Output-Mode-Variation-Bedarf
+- **Eigener InlineActionTelemetry-Layer** (ADR-144 Option 2): verworfen wegen Code-Duplikation gegen OperationLogger
+- **Ephemer im Memory** fuer Conversation-Block (ADR-143 Option 1): verworfen wegen Markt-Innovation ohne Persistenz
+- **Sidecar-Datei `.inline-chats.md`** fuer Conversation-Block (ADR-143 Option 4): verworfen wegen Sidecar-Proliferation
+
+**Known risks fuer /coding-Monitoring:**
+
+- **Tier-1-Refactor (ADR-138)** groesser als geschaetzt: Mitigation Pre-Welle als eigene Phase, Snapshot-Tests fuer Sidebar-Callbacks vor Refactor
+- **CodeMirror-Diff-Latenz** >100ms in der Praxis: Mitigation Viewport-only Decorations, optionale Modal-Preview-Fallback in Settings
+- **Vault-RAG-Confidence-Threshold** falsch kalibriert: Mitigation Default 0.7, User-rebindbar, Telemetrie sammelt empirische Verteilung
+- **Conversation-Block-Aufblaehung**: Mitigation 20-Turn-Cap + Auto-Collapse + optionale "move to history"-Action in Welle 3
+- **esbuild external-Config** fuer @codemirror/* MUSS verifiziert sein vor FEAT-33-03-Start (Open Item in plan-context Section 10)
+
+**Open items fuer /coding (Codebase-Reconciliation Phase 2a):**
+
+- AgentTaskRunConfig kann ohne Bruch erweitert werden? Existing-callers durchcheck
+- SkillsService SkillManifest-Schema-Position fuer Capability-Feld
+- OperationLogger Event-Typ-Enum Schema-Migration falls strict
+- esbuild.config.mjs external-Verifikation (@codemirror/state, @codemirror/view, @codemirror/language, obsidian)
+
+**Wellen-Plan fuer /coding (siehe plan-context-epic-33.md Section 7):**
+
+- **Pre-Welle:** Tier-1-Refactor (ADR-138)
+- **Welle 1 (P0):** FEAT-33-01 Trigger-Layer -> FEAT-33-04 Send-to-Main-Chat -> FEAT-33-02 Lookup -> FEAT-33-09 Vault-RAG -> FEAT-33-08 Skills-im-Menu -> FEAT-33-03 Rewrite (komplexeste)
+- **Welle 2 (P1):** FEAT-33-06 Translate -> FEAT-33-07 Summarize -> FEAT-33-05 Inline-Chat
+- **Welle 3 (P2):** FEAT-33-10 Per-Action-Pin -> FEAT-33-11 Find-Action-Items (optional via Skill)
+
+**Consistency check:**
+
+plan-context.md ist konsistent mit allen 7 ADRs. Forbidden-Terms-Check: alle Tech-Terme nur in Technical NFRs und Implementation Notes, ADR-Abstraktion gewahrt (Context/Decision/Consequences ohne file:line).
+
+**Naechster Schritt:** `/coding` startet mit Phase 2a Codebase-Reconciliation, dann Pre-Welle Tier-1-Refactor (ADR-138), dann Welle 1.1 FEAT-33-01 Trigger-Layer als Substrat aller anderen Actions. TDD-Default ist aktiv.
+
+---
+
 ## requirements-engineering-to-architecture 2026-06-22
 
 triage: EPIC-33
