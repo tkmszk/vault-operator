@@ -5024,3 +5024,50 @@ plan-context-imp-20-06-01.md ist konsistent mit ADR-135, ADR-95 (amended), ADR-1
 ### Naechster Schritt
 
 Adversarial Verify-Workflow + Full-Suite-Lauf. Wenn clean: commit der Rename-Wellen unter `chore: IMP-20-06-01 vocabulary + tab rename + cluster freshness move`.
+
+---
+
+## 2026-06-22 -- security-audit (AUDIT-034)
+
+**Phase:** Full-codebase delta audit since AUDIT-033 (v2.12.6 -> v2.14.15), branch `feature/audit-2026-06-22`.
+
+**Scope:** SAST + OWASP Top 10 + OWASP LLM Top 10 + SCA + Zero Trust ueber Retrieval Wave 1, Memory v2 Phase 6, EPIC-32 Stigmergy, Office-Pipeline, Reasoning-Effort-Steering, Plugin-API-Discovery (FEAT-29).
+
+**Verdict:** Resolved (initial High wegen 5 credential-encryption + path-traversal Findings, alle im Fix-Loop am gleichen Tag geschlossen).
+
+**Zahlen:** 79 confirmed findings (84 dropped). 0 Critical, 5 High, 28 Medium, 36 Low, 10 Info. Fix-Loop: 33 Resolved, 8 Partial, 0 Deferred, 0 Blocked. Build clean, 3162/3163 Tests gruen + 1 expected fail.
+
+**Schwerpunkte gefixt:**
+
+- H-1 EditFileTool Hidden-Folder-Path-Traversal: `validateVaultRelativePath` + cleanPath durchgaengig, 4 Regression-Tests (`.foo/../../etc/passwd`, `../outside.md`, NUL-byte, `%2e%2e`).
+- H-2/H-3/H-4 GlobalSettingsService Credential-Encryption-Desync gegen main.ts: shared `providerCredentialCrypto` walker (single source of truth). ChatGPT-OAuth-Tokens, providerConfigs[].credentials, legacy_active_models_backup jetzt at-rest verschluesselt im global-settings-Pfad. Round-trip Tests pinnen.
+- H-5 zod>=4.4.0 npm override gegen CVE-2026-6991 (transitiv via openai 5.23.2).
+- M-1/M-2 WriteFileTool + ReadFileTool Pfad-Validation am Tool-Eingang, Adapter-Fallback laeuft durch denselben Helper.
+- M-3+L-5+L-13+L-14 WebFetchTool SSRF-Haertung: CGNAT 100.64/10, IPv4-mapped IPv6 (dotted + hex), link-local fe80::/10, multicast, broadcast/reserved, OS-resolver via dns.promises.lookup verbatim, internal-suffix-denylist, manual redirect chain mit re-validation und socket remoteAddress check.
+- M-7/M-8 Office-Parser zip-bomb caps (ooxml 50MB single / 500MB cumulative, XlsxParser column + row clamp).
+- M-9/M-10/M-11 ToolExecutionPipeline Mode-Gate-Enforcement, per-tool IgnoreService, configure_model approval-required.
+- M-12/L-12 OperationLogger sanitizer regex extended + nested object walk + value scrubbing, failed-write notice + sentinel file.
+- M-13/L-8 SemanticIndexService enrichment-sanitizer + escapeXmlAttr.
+- M-14/L-4 MCP SSRF guard (default deny, opt-in via `McpClientOptions.allowLocalUrls`), token + URL redaction in McpClient errors.
+- M-4 ToolStepsHtml rehydration durch DOMPurify.
+- M-6 GlobalFileService chmod 0o600 auf POSIX (clamped re-on-overwrite).
+
+**Partials (8) -- Cross-Module-Wiring in Folge-PR:**
+
+- M-5 + M-15 SafeStorage-Banner: ProvidersTab + SafeStorageService fertig; main.ts onload-Toast + ObsidianAgentSettings.safeStoragePlaintextFallbackAcknowledged-Typ stehen aus.
+- M-14 MCP SSRF: guard im obsidianFetch + McpClient fertig; McpTab Settings-Save-Validation + main.ts Wiring von `plugin.settings.mcp.allowLocalUrls` in den Constructor stehen aus. Settings-Type McpServerConfig unangetastet.
+- L-10 OAuth-Revoke on logout: ChatGPT + Copilot best-effort fertig; Kilo bewusst deferred (no documented endpoint), Kommentar markiert das. Kein fetch-mock harness fuer Unit-Test-Coverage.
+- L-11 esbuild integrity: npm-script `verify:esbuild-hashes` + Helper geschrieben; CI-Step auf `pull_request` in `.github/workflows/security-audit.yml` steht aus.
+- L-12 OperationLogger LogTab-Banner: Logger-Surface fertig (failedWrites counter, getFailureCount, getLastFailureMessage), UI-Konsum in `src/ui/settings/LogTab.ts` steht aus.
+- L-15 Trust-wrapping Helper: `formatUntrustedContent` + exported `escapeXmlAttribute` in BaseTool.ts fertig; Adoption in ReadFileTool/SemanticSearchTool/WebFetchTool/UseMcpToolTool als One-Liner-Swap deferred.
+- L-17 Imported-skill provenance gate: InvokeSkillTool komplett haertet (TRUSTED_SKILL_SOURCES, per-session approval, body wrapper, allowedTools intersection, 14 Tests). Cross-Module-Stuecke (ToolExecutionPipeline `skill`-Group-Gating wenn autoApproval.skills aktiv, SelfAuthoredSkillLoader source-Normalisation, Settings-Approval-Card Source-Badge) deferred.
+
+**Architektur-Sicherheits-Punkte fuer naechste Iteration:**
+
+- providerCredentialCrypto wird jetzt von main.ts + GlobalSettingsService geteilt. Future credential field additions muessen IMMER dort registriert werden -- ein Drift-Guard-Test waere sinnvoll (audit-034-fixes.test.ts hat einen Anfang, aber das Register selbst hat noch keinen Explicit-Snapshot-Test).
+- Tool-side `validateVaultRelativePath` ist jetzt das kanonische Muster. AUDIT-034 zeigte dass auf 6 Tools verteilt verwendet -- die anderen Tools (CreateFolderTool, MoveFileTool, DeleteFileTool, RestoreCheckpointTool) sollten vor v2.15.0 nachgezogen werden.
+- Plugin-API-Discovery (FEAT-29 / Imported-skills): L-17 hat den Pfad fuer Provenance + Approval gehaertet, aber der grosse Wurf (eigenes ADR fuer Skill-Trust-Model) fehlt. EPIC-Skill-Trust-Model als Folgespec.
+
+**Release-recommendation:** GREEN fuer interne Builds / dev-merge; YELLOW fuer Public-Mirror -- die 8 Partials sollten in einer kurzen Folge-Welle vor v2.15.0-Public abgeschlossen werden.
+
+**Naechster Schritt empfohlen:** `/dia-orchestrator` Phase 7 (Release Closure) ODER manueller Merge nach dev mit Vorlauf-Welle fuer die 8 Partials.
