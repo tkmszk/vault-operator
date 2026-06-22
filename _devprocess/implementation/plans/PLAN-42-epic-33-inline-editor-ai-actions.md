@@ -314,14 +314,17 @@ Welle 3 P2 (alle module-DONE):
 - [x] FEAT-33-10 Per-Action-Model-Pin: PerActionPin-Helper liest settings.actionPins live. Settings-UI deferred (Default-Settings reichen fuer initial Funktionalitaet).
 - [x] FEAT-33-11 Find-Action-Items: lebend.
 
-Deferred Follow-ups (Settings-Tab + Diff-Renderer + Sidebar-Migration + Vault-RAG-Wiring + Skill-Wiring):
-- [ ] InlineActionsTab in Settings-Modal -- Default-Settings reichen, UI ist Komfort
-- [ ] CodeMirror-6 Diff-Decoration-Adapter (Spike C InlineAI-Plugin-Vorbild)
-- [ ] PR-1.2 SidebarMessageRenderer-Extraktion
-- [ ] PR-1.3 AgentTaskRunConfig-Override-Felder
-- [ ] SemanticIndexProbe live-wiring (FEAT-33-09 Vault-RAG)
-- [ ] SkillCapabilityProbe live-wiring (FEAT-33-08 Skills-im-Menu)
-- [ ] CSS .agent-inline-menu Theme (Welle 1 erscheint mit Vanilla-DOM ohne CSS-Polish)
+Polish-Wave (alle DONE 2026-06-22 in derselben Session):
+- [x] InlineActionsTab in Settings-Modal (`src/ui/settings/InlineActionsTab.ts`, im Advanced-Tab als 'inline-actions')
+- [x] CodeMirror-6 Diff-Decoration-Adapter (`src/core/inline/diff/CodeMirrorDiffAdapter.ts`, registriert via plugin.registerEditorExtension); RewriteAction sammelt LLM-Stream und startet Diff-Session bei onComplete
+- [x] PR-1.2 Sidebar uses AgentTaskRunner: `AgentSidebarView.ts:1959` (jetzt `new AgentTaskRunner({api, toolRegistry, callbacks, modeService, consecutiveMistakeLimit, ...})` plus `task.execute(config)`), Closures unveraendert, Callbacks-Block identisch
+- [x] PR-1.3 AgentTaskRunConfig-Override-Felder: optional modelOverride/thinkingOverride/effortOverride im RunConfig-Schema (informational; Sidebar-Resolution-Pfad unveraendert)
+- [x] SemanticIndexProbe live-wiring (FEAT-33-09): plugin.semanticIndex.embedTexts + plugin.vectorStore.searchUniqueFiles, defensive null-fallback wenn nicht initialisiert
+- [x] SkillCapabilityProbe live-wiring (FEAT-33-08): plugin.selfAuthoredSkillLoader.getAllSkills() plus settings.inlineActions.skillCapabilities-Mapping; User opted-in pro Skill via Settings-Tab statt Frontmatter-Schema-Change
+- [x] CSS-Theme `.agent-inline-menu` in styles.css (Hover, Active, Buttons, Diff-Add/Remove-Marker)
+- [x] Auto-Floating-on-Selection: `SelectionWatcher` debounced mouseup/keyup mit minLength + isEnabled-Live-Callback
+
+Naechste Phase: `/testing` -- Live-Smoke + Edge-Cases.
 - [ ] FEAT-33-04 Send-to-Main-Chat: SHA tbd
 - [ ] FEAT-33-02 Lookup (ohne Vault-RAG): SHA tbd
 - [ ] FEAT-33-09 Vault-Knowledge-Integration: SHA tbd
