@@ -108,7 +108,10 @@ class ConfirmModalImpl extends Modal {
                 .onClick(() => this.decide(false)))
             .addButton((btn) => {
                 btn.setButtonText(opts.confirmLabel ?? 'Confirm').setCta();
-                if (opts.destructive) btn.setWarning();
+                // setDestructive (Obsidian 1.13.0+) replaces setWarning;
+                // combined with setCta() it produces a destructive primary
+                // action. manifest.minAppVersion is gated to >= 1.13.0.
+                if (opts.destructive) btn.setDestructive();
                 btn.onClick(() => this.decide(true));
             });
     }

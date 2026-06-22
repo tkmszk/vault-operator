@@ -5,11 +5,25 @@ import { AgentTask } from '../core/AgentTask';
 import { ModeService } from '../core/modes/ModeService';
 import type { MessageParam, ContentBlock } from '../api/types';
 import { getModelKey, getFirstEnabledModelKey, modelToLLMProvider } from '../types/settings';
+import type { CustomModel } from '../types/settings';
 import { buildApiHandler, buildApiHandlerForModel } from '../api/index';
 import { ToolPickerPopover } from './sidebar/ToolPickerPopover';
 import { McpServerPopover } from './sidebar/McpServerPopover';
 import { ChatModelPickerPopover } from './sidebar/ChatModelPickerPopover';
 import { resolveOverrideModel } from './sidebar/chatModelDropdown';
+import {
+    DEFAULT_THINKING_OVERRIDE,
+    isExplicitThinkingOverride,
+    resolveEffectiveThinkingEnabled,
+    type ThinkingOverride,
+} from './sidebar/thinkingOverride';
+import {
+    DEFAULT_EFFORT_OVERRIDE,
+    resolveEffectiveEffort,
+    thinkingSwitchIsOn,
+    type EffortOverride,
+} from './sidebar/effortOverride';
+import { getModelEffortLevels, type EffortLevel } from '../types/model-registry';
 import { providerConfigToCustomModel, resolveActiveProvider } from '../core/routing/tierResolution';
 import { TOOL_METADATA } from '../core/tools/toolMetadata';
 import { AttachmentHandler } from './sidebar/AttachmentHandler';
@@ -62,6 +76,24 @@ export class AgentSidebarView extends ItemView {
      * Reset to null when the active provider changes.
      */
     private chatModelOverride: string | null = null;
+    /**
+     * Per-conversation extended-thinking override (issue #44).
+     * 'follow' -> use the active model's own thinkingEnabled (default, no change)
+     * 'on'/'off' -> force thinking on/off for this conversation only.
+     * Lives alongside chatModelOverride; reset to 'follow' on a fresh chat.
+     */
+    private chatThinkingOverride: ThinkingOverride = DEFAULT_THINKING_OVERRIDE;
+    /**
+     * Per-conversation reasoning-effort override.
+     * 'auto' -> send no effort field (default, byte-identical to today).
+     * A native level -> request that effort level. Threaded on every
+     * model-resolution path the thinking override uses (chat-pin, mode,
+     * default-active), so it works in auto mode too. Applied to the main-loop
+     * model only; router tier-swaps to the budget helper or frontier do not
+     * carry it, the same accepted limitation as the thinking override.
+     * Lives alongside chatModelOverride; reset to 'auto' on a fresh chat.
+     */
+    private chatEffortOverride: EffortOverride = DEFAULT_EFFORT_OVERRIDE;
     /** EPIC-26 / FEAT-26-05: searchable popover for picking the chat-header model. */
     private chatModelPicker: ChatModelPickerPopover | null = null;
     private sendButton: HTMLElement | null = null;
@@ -130,6 +162,16 @@ export class AgentSidebarView extends ItemView {
         this.plugin = plugin;
         this.modeService = new ModeService(plugin);
         this.toolPicker = new ToolPickerPopover(plugin, this.modeService);
+
+        // FIX-26-99-03 hook: settings ModesTab + NewModeModal need access to
+        // the same ModeService instance the sidebar uses, otherwise they
+        // edit a fresh detached copy whose state never reaches the agent
+        // loop. AgentSettingsTab.findActiveModeService() looks for this
+        // method on the open sidebar leaf.
+        // (Declared inline to avoid a class field ordering hazard with
+        // the property initializer ordering of the file's eslint-disable
+        // file header.)
+        (this as unknown as { getModeServiceOrNull(): ModeService | null }).getModeServiceOrNull = () => this.modeService ?? null;
         this.mcpPicker = new McpServerPopover(plugin);
         this.vaultFilePicker = new VaultFilePicker(
             this.app,
@@ -739,15 +781,15 @@ export class AgentSidebarView extends ItemView {
                 label = t('ui.sidebar.modelAuto');
                 title = t('ui.sidebar.modelAutoTitle');
             } else {
-                const m = resolveOverrideModel(activeProvider, this.chatModelOverride);
-                // Chat-header is narrow -- keep the label short:
-                // displayName when available, otherwise the bare model name
-                // (normalized to strip vendor/region/version prefixes so e.g.
-                // "anthropic/claude-opus-4-6" or "eu.anthropic.claude-opus-4-6-v1"
-                // collapses to "claude-opus-4-6"). Full id stays in the tooltip.
-                const shortName = m?.displayName
-                    ?? this.shortenModelId(this.chatModelOverride);
-                label = shortName;
+                // Chat-header always renders the bare core model id, not the
+                // provider-supplied displayName. Bedrock cross-region profiles
+                // expand into long strings like "EU Anthropic Claude Opus 4.8
+                // [Cross-Region Profile]" that push the composer row off-screen.
+                // shortenModelId collapses the underlying id to its core form
+                // ("eu.anthropic.claude-opus-4-8-v1:0" -> "claude-opus-4-8");
+                // the full id and the descriptive displayName stay in the
+                // tooltip and inside the picker popover.
+                label = this.shortenModelId(this.chatModelOverride);
                 title = t('ui.sidebar.modelOverrideTitle', { label: this.chatModelOverride });
             }
         } else {
@@ -759,6 +801,16 @@ export class AgentSidebarView extends ItemView {
             title = hasModeOverride ? t('ui.sidebar.modeOverride', { label }) : label;
         }
         this.modelButton.createSpan('model-label').setText(label);
+        // The thinking state stays visible inside the picker popover
+        // (chat-model-picker-thinking-switch); the chat composer pill row only
+        // shows the model identity, so a thinking deviation is conveyed via the
+        // tooltip without a second chip cluttering the row.
+        if (isExplicitThinkingOverride(this.chatThinkingOverride)) {
+            const thinkingOn = thinkingSwitchIsOn(this.chatThinkingOverride);
+            title = thinkingOn
+                ? t('ui.sidebar.thinkingOverrideTitleOn', { label: title })
+                : t('ui.sidebar.thinkingOverrideTitleOff', { label: title });
+        }
         setIcon(this.modelButton.createSpan('mode-chevron'), 'chevron-down');
         this.modelButton.title = title;
         // Use the effective key for context-tracker logic below.
@@ -879,9 +931,43 @@ export class AgentSidebarView extends ItemView {
             getCurrent: () => this.chatModelOverride,
             onSelect: (overrideId) => {
                 this.chatModelOverride = overrideId;
+                // Effort is a pin-only control. Unpinning (back to Auto) clears
+                // any chosen effort so Auto mode falls back to the model's own
+                // vendor default; a stale level must not leak onto the router.
+                if (overrideId === null) {
+                    this.chatEffortOverride = DEFAULT_EFFORT_OVERRIDE;
+                }
                 this.updateModelButton();
             },
+            getThinking: () => this.chatThinkingOverride,
+            onThinkingChange: (override) => {
+                this.chatThinkingOverride = override;
+                this.updateModelButton();
+            },
+            getEffort: () => this.chatEffortOverride,
+            onEffortChange: (override) => {
+                this.chatEffortOverride = override;
+                this.updateModelButton();
+            },
+            getEffortLevels: () => this.resolveEffortLevelsForPinnedModel(provider),
         });
+    }
+
+    /**
+     * Native effort levels for the PINNED chat-header model, or [] when nothing
+     * is pinned. Effort is a pin-only control: in Auto mode the tier router
+     * already picks the model for the task, so no effort dial is offered and the
+     * model keeps its own vendor default (the provider layer sends no effort
+     * field). The empty array hides the effort slider, which is how Auto mode and
+     * effort-incapable models (Gemini, local) both end up with no control.
+     */
+    private resolveEffortLevelsForPinnedModel(
+        provider: import('../types/settings').ProviderConfig,
+    ): EffortLevel[] {
+        if (!this.chatModelOverride) return [];
+        const m = resolveOverrideModel(provider, this.chatModelOverride);
+        if (!m) return [];
+        return getModelEffortLevels(m.id, provider.type);
     }
 
     /**
@@ -962,7 +1048,11 @@ export class AgentSidebarView extends ItemView {
         if (next === null) return;
         const trimmed = next.trim();
         if (!trimmed || trimmed === currentTitle) return;
-        await store.updateMeta(id, { title: trimmed });
+        // issue #45 quirk 2: titleSource='user' lockt den Title gegen
+        // spaetere Auto-Writer (LLM-Titler in finalizeConversation,
+        // onComplete-Fallback, MCP-Sync). Der Guard sitzt zentral in
+        // ConversationStore.updateMeta.
+        await store.updateMeta(id, { title: trimmed, titleSource: 'user' });
     }
 
     /** Un-pin: deprecate all facts that came from this conversation. */
@@ -1196,8 +1286,20 @@ export class AgentSidebarView extends ItemView {
         // Phase 2.3: if the FirstRun wizard is still owed to the user
         // (not completed, not dismissed, not yet shown three times),
         // open the wizard instead of the legacy in-chat provider-picker.
+        //
+        // FIX (2026-06-15): when the user manually restarts the setup from
+        // Settings -> Interface / Memory and then cancels the wizard, the
+        // pure modalCompleted check would re-open the wizard on every
+        // reload even though the user already has a provider configured.
+        // `isActiveOnboardingFlow` resolves the ambiguity: any provider in
+        // providerConfigs[] OR any legacy entry in activeModels[] means the
+        // user is no longer in the first-time wizard.
         const shown = ob?.firstRunModalShownCount ?? 0;
-        const wizardPending = ob && !ob.modalCompleted && !ob.dontShowFirstRunAgain && shown < 3;
+        const wizardPending = ob
+            && !ob.modalCompleted
+            && !ob.dontShowFirstRunAgain
+            && shown < 3
+            && isActiveOnboardingFlow(this.plugin.settings);
         if (wizardPending) {
             void this.openFirstRunWizard();
             return;
@@ -1242,12 +1344,14 @@ export class AgentSidebarView extends ItemView {
     private getOnboardingCallbacks() {
         return {
             addAssistantMessage: (md: string) => this.addAssistantMessage(md),
-            addUserMessage: (text: string) => this.addUserMessage(text),
             updateModelButton: () => this.updateModelButton(),
             startOnboardingChat: () => this.startOnboardingChat(),
             openSettings: () => {
-                this.app.setting?.open?.();
-                window.setTimeout(() => this.app.setting?.openTabById?.(this.plugin.manifest.id), 200);
+                // FIX-26-99-02: route the onboarding "Setup" button straight
+                // to the providers tab so the user lands on the
+                // providerConfigs[] surface (post-EPIC-26 canonical store),
+                // not on whichever tab was last open.
+                this.plugin.openSettingsAt('providers');
             },
         };
     }
@@ -1285,10 +1389,20 @@ export class AgentSidebarView extends ItemView {
         if (findings.length === 0) return;
         // eslint-disable-next-line @typescript-eslint/no-require-imports -- dynamic import for modal
         const { VaultHealthRepairModal } = require('./modals/VaultHealthRepairModal') as typeof import('./modals/VaultHealthRepairModal');
-        new VaultHealthRepairModal(this.plugin, findings, (prompt) => {
+        const modal = new VaultHealthRepairModal(this.plugin, findings, (prompt) => {
             this.clearConversation();
             this.sendProgrammaticMessage(prompt, false);
-        }).open();
+        });
+        // IMP-19-01-01: opt-in auto-apply for deterministic rule
+        // findings (missing_backlinks, category_mismatch,
+        // inconsistent_tags). When the setting is on AND there is at
+        // least one repairable finding, the modal opens directly into
+        // the runRepair() path; the user lands on the same Undo/Done
+        // results screen as if they had clicked the Auto-fix banner.
+        if (this.plugin.settings.vaultHealth?.autoApplyRuleRepairs) {
+            modal.autoApplyOnOpen = true;
+        }
+        modal.open();
     }
 
     /** Update the health-pulse icon. Called from main.ts after health check. */
@@ -1379,14 +1493,6 @@ export class AgentSidebarView extends ItemView {
 
         const isHidden = this.nextMessageHidden;
         this.nextMessageHidden = false;
-
-        // Onboarding key interception: treat input as API key when waiting
-        if (this.onboarding?.isAwaitingKey) {
-            this.textarea.value = '';
-            this.autoResizeTextarea();
-            const consumed = await this.onboarding.handleKeyInput(text, this.getOnboardingCallbacks());
-            if (consumed) return;
-        }
 
         this.lastUserMessage = text;
 
@@ -1532,16 +1638,67 @@ export class AgentSidebarView extends ItemView {
         // dropdown has an explicit model picked, build a fresh api handler
         // for it. Falls through to the legacy mode-model resolution when
         // override is null (Auto).
+        // Issue #44: a per-conversation thinking override may also force
+        // thinking on/off. When it does, a fresh handler is built even for
+        // the default-active model so the override takes effect.
         const activeProvider = resolveActiveProvider(this.plugin.settings);
+        // The effort control is pin-only and only revealed while thinking is On,
+        // so a contradictory Thinking=Off + Effort pair can no longer be
+        // expressed and no coherence collapse is needed: the thinking override
+        // passes through untouched. The thinking resolution itself is unchanged.
+        const effectiveThinkingOverride = this.chatThinkingOverride;
+        const thinkingIsExplicit = isExplicitThinkingOverride(effectiveThinkingOverride);
+        // Apply the per-conversation thinking override to a model before it is
+        // built. In 'follow' mode the model's own value is kept unchanged.
+        const applyThinkingOverride = (model: CustomModel): CustomModel => {
+            if (!thinkingIsExplicit) return model;
+            return {
+                ...model,
+                thinkingEnabled: resolveEffectiveThinkingEnabled(
+                    effectiveThinkingOverride,
+                    model.thinkingEnabled,
+                ),
+            };
+        };
+        // Apply the per-conversation effort override. Effort is a PIN-ONLY
+        // control, so this only runs on the chat-pin path below (the mode and
+        // default-active paths do not call it): in Auto mode no effort is sent
+        // and the model keeps its own vendor default. 'auto' leaves the model
+        // unchanged. It is also gated on the thinking switch being On, since an
+        // effort level is meaningless with thinking off and the UI hides the
+        // control there; this keeps a stale level from being sent. The provider
+        // layer only emits a level valid for the model family, so a mismatch is
+        // dropped there rather than here.
+        const applyEffortOverride = (model: CustomModel): CustomModel => {
+            if (!thinkingSwitchIsOn(this.chatThinkingOverride)) return model;
+            const effort = resolveEffectiveEffort(this.chatEffortOverride);
+            if (effort === undefined) return model;
+            return { ...model, reasoningEffort: effort };
+        };
         let resolvedApiHandler = this.plugin.apiHandler;
+        // modelOverrideActive means the user pinned a specific model via the
+        // chat dropdown: it suppresses TaskRouter and the lean cost-heuristics
+        // (#44). handlerResolved is the separate "a handler was already built"
+        // signal so the default-active thinking rebuild below does not clobber
+        // a mode-specific handler. A mode model is NOT a manual override, so it
+        // sets handlerResolved only, keeping its pre-#44 routing behavior.
         let modelOverrideActive = false;
+        let handlerResolved = false;
         if (activeProvider && this.chatModelOverride) {
             const m = resolveOverrideModel(activeProvider, this.chatModelOverride);
             if (m) {
                 try {
-                    const cm = providerConfigToCustomModel(activeProvider, m.id, m);
+                    // A pinned model suppresses the tier router, so both the
+                    // thinking and effort overrides apply to exactly the model
+                    // the turn runs on.
+                    const cm = applyEffortOverride(
+                        applyThinkingOverride(
+                            providerConfigToCustomModel(activeProvider, m.id, m),
+                        ),
+                    );
                     resolvedApiHandler = buildApiHandlerForModel(cm);
                     modelOverrideActive = true;
+                    handlerResolved = true;
                 } catch {
                     resolvedApiHandler = this.plugin.apiHandler;
                 }
@@ -1553,12 +1710,37 @@ export class AgentSidebarView extends ItemView {
         const modeModelKey = this.resolveEnabledModelKey(currentModeSlug);
         const resolvedModel = this.plugin.settings.activeModels.find((m) => getModelKey(m) === modeModelKey);
 
-        if (!modelOverrideActive && resolvedModel && modeModelKey !== this.plugin.settings.activeModelKey) {
-            // Mode has a different model — build a fresh handler for it
+        if (!handlerResolved && resolvedModel && modeModelKey !== this.plugin.settings.activeModelKey) {
+            // Mode has a different model, so build a fresh handler for it.
+            // Effort is pin-only, so a mode model carries only the thinking
+            // override; its own effort/default is left untouched.
             try {
-                resolvedApiHandler = buildApiHandler(modelToLLMProvider(resolvedModel));
+                resolvedApiHandler = buildApiHandler(
+                    modelToLLMProvider(applyThinkingOverride(resolvedModel)),
+                );
+                handlerResolved = true;
             } catch {
                 resolvedApiHandler = this.plugin.apiHandler;
+            }
+        }
+
+        // Issue #44: default-active model path. When neither a chat-model
+        // override nor a mode-specific model rebuilt the handler, but the user
+        // forced thinking for this conversation, rebuild from the same default
+        // model main.ts uses so the thinking override applies. Effort is NOT
+        // threaded here: it is pin-only, so in Auto mode the default model keeps
+        // its own vendor effort default.
+        if (!handlerResolved && thinkingIsExplicit) {
+            const defaultTier = this.plugin.settings.defaultMainModelTier ?? 'mid';
+            const defaultModel = this.plugin.getTierModel(defaultTier) ?? this.plugin.getActiveModel();
+            if (defaultModel) {
+                try {
+                    resolvedApiHandler = buildApiHandler(
+                        modelToLLMProvider(applyThinkingOverride(defaultModel)),
+                    );
+                } catch {
+                    resolvedApiHandler = this.plugin.apiHandler;
+                }
             }
         }
 
@@ -2159,19 +2341,32 @@ export class AgentSidebarView extends ItemView {
                     scheduleScroll();
                 },
                 onEpisodeData: (data) => {
-                    // Episodic memory: record successful multi-tool task (ADR-018, fire-and-forget)
+                    // Episodic memory: record task outcome (ADR-018 + FEAT-32-02 / ADR-133).
+                    // FEAT-32-02 PR 2.2: payload now includes success, mistakesEncountered,
+                    // attemptCompletionFired, fastPathFired, stigmergy. Fires for ALL exit
+                    // paths (success, iteration-cap, abort, error). Fire-and-forget.
                     if (this.plugin.episodicExtractor && this.plugin.settings.mastery.enabled) {
+                        const resultSummary = data.success
+                            ? accumulatedText.slice(0, 300)
+                            : (data.attemptCompletionFired ? 'partial' : 'incomplete');
                         const episode = {
                             userMessage: text,
                             mode: activeMode.slug,
                             toolSequence: data.toolSequence,
                             toolLedger: data.toolLedger,
-                            success: true,
-                            resultSummary: accumulatedText.slice(0, 300),
+                            success: data.success,
+                            resultSummary,
+                            stigmergy: data.stigmergy,
                         };
                         this.plugin.episodicExtractor.recordEpisode(episode).then((ep) => {
                             if (ep && this.plugin.recipePromotionService) {
-                                this.plugin.recipePromotionService.checkForPromotion(ep).catch((e) =>
+                                // FEAT-32-02 PR 2.4 / ADR-132: hand the
+                                // Stigmergy decision snapshot to the promotion
+                                // service so Gate 1 (recipe-wins) and Gate 2
+                                // (sequence shortcut) can fire. Daemon-down
+                                // -> data.stigmergy is undefined and the
+                                // service falls through to Gate 3 ADR-058.
+                                this.plugin.recipePromotionService.checkForPromotion(ep, data.stigmergy).catch((e) =>
                                     console.warn('[Mastery] Promotion check failed:', e)
                                 );
                             }
@@ -2438,8 +2633,22 @@ export class AgentSidebarView extends ItemView {
                 const { ContextComposer } = await import('../core/memory/ContextComposer');
                 const inference = new TopicInference(this.plugin.memoryDB);
                 const profileView = new UserProfileView(this.plugin.memoryDB);
+                // FIX-32-03-01: the composer renders a stable pause-notice
+                // trailer when TokenBudgetGuard has blocked further writes.
+                // dayKey comes from the same snapshot the guard uses so the
+                // line flips deterministically at the daily reset.
                 const composer = new ContextComposer(
-                    this.plugin.memoryDB, inference, profileView, this.plugin.driftBus,
+                    this.plugin.memoryDB,
+                    inference,
+                    profileView,
+                    this.plugin.driftBus,
+                    () => {
+                        const guard = this.plugin.tokenBudget;
+                        if (!guard) return null;
+                        const reason = guard.blockReason();
+                        if (!reason) return null;
+                        return { reason, dayKey: guard.snapshot().day };
+                    },
                 );
                 let userEmbedding: Float32Array | null = null;
                 if (text.trim()) {
@@ -2511,10 +2720,16 @@ export class AgentSidebarView extends ItemView {
 
         // Recipe matching (ADR-017) — find procedural recipes before starting the task
         let recipesSection: string | undefined;
+        // FEAT-32-01 PR 1.3 / ADR-131: capture the matches so we can pass
+        // them into AgentTask.run via `recipeMatches`. Without this the
+        // FastPath gate inside AgentTask would re-run `match()` and could
+        // diverge from the Sidebar's `recipesSection` source.
+        let recipeMatchesForRun: import('../core/mastery/RecipeMatchingService').RecipeMatchResult[] | undefined;
         if (this.plugin.settings.mastery.enabled && this.plugin.recipeMatchingService) {
             try {
                 const matches = this.plugin.recipeMatchingService.match(text, activeMode.slug);
                 console.debug(`[Mastery] Recipe matching: ${matches.length} match(es) for mode "${activeMode.slug}"`, matches.map(m => `${m.recipe.id} (${m.score.toFixed(2)})`));
+                recipeMatchesForRun = matches;
                 if (matches.length > 0) {
                     recipesSection = this.plugin.recipeMatchingService.buildPromptSection(matches);
                     console.debug(`[Mastery] Recipe section injected (${recipesSection.length} chars)`);
@@ -2542,6 +2757,9 @@ export class AgentSidebarView extends ItemView {
             memoryContext,
             pluginSkillsSection: pluginSkillsSection || undefined,
             recipesSection,
+            // FEAT-32-01 PR 1.3 / ADR-131: hand the SAME matches to AgentTask
+            // so the FastPath gate sees what `recipesSection` was built from.
+            recipeMatches: recipeMatchesForRun,
             configDir: this.app.vault.configDir,
             conversationId: this.activeConversationId ?? undefined,
         });
@@ -2639,6 +2857,14 @@ export class AgentSidebarView extends ItemView {
         this.uiMessages = [];
         this.conversationHistory = [];
         this.userDismissedContext = false;
+        // Reset the per-conversation chat-header overrides so a pinned model,
+        // forced thinking, or a chosen effort level does not leak into the next
+        // conversation. The state-field comments claim a fresh-chat reset; this
+        // is where that reset actually happens.
+        this.chatModelOverride = null;
+        this.chatThinkingOverride = DEFAULT_THINKING_OVERRIDE;
+        this.chatEffortOverride = DEFAULT_EFFORT_OVERRIDE;
+        this.updateModelButton();
         // ADR-048: Reset session flags when starting a new conversation
         this.plugin.sessionFlags.clear();
         this.onboarding?.reset();
@@ -3358,7 +3584,12 @@ export class AgentSidebarView extends ItemView {
                     return;
                 }
                 new Notice('Running vault health check...');
-                await this.plugin.vaultHealthService.runChecks();
+                await this.plugin.vaultHealthService.runChecks(undefined, {
+                    backlinksProperty: this.plugin.settings.backlinksProperty ?? 'Notizen',
+                    silenceWithContextOrphans: this.plugin.settings.vaultHealth?.silenceWithContextOrphans ?? true,
+                    orphanExcludePathPrefixes: this.plugin.settings.vaultHealth?.orphanExcludePathPrefixes ?? [],
+                    reciprocalProperties: this.plugin.settings.vaultHealth?.reciprocalProperties ?? [['Notizen', 'Quellen']],
+                });
                 const findings = this.plugin.vaultHealthService.getFindings();
                 if (findings.length === 0) {
                     new Notice('No issues found. Vault is healthy.');

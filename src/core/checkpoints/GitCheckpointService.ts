@@ -181,7 +181,12 @@ export class GitCheckpointService {
                     this.vault.adapter.read(vaultRelPath),
                     `Read ${vaultRelPath}`
                 );
-                console.debug(`[Checkpoints] ${vaultRelPath}: read ${content.length} chars from vault head=${JSON.stringify(contentSnippet(content))}`);
+                // FIX-19-01-07: per-file debug-spam was dominating the
+                // console log (one line per file × N files), masking
+                // the actually interesting [VaultHealth] / repair
+                // summary lines. Now logged at trace level (off by
+                // default); a single summary line is emitted at the
+                // end of snapshot() instead.
 
                 // Write into shadow repo at same relative path
                 const destPath = `${this.repoPath}/${repoRelative}`;
@@ -191,7 +196,6 @@ export class GitCheckpointService {
 
                 // Stage file
                 await git.add({ fs, dir: this.repoPath, filepath: repoRelative });
-                console.debug(`[Checkpoints] ${vaultRelPath}: staged in shadow repo`);
                 staged.push(vaultRelPath);
             } catch (e) {
                 // AUDIT-030 L-3: track per-file failures so callers can surface
@@ -728,14 +732,69 @@ export class GitCheckpointService {
     }
 
     /**
-     * Remove old checkpoint commits to keep repo lean.
-     * Call after task completes (if autoCleanup is enabled).
+     * REF-07: prune stale checkpoint branches. Pre-fix this was a no-op
+     * (console.debug only); the shadow repo grew unbounded across sessions
+     * because every task creates its own ref under `refs/heads/task-*` and
+     * nothing ever deleted them. isomorphic-git has no GC, but we can do
+     * the pragmatic thing: scan the refs directory, delete loose refs whose
+     * mtime is older than the retention window.
+     *
+     * Loose refs only -- isomorphic-git writes one file per ref. If the repo
+     * was packed externally (rare for our shadow path) we leave packed refs
+     * alone; the next snapshot writes a fresh loose ref anyway.
+     *
+     * Called at the end of every snapshot() with a low frequency throttle
+     * (once per 24h) so we don't pay the directory walk on every tool call.
      */
     cleanup(taskId: string): void {
         if (!this.autoCleanup) return;
-        // For simplicity: we keep the last 10 commits and prune older ones via gc
-        // isomorphic-git doesn't have a built-in GC, so we just log for now
-        console.debug(`[Checkpoints] Cleanup for task ${taskId} (repo stays lean via periodic prune)`);
+        try {
+            this.pruneStaleRefs();
+        } catch (e) {
+            console.debug(`[Checkpoints] cleanup for ${taskId} failed:`, e);
+        }
+    }
+
+    /** Throttle: only run the prune walk once per 24h. */
+    private lastPruneAt = 0;
+    /** Retain branches whose mtime is within this window (default 30 days). */
+    private readonly REF_RETENTION_DAYS = 30;
+    private readonly PRUNE_THROTTLE_MS = 24 * 60 * 60 * 1000;
+
+    private pruneStaleRefs(): void {
+        const now = Date.now();
+        if (now - this.lastPruneAt < this.PRUNE_THROTTLE_MS) return;
+        this.lastPruneAt = now;
+
+        const refsDir = `${this.repoPath}/.git/refs/heads`;
+        let entries: string[] = [];
+        try {
+            entries = rawFs.readdirSync(refsDir);
+        } catch {
+            return; // refs dir missing -> nothing to prune
+        }
+
+        const cutoffMs = now - this.REF_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+        let removed = 0;
+        for (const name of entries) {
+            // Only touch task-* branches; never the working "main" or
+            // user-created branches. Pre-cleanup, our snapshot path writes
+            // refs named "task-<timestamp>" or "vault-health-<action>-<ts>".
+            if (!/^(task|vault-health)-/.test(name)) continue;
+            const full = `${refsDir}/${name}`;
+            try {
+                const st = rawFs.statSync(full);
+                if (st.mtimeMs < cutoffMs) {
+                    rawFs.unlinkSync(full);
+                    removed++;
+                }
+            } catch {
+                // Ignore missing/locked refs.
+            }
+        }
+        if (removed > 0) {
+            console.debug(`[Checkpoints] pruned ${removed} stale ref(s) older than ${this.REF_RETENTION_DAYS} days`);
+        }
     }
 
     // -------------------------------------------------------------------------

@@ -12,7 +12,8 @@ import type { LLMProvider } from '../../types/settings';
 import type { ApiHandler, ApiStream, ApiStreamChunk, MessageParam, ModelInfo } from '../types';
 import type { ToolDefinition } from '../../core/tools/types';
 import type { IncomingMessage } from 'http';
-import { getModelContextWindow, resolveOutputBudget, estimatePromptTokens, modelSupportsTemperature } from '../../types/model-registry';
+import { getModelContextWindow, resolveOutputBudget, estimatePromptTokens, modelSupportsTemperature, getModelEffortLevels, modelUsesBudgetTokensThinking } from '../../types/model-registry';
+import { validateProviderUrl } from './providerUrlGuard';
 import { logCacheStat } from '../logCacheStat';
 import { flushToolCallAccumulators, type ToolCallAccumulator } from './utils/toolCallFlush';
 
@@ -22,6 +23,8 @@ import { flushToolCallAccumulators, type ToolCallAccumulator } from './utils/too
 
 // FIX-04-03-09: content may be a content-part array on user messages to
 // carry multimodal input ({type:'image_url'|'text'}).
+import { appendOpenAiChatUserMessage, type OpenAiChatMessage } from '../openaiShapeUserBlocks';
+
 type OpenAIContentPart =
     | { type: 'text'; text: string }
     | { type: 'image_url'; image_url: { url: string } };
@@ -50,6 +53,19 @@ interface OpenAIMessage {
 // extend this after a regression test against OpenRouter + Claude ET.
 const REASONING_PASSBACK_PROVIDER_TYPES = new Set<string>(['custom', 'ollama', 'lmstudio']);
 const MAX_REASONING_CONTENT_CHARS = 50_000;
+
+// FIX-04-03-10: per-conversation Thinking toggle for OpenAI-compatible local
+// backends. The OpenRouter path has its own `reasoning` wrapper, OpenAI/Azure
+// have no on/off toggle (effort-only), so this set is the local cluster only.
+// Mechanism (only when this.config.thinkingEnabled is EXPLICITLY set):
+//   1. `chat_template_kwargs: { enable_thinking: <bool> }` extra body field
+//      (vLLM + MLX-LM pass it through to the chat template; other servers
+//      ignore unknown fields).
+//   2. For Qwen-family model names: prefix the system prompt with `/no_think `
+//      or `/think `. Servers that drop chat_template_kwargs (Ollama today) still
+//      honour the inline token, which is Qwen's official documented mechanism.
+const THINKING_TOGGLE_PROVIDER_TYPES = new Set<string>(['custom', 'ollama', 'lmstudio']);
+const QWEN_THINKING_MODEL_REGEX = /qwen3?/i;
 
 interface OpenAIToolCall {
     id: string;
@@ -187,6 +203,15 @@ export class OpenAiProvider implements ApiHandler {
     constructor(config: LLMProvider) {
         this.config = config;
 
+        // AUDIT-037 H-1: SSRF guard on config.baseUrl. validateProviderUrl
+        // throws when the URL is a public-cloud provider impersonator (e.g.
+        // openai pointed at an internal IP) or targets AWS / GCP metadata.
+        // For ollama / lmstudio loopback and RFC 1918 ranges are allowed; for
+        // "custom" any HTTPS host is allowed and HTTP is allowed only for
+        // loopback hosts. Undefined config.baseUrl falls back to the hardcoded
+        // DEFAULT_BASE_URLS entry below.
+        if (config.baseUrl) validateProviderUrl(config.type, config.baseUrl);
+
         let baseURL = config.baseUrl ?? DEFAULT_BASE_URLS[config.type] ?? DEFAULT_BASE_URLS.openai;
         if (config.type === 'ollama' && !baseURL.match(/\/v\d/)) {
             baseURL = baseURL.replace(/\/+$/, '') + '/v1';
@@ -241,7 +266,12 @@ export class OpenAiProvider implements ApiHandler {
         tools: ToolDefinition[],
         abortSignal?: AbortSignal,
     ): ApiStream {
-        const openAiMessages = this.convertMessages(systemPrompt, messages);
+        // FIX-04-03-10: apply Qwen inline thinking token before convertMessages
+        // bakes the system prompt in. Only fires when the toggle is explicitly
+        // set AND the backend is in the local-cluster gate AND the model is a
+        // Qwen-family. Undefined stays byte-identical to today.
+        const effectiveSystemPrompt = this.maybePrefixQwenThinkingToken(systemPrompt);
+        const openAiMessages = this.convertMessages(effectiveSystemPrompt, messages);
         const openAiTools = tools.length > 0 ? this.convertTools(tools) : undefined;
 
         // Temperature handling — four cases:
@@ -265,10 +295,14 @@ export class OpenAiProvider implements ApiHandler {
         }
 
         // OpenRouter extended thinking: when enabled for Anthropic models via OpenRouter,
-        // force temperature to 1 and pass reasoning parameter
+        // force temperature to 1 and pass reasoning parameter. The guard must
+        // not override models that reject temperature outright (Opus 4.7+,
+        // Fable, Mythos via supportsTemperature) or pin it API-side (o-series),
+        // otherwise sending temperature: 1 re-introduces the 400 the
+        // supportsTemperature gate above just prevented.
         const openRouterThinking = this.config.type === 'openrouter'
             && (this.config.thinkingEnabled ?? false);
-        if (openRouterThinking) {
+        if (openRouterThinking && supportsTemperature && !isOSeries) {
             temperature = 1;
         }
         // Clamp the output budget to the model's real ceiling and (for thinking)
@@ -285,6 +319,36 @@ export class OpenAiProvider implements ApiHandler {
             },
         );
 
+        // Per-conversation reasoning effort. Only honoured for effort-capable
+        // (model, provider) pairs (gpt-5 / o-series on openai/copilot/openrouter,
+        // Claude-via-openrouter). 'auto'/undefined sends nothing, so the request
+        // stays byte-identical to today. The wire field differs by provider:
+        //   - OpenRouter normalizes to reasoning: { effort } (works for both its
+        //     Claude and non-Claude reasoning models, and merges with the
+        //     existing reasoning.max_tokens passthrough).
+        //   - openai / github-copilot use the chat-completions reasoning_effort.
+        // Defensive per-family validity: getModelEffortLevels returns the exact
+        // native set for this (model, provider) pair (OpenRouter Claude -> low..
+        // max, GPT -> minimal..high), so a cross-family level (a Claude-only
+        // xhigh/max accidentally set on a GPT model, or a GPT-only minimal on an
+        // OpenRouter Claude) is dropped, not sent.
+        const effort = this.config.reasoningEffort;
+        const effortLevels = getModelEffortLevels(this.config.model, this.config.type);
+        const effortValid = effort !== undefined && effortLevels.includes(effort);
+        // OpenRouter reasoning object: merge the existing extended-thinking
+        // max_tokens passthrough (if any) with the effort field (if any).
+        // The adaptive Claude lineup (Opus 4.7/4.8, Fable, Mythos) removed
+        // budget_tokens at the Anthropic layer and 400s if it is sent, so
+        // max_tokens is omitted for that family even if the user has thinking
+        // pinned on -- the effort field below carries the intent instead, and
+        // when no effort is set the model thinks at its own adaptive default.
+        const openRouterReasoning: Record<string, unknown> = {};
+        const skipReasoningMaxTokens = openRouterThinking
+            && /^(anthropic\/)?claude-/i.test(this.config.model)
+            && !modelUsesBudgetTokensThinking(this.config.model);
+        if (openRouterThinking && !skipReasoningMaxTokens) openRouterReasoning.max_tokens = budgetTokens;
+        if (effortValid && this.config.type === 'openrouter') openRouterReasoning.effort = effort;
+
         // Build request body
         const requestBody: OpenAI.ChatCompletionCreateParamsStreaming = {
             model: this.config.type !== 'azure' ? this.config.model : this.config.model,
@@ -300,9 +364,14 @@ export class OpenAiProvider implements ApiHandler {
             stream_options: (this.config.type === 'openai' || this.config.type === 'openrouter')
                 ? { include_usage: true }
                 : undefined,
-            // OpenRouter reasoning passthrough for Anthropic models
-            ...(openRouterThinking
-                ? { reasoning: { max_tokens: budgetTokens } } as Record<string, unknown>
+            // OpenRouter reasoning object: extended-thinking max_tokens passthrough
+            // and/or the native effort field, whichever is active.
+            ...(Object.keys(openRouterReasoning).length > 0
+                ? { reasoning: openRouterReasoning } as Record<string, unknown>
+                : {}),
+            // openai / github-copilot reasoning effort (chat-completions field).
+            ...(effortValid && this.config.type !== 'openrouter'
+                ? { reasoning_effort: effort } as Record<string, unknown>
                 : {}),
             // OpenRouter: disable automatic model fallback to prevent silent model switches.
             // Without this, OpenRouter can route to a completely different model (e.g. Gemini)
@@ -310,6 +379,12 @@ export class OpenAiProvider implements ApiHandler {
             ...(this.config.type === 'openrouter'
                 ? { provider: { allow_fallbacks: false } } as Record<string, unknown>
                 : {}),
+            // FIX-04-03-10: per-conversation Thinking toggle for custom/ollama/
+            // lmstudio. vLLM and MLX-LM forward this to the model's chat template
+            // (Qwen3 enable_thinking, etc.). Other backends ignore unknown fields.
+            // Only emitted when the toggle is explicitly set; undefined keeps the
+            // request byte-identical to today.
+            ...(this.chatTemplateKwargsForThinking()),
         };
 
         // OpenAI and Azure use max_completion_tokens (newer models reject max_tokens with 400)
@@ -434,6 +509,24 @@ export class OpenAiProvider implements ApiHandler {
     }
 
     // ---------------------------------------------------------------------------
+    // FIX-04-03-10: Thinking toggle helpers (OpenAI-compat local backends)
+    // ---------------------------------------------------------------------------
+
+    private chatTemplateKwargsForThinking(): Record<string, unknown> {
+        if (typeof this.config.thinkingEnabled !== 'boolean') return {};
+        if (!THINKING_TOGGLE_PROVIDER_TYPES.has(this.config.type)) return {};
+        return { chat_template_kwargs: { enable_thinking: this.config.thinkingEnabled } };
+    }
+
+    private maybePrefixQwenThinkingToken(systemPrompt: string): string {
+        if (typeof this.config.thinkingEnabled !== 'boolean') return systemPrompt;
+        if (!THINKING_TOGGLE_PROVIDER_TYPES.has(this.config.type)) return systemPrompt;
+        if (!QWEN_THINKING_MODEL_REGEX.test(this.config.model)) return systemPrompt;
+        const token = this.config.thinkingEnabled ? '/think ' : '/no_think ';
+        return `${token}${systemPrompt}`;
+    }
+
+    // ---------------------------------------------------------------------------
     // Format conversion: Anthropic → OpenAI
     // ---------------------------------------------------------------------------
 
@@ -523,52 +616,12 @@ export class OpenAiProvider implements ApiHandler {
                     result.push({ role: 'assistant', content: textParts });
                 }
             } else {
-                // User messages may contain text + image + tool_result blocks.
-                // Thinking blocks cannot legally appear on user role; ignored
-                // if they do. FIX-04-03-09: image blocks used to be silently
-                // dropped (text/tool_result-only branches) so gpt-4o /
-                // Gemini-via-OpenAI / OpenRouter vision models received text
-                // only and answered "I don't see an image". They are now
-                // emitted in the canonical content-array format.
-                const hasImage = blocks.some((b) => b.type === 'image');
-                if (hasImage) {
-                    const contentArr: Array<
-                        | { type: 'text'; text: string }
-                        | { type: 'image_url'; image_url: { url: string } }
-                    > = [];
-                    for (const block of blocks) {
-                        if (block.type === 'text') {
-                            contentArr.push({ type: 'text', text: block.text });
-                        } else if (block.type === 'image') {
-                            contentArr.push({
-                                type: 'image_url',
-                                image_url: { url: `data:${block.source.media_type};base64,${block.source.data}` },
-                            });
-                        }
-                    }
-                    if (contentArr.length > 0) {
-                        result.push({ role: 'user', content: contentArr });
-                    }
-                }
-                for (const block of blocks) {
-                    if (!hasImage && block.type === 'text') {
-                        result.push({ role: 'user', content: block.text });
-                    } else if (block.type === 'tool_result') {
-                        // Tool results become separate 'tool' role messages in OpenAI format.
-                        // OpenAI only supports string content — extract text from multimodal arrays.
-                        const textContent = typeof block.content === 'string'
-                            ? block.content
-                            : block.content
-                                .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
-                                .map((b) => b.text)
-                                .join('\n');
-                        result.push({
-                            role: 'tool',
-                            tool_call_id: block.tool_use_id,
-                            content: textContent,
-                        });
-                    }
-                }
+                // REF-06: user-message conversion (text + image + tool_result)
+                // now lives in the shared appendOpenAiChatUserMessage helper.
+                // Three near-identical copies of this branch used to live in
+                // openai/copilot/kilo; FIX-04-03-09 had to update all three
+                // and we want to avoid the same future-bug pattern.
+                appendOpenAiChatUserMessage(result as OpenAiChatMessage[], msg);
             }
         }
 

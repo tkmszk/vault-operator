@@ -14,7 +14,8 @@ import { extractRegionFromBedrockUrl } from '../../api/providers/bedrock';
  */
 export interface BedrockFetchCredentials {
     region?: string;
-    authMode?: 'api-key' | 'access-key';
+    /** FEAT-26-07 adds 'gateway' (enterprise APIM proxy). */
+    authMode?: 'api-key' | 'access-key' | 'gateway';
     apiKey?: string;
     accessKey?: string;
     secretKey?: string;
@@ -35,6 +36,34 @@ interface ApiModelEntry {
     display_name?: string;
     created?: number;
     supported_parameters?: string[];
+    // FIX-26-99-04: OpenRouter (and a couple of OpenAI-compatible servers)
+    // ship pricing + context-window info inline with the model list. The
+    // legacy fetcher dropped these fields; ModelDiscoveryService now
+    // reads them so the UI can show real pricing instead of a placeholder.
+    context_length?: number;
+    pricing?: {
+        prompt?: string | number;
+        completion?: string | number;
+    };
+    top_provider?: {
+        context_length?: number;
+        max_completion_tokens?: number;
+    };
+}
+
+/**
+ * FIX-26-99-04: enriched return shape. The OpenRouter branch fills the
+ * optional fields; every other branch leaves them undefined so existing
+ * callers do not need to change. main.ts maps these into
+ * RawDiscoveredModel for ModelDiscoveryService.
+ */
+export interface FetchedModelEntry {
+    id: string;
+    label: string;
+    contextWindow?: number;
+    maxOutputTokens?: number;
+    pricingPromptUsd?: number;
+    pricingCompletionUsd?: number;
 }
 
 /** Shape of a single Ollama model entry. */
@@ -128,12 +157,28 @@ async function testModelConnection(model: CustomModel): Promise<TestResult> {
                     detail: 'Paste the bearer token from the Bedrock console or from the AWS_BEARER_TOKEN_BEDROCK environment variable.',
                 };
             }
-        } else {
+        } else if (authMode === 'access-key') {
             if (!model.awsAccessKey || !model.awsSecretKey) {
                 return {
                     ok: false,
                     message: 'AWS credentials required',
                     detail: 'Fill both access key ID and secret access key, or switch to the Bedrock API key mode.',
+                };
+            }
+        } else {
+            // FEAT-26-07 gateway mode pre-flight
+            if (!model.baseUrl) {
+                return {
+                    ok: false,
+                    message: 'Gateway endpoint required',
+                    detail: 'Enter the full gateway base URL (e.g. https://gateway.example.com/bedrock).',
+                };
+            }
+            if (!model.gatewayHeaderValue) {
+                return {
+                    ok: false,
+                    message: 'Gateway subscription key required',
+                    detail: 'Paste the subscription key for the enterprise Bedrock gateway.',
                 };
             }
         }
@@ -401,7 +446,7 @@ async function fetchProviderModels(
     baseUrl?: string,
     apiVersion?: string,
     bedrockCreds?: BedrockFetchCredentials,
-): Promise<{ id: string; label: string }[]> {
+): Promise<FetchedModelEntry[]> {
     if (provider === 'bedrock') {
         return fetchBedrockModels(bedrockCreds ?? {}, baseUrl);
     }
@@ -494,7 +539,25 @@ async function fetchProviderModels(
                 if (caps.length === 0) return true;
                 return caps.includes('tools') || caps.includes('tool_choice');
             })
-            .map((m) => ({ id: m.id as string, label: (m.name ?? m.id) as string }))
+            .map((m): FetchedModelEntry => {
+                const ppPrompt = m.pricing?.prompt;
+                const ppCompletion = m.pricing?.completion;
+                const toNum = (v: string | number | undefined): number | undefined => {
+                    if (v === undefined) return undefined;
+                    const n = typeof v === 'string' ? parseFloat(v) : v;
+                    return Number.isFinite(n) ? n : undefined;
+                };
+                const ctx = m.top_provider?.context_length ?? m.context_length;
+                const maxOut = m.top_provider?.max_completion_tokens;
+                return {
+                    id: m.id as string,
+                    label: (m.name ?? m.id) as string,
+                    contextWindow: ctx,
+                    maxOutputTokens: maxOut,
+                    pricingPromptUsd: toNum(ppPrompt),
+                    pricingCompletionUsd: toNum(ppCompletion),
+                };
+            })
             .sort((a, b) => a.id.localeCompare(b.id));
     }
 
@@ -533,8 +596,10 @@ async function fetchProviderModels(
     // (network error) and discovery returns empty; the test-connection then
     // falls back to a placeholder model id and the Codex backend 400s.
     if (provider === 'chatgpt-oauth') {
-        const { listKnownChatGptOAuthModels } = await import('../../api/providers/chatgpt-oauth');
-        return listKnownChatGptOAuthModels();
+        // Live discovery from the Codex /codex/models endpoint (account- and
+        // client-version-specific), with a static fallback baked in.
+        const { fetchChatGptOAuthModels } = await import('../../api/providers/chatgpt-oauth');
+        return fetchChatGptOAuthModels();
     }
 
     // Kilo Gateway. dynamic model list via KiloMetadataService
@@ -602,6 +667,20 @@ async function fetchBedrockModels(
         throw new Error('AWS region required. pick a region or set an endpoint URL containing one.');
     }
     const authMode = creds.authMode ?? 'api-key';
+
+    // FEAT-26-07: gateway mode terminates the AWS trust boundary at an
+    // enterprise APIM that does NOT expose the Bedrock control plane
+    // (`ListFoundationModels` / `ListInferenceProfiles` live elsewhere).
+    // Return a curated list of EU cross-region inference profile IDs that
+    // typical gateway deployments support so the dropdown is still useful.
+    if (authMode === 'gateway') {
+        return [
+            { id: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0', label: 'Anthropic Claude Haiku 4.5 (EU profile)' },
+            { id: 'eu.anthropic.claude-sonnet-4-6',              label: 'Anthropic Claude Sonnet 4.6 (EU profile)' },
+            { id: 'eu.anthropic.claude-opus-4-7',                label: 'Anthropic Claude Opus 4.7 (EU profile)' },
+            { id: 'eu.anthropic.claude-opus-4-8',                label: 'Anthropic Claude Opus 4.8 (EU profile)' },
+        ];
+    }
 
     // Dynamic import keeps the control-plane SDK out of the hot path. it's
     // only needed when the user actually clicks Fetch Models.

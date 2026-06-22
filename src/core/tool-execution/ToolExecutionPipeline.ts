@@ -28,6 +28,12 @@ import { VaultDataFileAdapter } from '../storage/VaultDataFileAdapter';
 import { getTmpRoot } from '../utils/agentFolder';
 import { findAllowedMethod } from '../tools/agent/pluginApiAllowlist';
 import { scanUnreadSources } from '../quality-gates';
+import type { StigmergyTurn } from '../stigmergy/StigmergyAdapter';
+import {
+    emitStigmergyInvoked,
+    emitStigmergyReturned,
+    type DispatchSource,
+} from '../stigmergy/stigmergyEmitGate';
 
 /**
  * FEAT-24-03 (ADR-63 amendment): hard ceiling on the characters of any single
@@ -113,7 +119,52 @@ const TOOL_GROUPS: Record<string, ApprovalGroup> = {
     generate_canvas: 'vault-change',
     create_base: 'vault-change',
     update_base: 'vault-change',
+    // FIX-29-99-05: pre-fix, the four Office-creation tools and several
+    // meta-tools landed on the `note-edit` default. Office creates binary
+    // files (pptx/docx/xlsx/drawio/excalidraw) -- semantically vault-change.
+    // The agent/read meta-tools belong in the agent/read groups so
+    // auto-approval respects their actual side-effect class.
+    create_pptx: 'vault-change',
+    create_docx: 'vault-change',
+    create_xlsx: 'vault-change',
+    create_excalidraw: 'vault-change',
+    create_drawio: 'vault-change',
+    plan_presentation: 'agent',
+    extract_zip: 'vault-change',
+    ingest_document: 'note-edit',
+    // Checkpoint-restore touches every tracked file at once -- treated as
+    // a structural change rather than a single note edit.
+    restore_checkpoint: 'vault-change',
+    // vault_health_check mutating actions are gated by a multi-file
+    // snapshot inside the tool (FIX-19-99-04); classification stays at
+    // vault-change so auto-approval picks up the right group.
+    vault_health_check: 'vault-change',
+    read_document: 'read',
+    list_checkpoints: 'read',
+    read_checkpoint: 'read',
+    diff_checkpoint: 'read',
+    // Meta-tools: discovery + skill-body fetch are read-only relative to
+    // the vault. invoke_skill/invoke_mcp_server route to the same gate
+    // their targets use -- treated as skill for now.
+    find_tool: 'agent',
+    read_skill: 'read',
+    read_mcp_tool: 'read',
+    invoke_skill: 'skill',
+    invoke_mcp_server: 'skill',
+    probe_plugin: 'skill',
+    run_skill_script: 'skill',
+    // EPIC-26 flagship escalation: still an LLM call but no vault edit.
+    consult_flagship: 'agent',
+    // Memory-v2 surfaces. recall is read-only; mark/update mutate the
+    // memory store (not the vault) -- 'agent' keeps them auto-approvable
+    // because the user opted into the memory system already.
+    recall_memory: 'read',
+    mark_for_memory: 'agent',
+    update_soul: 'self-modify',
+    inspect_self: 'read',
+    search_history: 'read',
     // Web
+
     web_fetch: 'web',
     web_search: 'web',
     // Agent control (always auto-approved)
@@ -228,6 +279,15 @@ export class ToolExecutionPipeline {
     /** ADR-063: Context Externalization — large results written to temp files. */
     private resultExternalizer: ResultExternalizer | null = null;
 
+    /**
+     * Active Stigmergy turn for this task (set once after `loop.beginTurn`).
+     * The pipeline emits `capability_invoked` / `capability_returned` around
+     * each single-tool dispatch so the daemon can learn real tool->tool
+     * trails (not just START->tool stars). Undefined or `enabled=false`
+     * means observe-only mode is off and emits are skipped on the fast path.
+     */
+    private stigmergyTurn?: StigmergyTurn;
+
 
     /** Tools eligible for result caching (read-only, deterministic within a task). */
     private static readonly CACHEABLE = new Set([
@@ -264,6 +324,16 @@ export class ToolExecutionPipeline {
         return this.resultExternalizer;
     }
 
+    /**
+     * Bind the Stigmergy turn used to instrument the single-tool dispatch.
+     * Called by AgentTask right after `loop.beginTurn(...)` returns. The
+     * turn carries its own enabled-gate, so passing a no-op turn (daemon
+     * down / SDK missing / Studio toggle off) is safe.
+     */
+    setStigmergyTurn(turn: StigmergyTurn): void {
+        this.stigmergyTurn = turn;
+    }
+
     /** ADR-063: Clean up temp files after task completion. */
     async cleanupExternalized(): Promise<void> {
         await this.resultExternalizer?.cleanup();
@@ -277,11 +347,18 @@ export class ToolExecutionPipeline {
 
     /**
      * CENTRAL EXECUTION METHOD — all tools MUST flow through here.
+     *
+     * `opts.source` (FEAT-32-01 PR 1.2 / ADR-131) tags the dispatch origin so
+     * the Pipeline can keep the Stigmergy substrate free of FastPath /
+     * planner mechanics. Default `'model'` preserves existing behavior; the
+     * FastPath executor passes `'fastpath'` so the substrate stays blind to
+     * Recipe-driven batches (by design -- the agent did not pick the tool).
      */
     async executeTool(
         toolCall: ToolUse,
         callbacks: ToolCallbacks,
         extensions?: ContextExtensions,
+        opts?: { source?: DispatchSource },
     ): Promise<ToolResult> {
         const startTime = Date.now();
 
@@ -420,9 +497,45 @@ export class ToolExecutionPipeline {
                 invalidateToolCache: extensions?.invalidateToolCache,
                 activateDeferredTool: extensions?.activateDeferredTool,
                 getReadFiles: extensions?.readFiles ? () => extensions.readFiles! : undefined,
+                // Stigmergy turn: dispatcher tools (use_mcp_tool, read_skill,
+                // invoke_skill) emit additional namespaced events for the
+                // inner capability (mcp:<server>:<tool>, skill:<name>) so
+                // the substrate sees real tool->skill / tool->mcp edges,
+                // not just dispatcher stars. The turn is a no-op when
+                // Stigmergy is off / the daemon is down, so passing it
+                // through unconditionally is safe.
+                stigmergyTurn: this.stigmergyTurn,
+                // FEAT-32-01 PR 1.2 / ADR-131: propagate the dispatch source
+                // so dispatcher tools can suppress their inner emits when the
+                // outer call came from FastPath / planner. Default `'model'`.
+                dispatchSource: opts?.source ?? 'model',
             };
 
-            await tool.execute(toolCall.input, context);
+            // Stigmergy: emit capability_invoked BEFORE the dispatch and
+            // capability_returned AFTER, so the daemon can build tool->tool
+            // edges instead of only START->tool stars. The id MUST match what
+            // we registered with registerCapability (toolCall.name == tool
+            // definition name == capability id), otherwise phantom
+            // capabilities would appear in the substrate.
+            // The turn handle itself is non-fatal: emit failures are logged
+            // and swallowed so they cannot mask the tool's own error.
+            // `success=false` covers BOTH a throw AND the codebase's
+            // pushToolResult('<error>...') convention (executionHadError),
+            // since both are negative evidence for the substrate.
+            // FEAT-32-01 PR 1.2 / ADR-131: route every emit through the gate
+            // helper so the Pipeline cannot drift from the dispatchers. The
+            // helper is a no-op when the source is `'fastpath'` / `'planner'`
+            // or when the turn is missing / disabled.
+            const stigmergyTurn = this.stigmergyTurn;
+            const dispatchSource = context.dispatchSource;
+            await emitStigmergyInvoked(stigmergyTurn, toolCall.name, dispatchSource);
+            try {
+                await tool.execute(toolCall.input, context);
+            } catch (e) {
+                await emitStigmergyReturned(stigmergyTurn, toolCall.name, false, dispatchSource);
+                throw e;
+            }
+            await emitStigmergyReturned(stigmergyTurn, toolCall.name, !executionHadError, dispatchSource);
 
             // FIX-H: track successful file reads for todo-verification (ADR-090 follow-up)
             // Must happen BEFORE the hallucination scan below so this same call's

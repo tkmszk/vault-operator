@@ -2,6 +2,8 @@
  * Plugin Settings
  */
 
+import type { EffortLevel } from './model-registry';
+
 // ---------------------------------------------------------------------------
 // CustomModel — single unified model entry (replaces per-provider LLMProvider)
 // Adapted from Obsidian Copilot's CustomModel pattern
@@ -39,11 +41,15 @@ export interface CustomModel {
     thinkingEnabled?: boolean;
     /** Thinking budget in tokens (used when thinkingEnabled is true, default 10000) */
     thinkingBudgetTokens?: number;
+    /** Native reasoning-effort level for effort-capable models; undefined sends no effort field. */
+    reasoningEffort?: EffortLevel;
     /** AWS region (Bedrock only), e.g. "eu-central-1", "us-east-1" */
     awsRegion?: string;
     /** Auth mode for Bedrock: 'api-key' uses a single bearer token (new AWS Bedrock API Keys),
-     * 'access-key' uses the classic IAM access key + secret key pair with SigV4 signing */
-    awsAuthMode?: 'api-key' | 'access-key';
+     * 'access-key' uses the classic IAM access key + secret key pair with SigV4 signing,
+     * 'gateway' (FEAT-26-07) routes through an enterprise API-Gateway that proxies the
+     * Bedrock ConverseStream API and replaces AWS-signing with a configurable header. */
+    awsAuthMode?: 'api-key' | 'access-key' | 'gateway';
     /** AWS Bedrock API key (bearer token). Used when awsAuthMode === 'api-key'. */
     awsApiKey?: string;
     /** AWS IAM access key ID. Used when awsAuthMode === 'access-key'. */
@@ -52,6 +58,17 @@ export interface CustomModel {
     awsSecretKey?: string;
     /** Optional AWS session token for temporary credentials from SSO/STS (access-key mode only) */
     awsSessionToken?: string;
+    /** FEAT-26-07: header name carrying the gateway subscription key (e.g. 'Ocp-Apim-Subscription-Key').
+     * Used when awsAuthMode === 'gateway' (Bedrock) or useGateway === true (Anthropic). */
+    gatewayHeaderName?: string;
+    /** FEAT-26-07: subscription-key value sent in `gatewayHeaderName`.
+     * Treated as a credential -- encrypted at rest like the AWS credentials. */
+    gatewayHeaderValue?: string;
+    /** FEAT-26-07 follow-up: opt into the enterprise-gateway code path for
+     * non-AWS providers (e.g. Anthropic via Azure APIM). When true, the
+     * provider switches to Node-fetch (CORS bypass) and sends the configured
+     * `gatewayHeaderName`/`gatewayHeaderValue` pair as the auth header. */
+    useGateway?: boolean;
 }
 
 /**
@@ -246,6 +263,15 @@ export const BUILT_IN_MODELS: CustomModel[] = [
         enabled: false,
         isBuiltIn: true,
     },
+    // Cohere (custom provider, OpenAI compatibility endpoint -- needs a Cohere API key)
+    {
+        name: 'command-a-03-2025',
+        provider: 'custom',
+        displayName: 'Cohere Command A',
+        baseUrl: 'https://api.cohere.ai/compatibility/v1',
+        enabled: false,
+        isBuiltIn: true,
+    },
 ];
 
 // ---------------------------------------------------------------------------
@@ -268,10 +294,12 @@ export interface LLMProvider {
     thinkingEnabled?: boolean;
     /** Thinking budget in tokens */
     thinkingBudgetTokens?: number;
+    /** Native reasoning-effort level for effort-capable models; undefined sends no effort field. */
+    reasoningEffort?: EffortLevel;
     /** AWS region (Bedrock only) */
     awsRegion?: string;
-    /** Bedrock auth mode */
-    awsAuthMode?: 'api-key' | 'access-key';
+    /** Bedrock auth mode (FEAT-26-07 adds 'gateway') */
+    awsAuthMode?: 'api-key' | 'access-key' | 'gateway';
     /** Bedrock API key (bearer token) */
     awsApiKey?: string;
     /** AWS access key ID (Bedrock only) */
@@ -280,6 +308,12 @@ export interface LLMProvider {
     awsSecretKey?: string;
     /** AWS session token (Bedrock only, optional) */
     awsSessionToken?: string;
+    /** FEAT-26-07: header name for enterprise gateway auth */
+    gatewayHeaderName?: string;
+    /** FEAT-26-07: subscription-key value sent in `gatewayHeaderName` */
+    gatewayHeaderValue?: string;
+    /** FEAT-26-07: enterprise gateway opt-in for non-AWS providers. */
+    useGateway?: boolean;
 }
 
 /** Convert a CustomModel to LLMProvider for the API handler layer */
@@ -298,12 +332,16 @@ export function modelToLLMProvider(model: CustomModel): LLMProvider {
         promptCachingEnabled: model.promptCachingEnabled !== false,
         thinkingEnabled: model.thinkingEnabled,
         thinkingBudgetTokens: model.thinkingBudgetTokens,
+        reasoningEffort: model.reasoningEffort,
         awsRegion: model.awsRegion,
         awsAuthMode: model.awsAuthMode,
         awsApiKey: model.awsApiKey,
         awsAccessKey: model.awsAccessKey,
         awsSecretKey: model.awsSecretKey,
         awsSessionToken: model.awsSessionToken,
+        gatewayHeaderName: model.gatewayHeaderName,
+        gatewayHeaderValue: model.gatewayHeaderValue,
+        useGateway: model.useGateway,
     };
 }
 
@@ -654,13 +692,18 @@ export interface ProviderConfig {
     baseUrl?: string;
     /** Auth: Azure / enterprise gateway api-version. */
     apiVersion?: string;
-    /** Auth: AWS Bedrock auth mode + credentials. */
-    awsAuthMode?: 'api-key' | 'access-key';
+    /** Auth: AWS Bedrock auth mode + credentials. FEAT-26-07 adds 'gateway'. */
+    awsAuthMode?: 'api-key' | 'access-key' | 'gateway';
     awsRegion?: string;
     awsApiKey?: string;
     awsAccessKey?: string;
     awsSecretKey?: string;
     awsSessionToken?: string;
+    /** FEAT-26-07: enterprise gateway auth header (name + key value). */
+    gatewayHeaderName?: string;
+    gatewayHeaderValue?: string;
+    /** FEAT-26-07: enterprise gateway opt-in for non-AWS providers. */
+    useGateway?: boolean;
     /** Auth: OAuth bearer token (chatgpt-oauth, github-copilot). */
     oauthToken?: string;
 
@@ -686,6 +729,16 @@ export interface ProviderConfig {
         mid?: string;
         flagship?: string;
     };
+
+    /**
+     * IMP-20-06-01 W4-T2 / ADR-135: per-provider Zero-Data-Retention
+     * affirmation. Default undefined (treated as not-ZDR). When the
+     * user flips this on, they confirm with the provider that prompts
+     * and completions are NOT retained or used for training. Required
+     * before the freshness verifier can escalate to the frontier tier
+     * on this provider.
+     */
+    zdrCapable?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -780,6 +833,17 @@ export interface ObsidianAgentSettings {
     semanticExcludedFolders: string[];
     semanticStorageLocation: 'obsidian-sync' | 'local' | 'global';
     semanticIndexPdfs: boolean;
+    /**
+     * IMP-06-01-01: post-fix flags so the EmbeddingsTab "Reindex PDFs
+     * only" CTA + the post-fix hint modal know whether they need to be
+     * shown. Both default false; flipped to true by the corresponding
+     * user action (modal dismiss vs. reindex complete) and persisted
+     * thereafter. Two flags because "modal dismissed" does NOT mean
+     * "reindex done" -- the user may have closed the modal and never
+     * actually run the cleanup.
+     */
+    _pdfReindexHintShown: boolean;
+    _pdfReindexCompleted: boolean;
     /** Chunk size in characters. Changing this invalidates and rebuilds the index. */
     semanticChunkSize: number;
     /** Contextual Retrieval: prepend LLM-generated context prefix to each chunk before embedding (ADR-051 Stufe 0). */
@@ -788,6 +852,8 @@ export interface ObsidianAgentSettings {
     contextualModelKey: string;
     /** HyDE: generate a hypothetical document before embedding the query. Off by default (costs 1 extra LLM call per search). */
     hydeEnabled: boolean;
+    /** Weighted RRF fusion: downweight the tag arm (0.6) and blend dense cosine into the final ordering. Off reproduces plain RRF. */
+    weightedFusionEnabled: boolean;
     /** Auto-index vault files as they change (modify/create/delete/rename). Off by default — can slow down Obsidian if using a local embedding model. */
     semanticAutoIndexOnChange: boolean;
 
@@ -810,6 +876,15 @@ export interface ObsidianAgentSettings {
     // Knowledge Maintenance (FEATURE-1903)
     /** Frontmatter property name that defines the note category (e.g. "Kategorie"). */
     categoryProperty: string;
+    /**
+     * Frontmatter property name that holds the reciprocal backlink
+     * wikilinks (e.g. "Notizen" or "Notes"). Used by the Vault Health
+     * repair pass to write the reverse edge into the right key.
+     * FIX-19-01-01: was hardcoded to 'Notizen' inside the repair path,
+     * causing repairs to land on a different property than the
+     * original edge and re-detection on the next health check.
+     */
+    backlinksProperty: string;
     /** Frontmatter property name for the short summary (e.g. "Zusammenfassung"). */
     summaryProperty: string;
     /** Naming convention for source files (e.g. "Autor-Jahr_Titel"). */
@@ -1047,8 +1122,23 @@ export interface ObsidianAgentSettings {
         enabled: boolean;
     };
 
+    /**
+     * Always use the compact system-prompt variants (EPIC-26 lean cost
+     * heuristics + lean plugin-skill catalogue) to save tokens. When false,
+     * the lean variants are chosen by routing heuristics only.
+     *
+     * Default: false (current behaviour preserved).
+     */
+    leanSystemPrompt: boolean;
+
     /** BA-25: Vault-Ingest-Pflege (Note-Summary, Frontmatter, Auto-Trigger, PDF). */
     vaultIngest: VaultIngestSettings;
+
+    /** IMP-20-06-01: FEAT-20-06 Stage 4+5 verifier settings. */
+    freshness: FreshnessSettings;
+
+    /** IMP-19-01-01: FEAT-19-01 Vault Health auto-apply rule-based repairs. */
+    vaultHealth: VaultHealthSettings;
 
     // ----------------------------------------------------------------------
     // EPIC-26: Advisor-Pattern + Provider-only setup (ADR-120 .. ADR-123)
@@ -1171,6 +1261,23 @@ export interface VaultIngestSettings {
         maxHintsPerDay: number;
     };
     /**
+     * FEAT-19-20 / FIX-19-20-01: Stufe-3 Periodic-Job dediziertes Gating.
+     *
+     * Vor dem Audit lief Stufe-3 an `autoTrigger.enabled` mit (stuendlicher
+     * Check, woechentlicher Run). Audit fand: das war Co-Trigger fuer
+     * mehrere unverwandte Auto-Trigger und damit unklar dokumentiert.
+     * Eigenes Flag macht die Opt-in-Semantik explizit; `lastRunIso`
+     * persistiert den letzten erfolgreichen Lauf (statt nur an
+     * `rolloverIfNewWeek` zu haengen, das beim Plugin-Restart neu
+     * berechnet wurde).
+     */
+    stufe3PeriodicJob: {
+        /** Default false: User muss Stufe-3-Job explizit aktivieren (kostet LLM-Tokens). */
+        enabled: boolean;
+        /** ISO-Timestamp des letzten erfolgreichen Runs. Leer = nie gelaufen. */
+        lastRunIso: string;
+    };
+    /**
      * FEAT-19-31 / IMP-19-31-01: vom User konfigurierbare Frontmatter-
      * Templates pro Ingest-Skill. Skill liest das angegebene File aus
      * dem Vault und nutzt das Frontmatter als Basis fuer die generierte
@@ -1261,6 +1368,10 @@ export const DEFAULT_VAULT_INGEST_SETTINGS: VaultIngestSettings = {
         perClusterCooldownDays: 7,
         maxHintsPerDay: 5,
     },
+    stufe3PeriodicJob: {
+        enabled: false,
+        lastRunIso: '',
+    },
 };
 
 // ---------------------------------------------------------------------------
@@ -1328,6 +1439,111 @@ export interface BackupSettings {
     retentionCount: number;
     lastAutoBackupAt: number;
 }
+
+// ---------------------------------------------------------------------------
+// IMP-20-06-01: Note-Verifier settings (FEAT-20-06 Stage 4+5)
+// ---------------------------------------------------------------------------
+
+/**
+ * Settings for the note-level claim-check pipeline. All defaults are
+ * privacy-conservative per ADR-135 and the IMP body:
+ * - `writeFrontmatter` is off so the vault stays clean by default
+ * - `externalSources.enabled` is off so no third-party search runs in the
+ *   background without explicit opt-in
+ * - `allowFrontierEscalation` is off so verdicts stay mid-tier-only
+ *   until the user actively turns it on AND the provider exposes ZDR
+ */
+export interface FreshnessSettings {
+    writeFrontmatter: boolean;
+    externalSources: {
+        enabled: boolean;
+    };
+    allowFrontierEscalation: boolean;
+    frontierConfidenceThreshold: number;
+    frontierSeverityFilter: ('matches' | 'extends' | 'contradicts' | 'outdated' | 'no_external_source')[];
+    excludePaths: string[];
+}
+
+export const DEFAULT_FRESHNESS_SETTINGS: FreshnessSettings = {
+    writeFrontmatter: false,
+    externalSources: { enabled: false },
+    allowFrontierEscalation: false,
+    frontierConfidenceThreshold: 0.7,
+    frontierSeverityFilter: ['contradicts', 'outdated'],
+    excludePaths: ['Private/', 'Personal/', 'Medical/', 'Clients/'],
+};
+
+// ---------------------------------------------------------------------------
+// IMP-19-01-01: Vault Health auto-apply for deterministic rule-based repairs.
+// ---------------------------------------------------------------------------
+
+export interface VaultHealthSettings {
+    /**
+     * IMP-19-01-01 AC-05. When true, opening the Vault Health modal
+     * via the sidebar badge auto-runs `runRepair()` over the three
+     * deterministic rule checks (missing_backlinks, category_mismatch,
+     * inconsistent_tags) before the modal renders. Findings that need
+     * a real decision still surface in the modal as before. Default
+     * off so existing users see no behaviour change until they opt in.
+     */
+    autoApplyRuleRepairs: boolean;
+
+    /**
+     * IMP-19-01-02: target folder for orphan-note auto-fix. When the
+     * user selects an `orphans` finding and applies repairs, the note
+     * is moved here via `app.fileManager.renameFile()`. Folder is
+     * auto-created. Default keeps the existing flat-vault convention
+     * (Inbox/Orphans/).
+     */
+    orphansTargetFolder: string;
+
+    /**
+     * FIX-19-01-05: silently drop the `with_context` orphan branch
+     * when true. A `with_context` orphan is a note that has outgoing
+     * MOC-property edges (Themen, Konzepte, ...) but no incoming
+     * wikilink. Users who use embedded Bases in the hub notes (which
+     * surface every note that points to the hub) do NOT need a
+     * Findings entry telling them to add a reciprocal backlink — the
+     * Base IS the backlink. Default true so the modal stays quiet
+     * for that workflow; users who rely on property-reciprocity can
+     * flip this off.
+     */
+    silenceWithContextOrphans: boolean;
+
+    /**
+     * FIX-19-01-05: extra path-prefix patterns to exclude from the
+     * orphan check. The hardcoded excludes are Templates, Daily
+     * Notes, Attachements (typo intentional, matches the user's
+     * existing folder). This setting layers user-specific
+     * exclusions on top — e.g. TaskNotes/ for the TaskNotes plugin,
+     * or any folder that holds notes which intentionally do not
+     * participate in the knowledge graph.
+     */
+    orphanExcludePathPrefixes: string[];
+
+    /**
+     * FIX-19-99-02 (cross-property reciprocity): pairs of frontmatter
+     * properties that count as semantically equivalent backlink
+     * relationships even though they have different names. Example:
+     * `[['Notizen', 'Quellen']]` declares that a `Quelle.Notizen ->
+     * Konzept` edge is satisfied when the `Konzept` has a reverse edge
+     * under either `Notizen` OR `Quellen` pointing back at the source.
+     *
+     * Default `[['Notizen', 'Quellen']]` reflects the common
+     * source-note-to-concept-note pattern (Quelle erwaehnt Konzept via
+     * `Notizen:`, Konzept zitiert Quelle via `Quellen:`). Set to `[]`
+     * to enforce strict same-property reciprocity.
+     */
+    reciprocalProperties: Array<[string, string]>;
+}
+
+export const DEFAULT_VAULT_HEALTH_SETTINGS: VaultHealthSettings = {
+    autoApplyRuleRepairs: false,
+    orphansTargetFolder: 'Inbox/Orphans',
+    silenceWithContextOrphans: true,
+    orphanExcludePathPrefixes: ['TaskNotes/', 'Inbox/Orphans/'],
+    reciprocalProperties: [['Notizen', 'Quellen']],
+};
 
 // ---------------------------------------------------------------------------
 // Visual Intelligence Settings (FEATURE-1115)
@@ -1494,10 +1710,13 @@ export const DEFAULT_SETTINGS: ObsidianAgentSettings = {
     semanticExcludedFolders: [],
     semanticStorageLocation: 'global',
     semanticIndexPdfs: false,
+    _pdfReindexHintShown: false,
+    _pdfReindexCompleted: false,
     semanticChunkSize: 2000,
     enableContextualRetrieval: true,
     contextualModelKey: '',
     hydeEnabled: false,
+    weightedFusionEnabled: true,
     semanticAutoIndexOnChange: false,
     enableGraphExpansion: true,
     graphExpansionHops: 1,
@@ -1506,6 +1725,7 @@ export const DEFAULT_SETTINGS: ObsidianAgentSettings = {
     implicitThreshold: 0.7,
     enableSuggestionBanner: true,
     categoryProperty: 'Kategorie',
+    backlinksProperty: 'Notizen',
     summaryProperty: 'Zusammenfassung',
     sourceNamingConvention: 'Autor-Jahr_Titel',
     enableSynthesisButton: true,
@@ -1646,13 +1866,16 @@ export const DEFAULT_SETTINGS: ObsidianAgentSettings = {
     chatgptOAuthEmail: '',
     chatgptOAuthPlanTier: '',
     chatgptOAuthExpiresAt: 0,
-    chatgptOAuthModel: 'gpt-5.5',
+    chatgptOAuthModel: 'gpt-5-codex',
     chatgptOAuthDisclaimerAcknowledgedAt: 0,
     debugMode: false,
     agentFolderPath: '.vault-operator',
     defaultOutputFolder: 'Inbox/',
     autoTaskRouter: { enabled: true },
+    leanSystemPrompt: false,
     vaultIngest: DEFAULT_VAULT_INGEST_SETTINGS,
+    freshness: DEFAULT_FRESHNESS_SETTINGS,
+    vaultHealth: DEFAULT_VAULT_HEALTH_SETTINGS,
 
     // EPIC-26 / ADR-122: provider-only setup. Pre-migration defaults
     // (PLAN-25 will fill providerConfigs + flip schemaVersion).

@@ -31,6 +31,7 @@ import {
     type ToolResultContentBlock,
     type ConverseStreamCommandInput,
 } from '@aws-sdk/client-bedrock-runtime';
+import { NodeHttpHandler } from '@smithy/node-http-handler';
 import type { DocumentType } from '@smithy/types';
 import type { LLMProvider } from '../../types/settings';
 import type {
@@ -43,7 +44,8 @@ import type {
 } from '../types';
 import type { ToolDefinition } from '../../core/tools/types';
 import { truncatedToolInputError } from '../types';
-import { resolveOutputBudget, estimatePromptTokens, modelSupportsTemperature } from '../../types/model-registry';
+import { resolveOutputBudget, estimatePromptTokens, modelSupportsTemperature, getModelEffortSupport, modelUsesBudgetTokensThinking } from '../../types/model-registry';
+import { validateProviderUrl } from './providerUrlGuard';
 import { getCacheCapability } from '../capabilities';
 import { splitSystemPromptAtCacheBreakpoint } from '../../core/systemPrompt';
 import { logCacheStat } from '../logCacheStat';
@@ -112,6 +114,31 @@ export function extractRegionFromBedrockUrl(url: string | undefined): string | n
     return match ? match[1].toLowerCase() : null;
 }
 
+/** FEAT-26-07 default header name when the user did not override it. */
+const DEFAULT_GATEWAY_HEADER_NAME = 'Ocp-Apim-Subscription-Key';
+
+/**
+ * FEAT-26-07: pure helper. Strips AWS-signing headers (`Authorization`,
+ * `X-Amz-*`) from the outgoing request and injects the configured gateway
+ * subscription header. Case-insensitive against the request map.
+ *
+ * Exported so the contract is unit-testable without standing up the
+ * full SDK middleware stack.
+ */
+export function applyGatewayHeaderTransform(
+    request: { headers: Record<string, string> },
+    headerName: string,
+    headerValue: string,
+): void {
+    for (const key of Object.keys(request.headers)) {
+        const lower = key.toLowerCase();
+        if (lower === 'authorization' || lower.startsWith('x-amz-')) {
+            delete request.headers[key];
+        }
+    }
+    request.headers[headerName] = headerValue;
+}
+
 export class BedrockProvider implements ApiHandler {
     private client: BedrockRuntimeClient;
     private config: LLMProvider;
@@ -119,15 +146,32 @@ export class BedrockProvider implements ApiHandler {
     constructor(config: LLMProvider) {
         this.config = config;
 
-        // Prefer the explicit region field, fall back to parsing it out of the
-        // endpoint URL. That way the user can set just one of the two fields.
-        const region = config.awsRegion?.trim() || extractRegionFromBedrockUrl(config.baseUrl) || '';
+        // Default to bearer-token mode if not specified, since it's the recommended path.
+        const authMode = config.awsAuthMode ?? 'api-key';
+
+        // AUDIT-037 H-2: SSRF guard on config.baseUrl. The Bedrock SDK forwards
+        // AWS credentials with every request, so a hostile endpoint walks off
+        // with the API key or IAM secret. validateProviderUrl pins the host
+        // to *.bedrock(-runtime).<region>.amazonaws.com and refuses metadata
+        // hosts, private IPs and unmatched HTTPS targets.
+        //
+        // FEAT-26-07: in gateway mode the strict AWS allow-list is skipped so
+        // enterprise APIM hosts can proxy the ConverseStream API. The standard
+        // SSRF defenses (HTTPS-only, no metadata, no RFC1918) stay in force.
+        if (config.baseUrl?.trim()) {
+            validateProviderUrl('bedrock', config.baseUrl.trim(), {
+                gatewayMode: authMode === 'gateway',
+            });
+        }
+
+        // Gateway mode requires an explicit region -- the URL no longer
+        // contains one. AWS modes can still fall back to parsing the URL.
+        const region = authMode === 'gateway'
+            ? (config.awsRegion?.trim() || '')
+            : (config.awsRegion?.trim() || extractRegionFromBedrockUrl(config.baseUrl) || '');
         if (!region) {
             throw new Error('[Bedrock] awsRegion is required (e.g. eu-central-1) -- either pick a region or give an endpoint URL containing one');
         }
-
-        // Default to bearer-token mode if not specified, since it's the recommended path.
-        const authMode = config.awsAuthMode ?? 'api-key';
 
         const clientConfig: BedrockRuntimeClientConfig = {
             region,
@@ -135,6 +179,14 @@ export class BedrockProvider implements ApiHandler {
             // https://bedrock-runtime.eu-central-1.amazonaws.com explicitly.
             // Falls back to the default regional endpoint when empty.
             ...(config.baseUrl?.trim() ? { endpoint: config.baseUrl.trim() } : {}),
+            // FEAT-26-07: enterprise gateways typically do not set CORS
+            // headers, so Electron's window.fetch refuses the request with
+            // "Failed to fetch". NodeHttpHandler routes via node:https,
+            // which is not subject to CORS in the renderer. Same pattern
+            // the OpenAI/Custom provider uses via createNodeFetch(). The
+            // AWS auth modes keep the SDK default handler, which is fine
+            // for *.amazonaws.com (CORS-allowed by AWS).
+            ...(authMode === 'gateway' ? { requestHandler: new NodeHttpHandler() } : {}),
         };
 
         if (authMode === 'api-key') {
@@ -144,7 +196,7 @@ export class BedrockProvider implements ApiHandler {
             }
             clientConfig.token = { token: apiKey };
             clientConfig.authSchemePreference = ['httpBearerAuth'];
-        } else {
+        } else if (authMode === 'access-key') {
             const accessKeyId = config.awsAccessKey?.trim();
             const secretAccessKey = config.awsSecretKey?.trim();
             if (!accessKeyId || !secretAccessKey) {
@@ -155,9 +207,47 @@ export class BedrockProvider implements ApiHandler {
                 secretAccessKey,
                 ...(config.awsSessionToken ? { sessionToken: config.awsSessionToken.trim() } : {}),
             };
+        } else {
+            // FEAT-26-07: 'gateway' mode -- the gateway terminates the AWS
+            // trust boundary. Provide dummy credentials so the SDK does not
+            // walk the default credential-provider chain (which would fail
+            // hard in the Electron renderer), and overwrite the auth headers
+            // in a finalizeRequest middleware below.
+            const headerValue = config.gatewayHeaderValue?.trim();
+            if (!headerValue) {
+                throw new Error('[Bedrock] gatewayHeaderValue is required when authMode is gateway');
+            }
+            clientConfig.credentials = {
+                accessKeyId: 'vault-operator-gateway',
+                secretAccessKey: 'vault-operator-gateway',
+            };
         }
 
         this.client = new BedrockRuntimeClient(clientConfig);
+
+        if (authMode === 'gateway') {
+            const headerName = (config.gatewayHeaderName?.trim() || DEFAULT_GATEWAY_HEADER_NAME);
+            // Non-null assertion safe -- the guard above already threw on empty.
+            const headerValue = config.gatewayHeaderValue!.trim();
+            this.client.middlewareStack.add(
+                (next) => async (args) => {
+                    const request = (args as { request?: { headers?: Record<string, string> } }).request;
+                    if (request && request.headers) {
+                        applyGatewayHeaderTransform(
+                            request as { headers: Record<string, string> },
+                            headerName,
+                            headerValue,
+                        );
+                    }
+                    return next(args);
+                },
+                {
+                    step: 'finalizeRequest',
+                    name: 'vault-operator-gateway-auth',
+                    priority: 'low',
+                },
+            );
+        }
     }
 
     getModel(): { id: string; info: ModelInfo } {
@@ -237,18 +327,98 @@ export class BedrockProvider implements ApiHandler {
             }
             : undefined;
 
+        // Extended thinking on Bedrock for budget-tokens Claude (Sonnet 4.6,
+        // Opus 4.6 and older): the thinking toggle sets thinkingEnabled and
+        // Bedrock Converse takes the legacy reasoning_config budget_tokens shape.
+        // Effort-capable Claude (Opus 4.7/4.8, Fable, Mythos) goes through the
+        // effort branch below instead; non-Claude (Nova) never gets a thinking
+        // field.
+        const thinkingEnabled = this.config.thinkingEnabled ?? false;
+        const sendBudgetThinking =
+            thinkingEnabled
+            && /claude/i.test(this.config.model)
+            && modelUsesBudgetTokensThinking(this.config.model);
         // Auto by default: undefined -> model-scaled budget; clamped to the
         // model's output ceiling and to the room left in the context window.
-        const { maxTokens } = resolveOutputBudget(
+        // Pass the thinking flag so resolveOutputBudget reserves the thinking
+        // budget on top of the visible-output budget.
+        const { maxTokens, thinkingBudgetTokens } = resolveOutputBudget(
             this.config.model,
             this.config.maxTokens,
-            { estimatedInputTokens: estimatePromptTokens(systemPrompt, messages, tools) },
+            {
+                enabled: thinkingEnabled,
+                budgetTokens: this.config.thinkingBudgetTokens,
+                estimatedInputTokens: estimatePromptTokens(systemPrompt, messages, tools),
+            },
         );
         // FIX-04-03-02: omit temperature for default-only models (Opus 4.7+,
-        // GPT-5.x on Bedrock if it ever ships there); Bedrock surfaces the
-        // same provider 400 as direct calls when temperature is rejected.
+        // GPT-5.x on Bedrock if it ever ships there); Bedrock surfaces the same
+        // provider 400 as direct calls when temperature is rejected. Extended
+        // thinking additionally requires temperature == 1, mirroring the direct
+        // Anthropic provider.
         const supportsTemperature = modelSupportsTemperature(this.config.model);
-        const temperature = supportsTemperature ? (this.config.temperature ?? 0.2) : undefined;
+        const temperature = !supportsTemperature
+            ? undefined
+            : sendBudgetThinking
+                ? 1
+                : (this.config.temperature ?? 0.2);
+
+        // Reasoning passthrough for Claude on Bedrock. Bedrock Converse exposes
+        // Anthropic extended thinking via `additionalModelRequestFields` -- a
+        // loose DocumentType the SDK does not type-check. Two mutually exclusive
+        // Claude shapes:
+        //   - effort-capable adaptive lineup (Opus 4.7/4.8, Fable/Mythos):
+        //     mirror the direct Anthropic API surface --
+        //       { thinking: { type: 'adaptive' },
+        //         output_config: { effort: <level> } }
+        //     The earlier `reasoning_config: { type: 'enabled', effort }` shape
+        //     400s with `thinking.enabled.budget_tokens: Field required` because
+        //     Bedrock partially translates `type: enabled` into the legacy
+        //     thinking shape, then notices the missing budget_tokens (adaptive
+        //     models do not accept budget_tokens at all). Sending the
+        //     Anthropic-native pair via the passthrough sidesteps that
+        //     translation entirely.
+        //   - budget-tokens lineup (Sonnet 4.6, Opus 4.6 and older): a token
+        //     budget driven by the thinking toggle. The Bedrock translation
+        //     layer
+        //       { reasoning_config: { type: 'enabled', budget_tokens: N } }
+        //     is preserved verbatim here (live-verified by Sebastian on Sonnet
+        //     4.6, see commit be611b4a).
+        // Fail-safe: with no effort and thinking off the field is omitted
+        // entirely (byte-identical to today), and if building it ever throws we
+        // proceed WITHOUT the field rather than break the request.
+        let additionalModelRequestFields: DocumentType | undefined;
+        try {
+            if (this.config.reasoningEffort && getModelEffortSupport(this.config.model, this.config.type)) {
+                additionalModelRequestFields = {
+                    thinking: { type: 'adaptive' },
+                    output_config: { effort: this.config.reasoningEffort },
+                };
+            } else if (sendBudgetThinking && typeof thinkingBudgetTokens === 'number' && thinkingBudgetTokens > 0) {
+                additionalModelRequestFields = {
+                    reasoning_config: {
+                        type: 'enabled',
+                        budget_tokens: thinkingBudgetTokens,
+                    },
+                };
+            }
+        } catch (e) {
+            // AUDIT-037 M-5: only swallow construction errors that are
+            // structurally plausible for an object-literal builder
+            // (TypeError if a registry helper returns the wrong shape,
+            // RangeError if a numeric coercion overflows). Other thrown
+            // values bubble up so a real bug stays visible instead of
+            // silently degrading every Bedrock turn to no-thinking mode.
+            if (!(e instanceof TypeError) && !(e instanceof RangeError)) {
+                throw e;
+            }
+            console.warn('[Bedrock] additionalModelRequestFields construction failed, omitting field', {
+                modelId: this.config.model,
+                reasoningEffort: this.config.reasoningEffort,
+                error: e instanceof Error ? e.message : String(e),
+            });
+            additionalModelRequestFields = undefined;
+        }
 
         const command = new ConverseStreamCommand({
             modelId: this.config.model,
@@ -259,6 +429,7 @@ export class BedrockProvider implements ApiHandler {
                 ...(temperature !== undefined ? { temperature } : {}),
             },
             toolConfig,
+            ...(additionalModelRequestFields !== undefined ? { additionalModelRequestFields } : {}),
         });
 
         const response = await this.client.send(command, { abortSignal });
@@ -390,11 +561,15 @@ export class BedrockProvider implements ApiHandler {
      * Uses ConverseCommand (no stream) to keep it cheap.
      */
     async classifyText(prompt: string, abortSignal?: AbortSignal): Promise<string> {
+        // No temperature: Opus 4.7+, Fable and Mythos reject any sampling
+        // parameter with a ValidationException, and the direct Anthropic and
+        // OpenAI classify paths omit it too. The classification is short and
+        // deterministic enough without it.
         const response = await this.client.send(
             new ConverseCommand({
                 modelId: this.config.model,
                 messages: [{ role: 'user', content: [{ text: prompt }] }],
-                inferenceConfig: { maxTokens: 50, temperature: 0 },
+                inferenceConfig: { maxTokens: 50 },
             }),
             { abortSignal },
         );

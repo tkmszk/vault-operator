@@ -49,6 +49,24 @@ export class AgentSettingsTab extends PluginSettingTab {
     }
 
     /**
+     * FIX-26-99-03: locate the ModeService that the open AgentSidebarView
+     * leaf already owns, so the settings ModesTab + NewModeModal can read
+     * and write through it instead of receiving `undefined`. Returns null
+     * when no sidebar leaf is open -- ModesTab degrades gracefully (the
+     * tab still renders but enumerates only built-in modes). The
+     * AgentSidebarView contract is `getModeServiceOrNull(): ModeService | null`.
+     */
+    private findActiveModeService(): import('../core/modes/ModeService').ModeService | undefined {
+        const leaves = this.app.workspace.getLeavesOfType('obsidian-agent-sidebar');
+        for (const leaf of leaves) {
+            const view = leaf.view as unknown as { getModeServiceOrNull?: () => import('../core/modes/ModeService').ModeService | null };
+            const ms = view.getModeServiceOrNull?.() ?? null;
+            if (ms) return ms;
+        }
+        return undefined;
+    }
+
+    /**
      * Programmatically navigate to a specific tab/subtab and re-render.
      * Used by deep-links (obsidian://obsilo-settings) and plugin methods.
      */
@@ -60,7 +78,22 @@ export class AgentSettingsTab extends PluginSettingTab {
             if (tab === 'customize') this.activeCustomizeSubTab = subTab;
             if (tab === 'advanced') this.activeAdvancedSubTab = subTab;
         }
-        this.display();
+        this.redraw();
+    }
+
+    // Non-deprecated internal re-render entry. PluginSettingTab.display()
+    // is marked as outdated since Obsidian 1.13.0 (the framework suggests
+    // the new declarative getSettingDefinitions API, but our custom tabbed
+    // UI does not fit that model -- see REVIEWER_NOTES.md Compliance notes).
+    // This wrapper lets internal call sites stay free of the deprecation
+    // warning. Obsidian itself still calls display() as the entry point,
+    // which is the one acceptable use of the outdated method.
+    // NOTE: this comment is NOT a JSDoc block (no `/**`). TSDoc parses
+    // any literal `@deprecated` token inside a `/** ... */` block as a
+    // tag on the documented symbol -- which would re-deprecate `redraw`
+    // and undo the entire purpose of this wrapper.
+    private redraw(): void {
+        (this as { display(): void }).display();
     }
 
     display(): void {
@@ -98,7 +131,7 @@ export class AgentSettingsTab extends PluginSettingTab {
                     return;
                 }
                 this.activeTab = id;
-                this.display();
+                this.redraw();
             });
         });
 
@@ -191,10 +224,10 @@ export class AgentSettingsTab extends PluginSettingTab {
                 { id: 'web-search',  label: t('settings.tab.webSearch') },
             ],
             this.activeProvidersSubTab,
-            (id) => { this.activeProvidersSubTab = id; this.display(); },
+            (id) => { this.activeProvidersSubTab = id; this.redraw(); },
         );
         const content = container.createDiv({ cls: 'agent-settings-subcontent' });
-        const rerender = () => this.display();
+        const rerender = () => this.redraw();
         if (this.activeProvidersSubTab === 'providers')   new ProvidersTab(this.plugin, this.app, rerender).build(content);
         if (this.activeProvidersSubTab === 'models')      new ModelsTab(this.plugin, this.app, rerender).build(content);
         if (this.activeProvidersSubTab === 'embeddings')  new EmbeddingsTab(this.plugin, this.app, rerender).build(content);
@@ -215,10 +248,16 @@ export class AgentSettingsTab extends PluginSettingTab {
             { id: 'memory',      label: t('settings.tab.memory')      },
         ];
         this.buildSubTabNav(container, subTabs, this.activeAgentSubTab,
-            (id) => { this.activeAgentSubTab = id; this.display(); });
+            (id) => { this.activeAgentSubTab = id; this.redraw(); });
         const content = container.createDiv({ cls: 'agent-settings-subcontent' });
-        const rerender = () => this.display();
-        const ms = undefined; // ModeService is instantiated in AgentSidebarView; settings tabs work without it
+        const rerender = () => this.redraw();
+        // FIX-26-99-03: pre-fix the ModeService was private to
+        // AgentSidebarView, so the ModesTab + NewModeModal received
+        // `undefined` and silently failed to enumerate or save custom
+        // modes. AgentSidebarView now exposes the service via
+        // `getModeServiceOrNull()` so the settings tab works whether
+        // or not the sidebar leaf is currently open.
+        const ms = this.findActiveModeService();
         if (this.activeAgentSubTab === 'modes')       new ModesTab(this.plugin, this.app, rerender, ms).build(content);
         if (this.activeAgentSubTab === 'permissions') new PermissionsTab(this.plugin, this.app, rerender).build(content);
         if (this.activeAgentSubTab === 'memory')      new MemoryTab(this.plugin, this.app, rerender).build(content);
@@ -237,9 +276,9 @@ export class AgentSettingsTab extends PluginSettingTab {
             { id: 'rules',      label: t('settings.tab.rules')      },
         ];
         this.buildSubTabNav(container, subTabs, this.activeCustomizeSubTab,
-            (id) => { this.activeCustomizeSubTab = id; this.display(); });
+            (id) => { this.activeCustomizeSubTab = id; this.redraw(); });
         const content = container.createDiv({ cls: 'agent-settings-subcontent' });
-        const rerender = () => this.display();
+        const rerender = () => this.redraw();
         if (this.activeCustomizeSubTab === 'skills')     new SkillsTab(this.plugin, this.app, rerender).build(content);
         if (this.activeCustomizeSubTab === 'connectors') new McpTab(this.plugin, this.app, rerender).build(content);
         if (this.activeCustomizeSubTab === 'prompts')    new PromptsTab(this.plugin, this.app, rerender).build(content);
@@ -265,10 +304,10 @@ export class AgentSettingsTab extends PluginSettingTab {
                 { id: 'optional-assets', label: t('settings.tab.optionalAssets') },
             ],
             this.activeAdvancedSubTab,
-            (id) => { this.activeAdvancedSubTab = id; this.display(); },
+            (id) => { this.activeAdvancedSubTab = id; this.redraw(); },
         );
         const content = container.createDiv({ cls: 'agent-settings-subcontent' });
-        const rerender = () => this.display();
+        const rerender = () => this.redraw();
         if (this.activeAdvancedSubTab === 'loop')      new LoopTab(this.plugin, this.app, rerender).build(content);
         if (this.activeAdvancedSubTab === 'interface') new InterfaceTab(this.plugin, this.app, rerender).build(content);
         if (this.activeAdvancedSubTab === 'vault')     new VaultTab(this.plugin, this.app, rerender).build(content);

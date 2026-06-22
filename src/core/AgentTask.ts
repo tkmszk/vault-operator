@@ -27,10 +27,24 @@ import { logInputBreakdown } from './utils/logInputBreakdown';
 import { microcompactToolResults } from './context/MicroCompactor';
 import { filterShadowedBuiltins } from './tools/shadowedByPlugin';
 import { isDeferredTool } from './tools/toolMetadata';
-import { getSubagentProfile } from './agent/subagent-profiles';
+import { getSubagentProfile, listSubagentProfileNames } from './agent/subagent-profiles';
 import { getHelperApi } from './helper-api';
+import { shouldRunTaskRouter } from './routing/TaskRouter';
+import { resolveLeanFlags } from './prompts/leanFlags';
 import { buildApiHandlerForModel } from '../api';
 import { CompositionStackService } from './skills/CompositionStackService';
+import {
+    beginStigmergyTurn,
+    registerCapabilitiesIfChanged as registerStigmergyCapabilitiesIfChanged,
+    stigmergyMcpId,
+    stigmergyPromptOf,
+    stigmergySkillId,
+    stigmergySubagentId,
+    type CapabilityDescriptor,
+    type McpCapabilityDescriptor,
+    type StigmergyTurn,
+} from './stigmergy/StigmergyAdapter';
+import { withTimeout } from './utils/withTimeout';
 
 /** FEAT-29-10: max composition-stack depth (skill -> skill / mcp chains). */
 const COMPOSITION_MAX_DEPTH = 5;
@@ -94,8 +108,33 @@ export interface AgentTaskCallbacks {
     onContextCondensed?: (prevTokens?: number, newTokens?: number) => void;
     /** Called when a checkpoint is saved before a write tool */
     onCheckpoint?: (checkpoint: import('./checkpoints/GitCheckpointService').CheckpointInfo) => void;
-    /** Called just before onComplete with tool execution data for episodic memory (ADR-018) */
-    onEpisodeData?: (data: { toolSequence: string[], toolLedger: string }) => void;
+    /**
+     * Called once per task in the finally-block with the complete episode
+     * payload (FEAT-32-02 PR 2.2 / ADR-133). Replaces the pre-FEAT-32-02
+     * success-only shape -- the callback now fires for every exit path
+     * (success, iteration-cap, abort, error) so RecipePromotion sees the
+     * full picture. Fields:
+     *   - toolSequence / toolLedger: existing ADR-018 payload.
+     *   - success: true when `stigmergyOutcome === 'accept'` AND
+     *     `mistakesEncountered === 0` AND (`attemptCompletionFired` OR
+     *     the turn was a clean natural exit -- streamed text, used at
+     *     least one tool, no errors, no iteration-cap hit). The natural-
+     *     exit branch covers read-only / question tasks where the prompt
+     *     deliberately steers the model away from attempt_completion.
+     *   - mistakesEncountered: total tool errors during the loop.
+     *   - attemptCompletionFired: whether the model called attempt_completion.
+     *   - fastPathFired: whether the ADR-061 FastPath block ran successfully.
+     *   - stigmergy: Stigmergy decision snapshot for this turn (ADR-133).
+     */
+    onEpisodeData?: (data: {
+        toolSequence: string[];
+        toolLedger: string;
+        success: boolean;
+        mistakesEncountered: number;
+        attemptCompletionFired: boolean;
+        fastPathFired: boolean;
+        stigmergy?: import('./mastery/EpisodicExtractor').EpisodeStigmergySnapshot;
+    }) => void;
     /** Called before context condensing to flush important facts to memory (Phase 5) */
     onPreCompactionFlush?: (history: MessageParam[]) => Promise<void>;
     /** Called when an unrecoverable error occurs */
@@ -159,6 +198,15 @@ export interface AgentTaskRunConfig {
      * Used only by spawnSubtask when `new_task` was called with `profile='...'`.
      */
     subagentAllowedTools?: ToolName[];
+    /**
+     * FEAT-32-01 PR 1.3 / ADR-131: pre-computed recipe matches for the user
+     * message. When set, AgentTask uses these instead of calling
+     * `recipeMatchingService.match()` itself, so the Sidebar and the
+     * AgentTask see the SAME match (no embedding-lookup drift between
+     * `recipesSection` build and FastPath gate). Optional: subagent paths
+     * pass `undefined` and AgentTask falls back to an inline match.
+     */
+    recipeMatches?: import('./mastery/RecipeMatchingService').RecipeMatchResult[];
 }
 
 export class AgentTask {
@@ -335,8 +383,208 @@ export class AgentTask {
         // contribute to it. Pipeline mutates on each successful read.
         const readFiles = new Set<string>();
 
-        // Add user message to the shared history
-        history.push({ role: 'user', content: userMessage });
+        // Stigmergy observability turn -- consult BEFORE the user message is
+        // pushed to history, so we can append pathGuidance to it cache-safely
+        // (the cached prefix is system + tools schema; the messages tail is
+        // not cached, so appending here does not invalidate the cache).
+        // Phase 1: the adapter NEVER hides a tool -- orderTools only reorders,
+        // pathGuidance only emits text in pinned/enforce modes. When the
+        // daemon is down or Stigmergy is toggled off, every call is a no-op
+        // and the loop runs exactly as before. Capability registration is
+        // hash-gated and re-runs only when the inventory actually changed.
+        //
+        // candidate_ids now span ALL FOUR explorable surfaces -- tools,
+        // skills, MCP tools, subagent profiles -- so consult can rank them
+        // jointly. Ids are namespaced (skill:*, mcp:server:*, subagent:*)
+        // exactly the way the inner-dispatch emits encode them; that
+        // alignment is what keeps the substrate from accumulating phantom
+        // capability nodes that never see edges.
+        //
+        // VO/Stigmergy contract: candidate_ids MUST equal the registered
+        // capability set (Cooperation Building Block 2). The mode-filtered
+        // tool list excludes deferred tools (FEATURE-1600 / find_tool /
+        // progressive disclosure), but those tools ARE registered with the
+        // daemon. If consult only saw the mode-filtered set, a learned path
+        // that runs through a deferred tool could never re-fire -- the
+        // consult would never know that tool was a candidate. Use the full
+        // registered tool set here so registration-superset == consult-set.
+        //
+        // The mode-filtered set still drives the prompt-cache `cachedTools`
+        // surface the model sees (orderTools is applied there); deferred
+        // tools stay deferred from the LLM until find_tool activates them.
+        // Stigmergy is RECALL, not a second tool selector -- VO's own
+        // progressive disclosure remains the precise default selector.
+        const fullRegisteredTools = this.toolRegistry.getToolDefinitions();
+        const stigmergyCandidates = fullRegisteredTools;
+
+        const pluginForStigmergy = this.toolRegistry.plugin as unknown as {
+            selfAuthoredSkillLoader?: { getAllSkills(): Array<{ name: string; description: string }> };
+            skillsManager?: { discoverSkills(): Promise<Array<{ name: string; description: string }>> };
+        };
+        const stigmergySkillsList: CapabilityDescriptor[] = [];
+        const seenSkillNames = new Set<string>();
+        const addSkill = (name: string, description: string): void => {
+            if (!name || seenSkillNames.has(name)) return;
+            seenSkillNames.add(name);
+            stigmergySkillsList.push({ name, description });
+        };
+        try {
+            for (const s of pluginForStigmergy.selfAuthoredSkillLoader?.getAllSkills() ?? []) {
+                addSkill(s.name, s.description);
+            }
+        } catch (e) {
+            console.debug('[Stigmergy] self-authored skill enumeration failed (non-fatal):',
+                e instanceof Error ? e.message : e);
+        }
+        try {
+            // FEAT-32-03 PR 3.1: hard 1500ms ceiling on discoverSkills so a
+            // haengende user-skill folder cannot block the Stigmergy turn
+            // (Audit Finding 26). TimeoutError is logged at debug, self-
+            // authored skills already loaded above stay registered.
+            const discoverPromise = pluginForStigmergy.skillsManager?.discoverSkills();
+            const userSkills = discoverPromise
+                ? (await withTimeout(discoverPromise, 1500, 'skillsManager.discoverSkills')) ?? []
+                : [];
+            for (const s of userSkills) addSkill(s.name, s.description);
+        } catch (e) {
+            console.debug('[Stigmergy] user skill enumeration failed (non-fatal):',
+                e instanceof Error ? e.message : e);
+        }
+
+        const stigmergyMcpList: McpCapabilityDescriptor[] = [];
+        if (mcpClient) {
+            try {
+                const allowed = allowedMcpServers;
+                const serverAllowed = (name: string): boolean =>
+                    !allowed || allowed.length === 0 || allowed.includes(name);
+                for (const { serverName, tool } of mcpClient.getAllTools()) {
+                    if (!serverAllowed(serverName)) continue;
+                    stigmergyMcpList.push({
+                        server: serverName,
+                        name: tool.name,
+                        description: tool.description ?? '',
+                    });
+                }
+            } catch (e) {
+                console.debug('[Stigmergy] mcp tool enumeration failed (non-fatal):',
+                    e instanceof Error ? e.message : e);
+            }
+        }
+
+        const stigmergySubagentList: CapabilityDescriptor[] = listSubagentProfileNames()
+            .map((name) => {
+                const p = getSubagentProfile(name);
+                return p ? { name: p.name, description: p.description } : null;
+            })
+            .filter((x): x is CapabilityDescriptor => x !== null);
+
+        await registerStigmergyCapabilitiesIfChanged({
+            tools: fullRegisteredTools,
+            skills: stigmergySkillsList,
+            mcp: stigmergyMcpList,
+            subagents: stigmergySubagentList,
+        });
+
+        const stigmergyCandidateIds: string[] = [
+            ...stigmergyCandidates.map((t) => t.name),
+            ...stigmergySkillsList.map((s) => stigmergySkillId(s.name)),
+            ...stigmergyMcpList.map((m) => stigmergyMcpId(m.server, m.name)),
+            ...stigmergySubagentList.map((a) => stigmergySubagentId(a.name)),
+        ];
+        const stigmergyTurn: StigmergyTurn = await beginStigmergyTurn({
+            taskId,
+            prompt: stigmergyPromptOf(userMessage),
+            candidateIds: stigmergyCandidateIds,
+        });
+        // Bind the turn to the per-task pipeline so the single-tool dispatch
+        // point can emit capability_invoked / capability_returned around
+        // tool.execute(). Without this, the daemon only sees START->tool
+        // (from capability_loaded) and never tool->tool edges.
+        pipeline.setStigmergyTurn(stigmergyTurn);
+
+        // VO/Stigmergy contract: outcome grading (Cooperation Building Block 1).
+        // The finally below MUST grade the turn, not unconditionally accept
+        // it. A flailing run that ended in find_tool / tool errors must not
+        // reinforce the same path the same way a clean attempt_completion
+        // does -- otherwise consult would learn to recommend bad shortcuts.
+        // Resolution rules (first matching wins, defaults to 'abandon'):
+        //   - clean attempt_completion, no abort/error -> 'accept'
+        //   - normal end without attempt_completion (iteration cap, hard
+        //     limit recovery, model stopped early)             -> 'iterate'
+        //   - abort, thrown error, circuit-breaker trip,
+        //     network/API failure                              -> 'abandon'
+        // Set at the three return sites in run(); the finally reads it.
+        let stigmergyOutcome: 'accept' | 'abandon' = 'abandon';
+        // FIX 2026-06-09 (Stigmergy substrate starvation RCA): a turn
+        // graded 'iterate' previously called stigmergyTurn.iterate(),
+        // which the upstream loop SDK uses to CANCEL the daemon's auto-
+        // accept timer AND leak the response buffer without depositing
+        // any edges in the substrate. With the prompt explicitly
+        // forbidding attempt_completion for read-only / question tasks
+        // (toolRules.ts:19, toolRouting.ts:33, AttemptCompletionTool.ts
+        // description), every clean read-only turn ended on 'iterate'
+        // and the substrate accumulated zero edges -- so no pin could
+        // ever form and no RecipePromotion shortcut could ever fire.
+        // The grading is now binary: a clean natural exit (streamed
+        // text, no errors, didn't hit the cap) is reinforcement-worthy
+        // (accept). Iteration-cap and error exits are negative evidence
+        // (abandon). The 'iterate' state is gone.
+        let cleanNaturalExit = false;
+
+        // pathGuidance: when Stigmergy has a pinned sequence or pinned-set for
+        // this task, append the hint as an extra text block on the SAME user
+        // message. Two consecutive role:'user' messages would violate the
+        // Anthropic alternation contract, so we merge into one. The text is
+        // appended at the END of the content array, after the cached system +
+        // tools schema, so the prompt cache stays valid.
+        // The descOf map spans all four surfaces so a pinned `skill:*` /
+        // `mcp:*` / `subagent:*` id in the guidance text gets a readable
+        // description, not a bare id.
+        const stigmergyDescById = new Map<string, string>();
+        for (const t of stigmergyCandidates) {
+            stigmergyDescById.set(t.name, t.description ?? '');
+        }
+        for (const s of stigmergySkillsList) {
+            stigmergyDescById.set(stigmergySkillId(s.name), s.description);
+        }
+        for (const m of stigmergyMcpList) {
+            stigmergyDescById.set(stigmergyMcpId(m.server, m.name), m.description);
+        }
+        for (const a of stigmergySubagentList) {
+            stigmergyDescById.set(stigmergySubagentId(a.name), a.description);
+        }
+        const guidance = stigmergyTurn.pathGuidance((id) => stigmergyDescById.get(id));
+        // STIGMERGY-PRECEDENCE-ANCHOR (FEAT-32-03 PR 3.3 / ADR-131 / ADR-062):
+        // this region is where the precedence rule lives. Cross-references:
+        //   - Doc: arc42 Sektion 8.16 (Stigmergy als externer Recall-Layer)
+        //   - Helpers: src/core/stigmergy/precedenceResolver.ts (pure, tested)
+        //   - Pipeline gate: src/core/stigmergy/stigmergyEmitGate.ts
+        //   - Promotion gates: src/core/mastery/RecipePromotionService.ts:55
+        // INVARIANTS (do not break without updating arc42 + ADR-131):
+        //   1. recipesSection stays in the cached System-Prompt-Prefix.
+        //   2. guidance.text appends only at the User-Message-Tail.
+        //   3. guidance.path is always honoured for deferred-tool Pre-Activation.
+        //   4. FastPath-Erfolg suppressed guidance.text (no double-hint).
+        //   5. stigmergyDecisionSnapshot is closure-local; never leaks to subagents.
+        // FEAT-32-01 PR 1.3 / ADR-131: precedence resolver. The user message
+        // push moves DOWN to AFTER the FastPath block so we can decide whether
+        // to append guidance.text only once the FastPath outcome is known.
+        // guidance.path stays in scope for Pre-Activation (kept below); only
+        // the textual hint is gated against Recipe + FastPath success.
+        let precedenceFastPathFired = false;
+        let precedenceRecipeWinner: string | null = null;
+        let precedenceFastPathHistoryEntries: import('../api/types').MessageParam[] = [];
+        const stigmergyGuidanceText = guidance.text;
+        // FEAT-32-02 PR 2.2: hoisted detector so FastPath can feed it via
+        // `recordForEpisodeOnly` BEFORE the main loop opens. Originally
+        // declared in the main-loop-prep block ~150 lines below.
+        const repetitionDetector = new ToolRepetitionDetector();
+        // Phase 2 hook (intentionally inert): once we trust the ranking, swap
+        // the candidate set to `stigmergyTurn.surfaced` here, gated behind a
+        // user setting. Phase 1 keeps the full tool list so the daemon can
+        // learn from the unbiased baseline.
+        // const useSurfacedOnly = false;
+        // if (useSurfacedOnly && stigmergyTurn.surfaced.length > 0) { ... }
 
         // v2.10.0: TaskRouter. Classify the user prompt; route simple
         // tool tasks onto the helper model so trivial xlsx / docx / file
@@ -351,7 +599,7 @@ export class AgentTask {
         // model, classified as complex, etc).
         const mainApi = this.api;
         let routerDecision: 'simple' | 'complex' | 'unknown' | 'disabled' = 'disabled';
-        if (this.depth === 0) {
+        if (shouldRunTaskRouter(this.depth, this.modelOverrideActive)) {
             try {
                 const plugin = this.toolRegistry.plugin;
                 const routerEnabled = plugin.settings.autoTaskRouter?.enabled ?? true;
@@ -384,6 +632,8 @@ export class AgentTask {
             } catch (e) {
                 console.warn('[TaskRouter] router failed, staying on main api:', e);
             }
+        } else if (this.depth === 0 && this.modelOverrideActive) {
+            console.debug('[TaskRouter] skipped -- manual model override active. Staying on the picked model.');
         }
 
         // Escalation helper: switch back to main api after 2 consecutive errors.
@@ -400,9 +650,13 @@ export class AgentTask {
         if (recipesSection && this.depth === 0) {
             try {
                 const { FastPathExecutor } = await import('./FastPathExecutor');
-                const recipeMatch = this.toolRegistry.plugin.recipeMatchingService?.match(
-                    typeof userMessage === 'string' ? userMessage : '', activeMode.slug,
-                );
+                // FEAT-32-01 PR 1.3: prefer pre-computed matches from the
+                // Sidebar (same source as `recipesSection`); fall back to
+                // inline match for subagent paths that do not pre-compute.
+                const recipeMatch = config.recipeMatches
+                    ?? this.toolRegistry.plugin.recipeMatchingService?.match(
+                        typeof userMessage === 'string' ? userMessage : '', activeMode.slug,
+                    );
                 const bestMatch = recipeMatch?.[0];
 
                 // FEATURE-0320 follow-up: when the user explicitly references
@@ -456,23 +710,33 @@ export class AgentTask {
                         abortSignal,
                         fpTools,
                         readFiles,
+                        // FEAT-32-02 PR 2.2 / ADR-133: feed FastPath dispatches
+                        // into the episodic detector so the toolSequence is
+                        // complete. Iteration 0 marks pre-loop dispatches.
+                        (tool, input, summary) =>
+                            repetitionDetector.recordForEpisodeOnly(tool, input, summary, 0),
                     );
 
                     if (result.success && result.toolCallsExecuted > 0) {
-                        console.debug(`[FastPath] Success: ${result.toolCallsExecuted} tools executed, injecting ${result.historyEntries.length} history entries`);
-                        // Append batch results to history — loop will see them and present
-                        for (const entry of result.historyEntries) {
-                            history.push(entry);
-                        }
-                        // ADR-061: Context hint — tell the loop that search/read is done
-                        history.push({
-                            role: 'user',
-                            content: `[Fast Path completed] The recipe "${bestMatch.recipe.name}" has been executed. `
-                                + `${result.toolCallsExecuted} tool calls completed successfully. `
-                                + `The search and read results are above. `
-                                + `Now: analyze the results and complete the task (write summary, present findings). `
-                                + `Do NOT re-search or re-read the same content — use the results already in context.`,
-                        });
+                        console.debug(`[FastPath] Success: ${result.toolCallsExecuted} tools executed, collecting ${result.historyEntries.length} history entries for post-precedence push`);
+                        // FEAT-32-01 PR 1.3 / ADR-131: do NOT push history yet.
+                        // Collect FastPath entries so the precedence resolver
+                        // below can push them AFTER the user message (which
+                        // gets its guidance.text suppressed when FastPath
+                        // fired). guidance.path Pre-Activation is unaffected.
+                        precedenceFastPathHistoryEntries = [
+                            ...result.historyEntries,
+                            {
+                                role: 'user',
+                                content: `[Fast Path completed] The recipe "${bestMatch.recipe.name}" has been executed. `
+                                    + `${result.toolCallsExecuted} tool calls completed successfully. `
+                                    + `The search and read results are above. `
+                                    + `Now: analyze the results and complete the task (write summary, present findings). `
+                                    + `Do NOT re-search or re-read the same content -- use the results already in context.`,
+                            },
+                        ];
+                        precedenceFastPathFired = true;
+                        precedenceRecipeWinner = bestMatch.recipe.id;
                     } else {
                         console.debug('[FastPath] No success, continuing with normal loop');
                     }
@@ -481,6 +745,54 @@ export class AgentTask {
                 console.warn('[FastPath] Pre-loop check failed (non-fatal), continuing with normal loop:', e);
             }
         }
+
+        // FEAT-32-01 PR 1.3 / ADR-131: precedence resolver. Decide guidance.text
+        // suppression now that the FastPath outcome is known, then push:
+        //   1) the user message (with conditional guidance.text)
+        //   2) the FastPath history entries (assistant + tool_results + hint)
+        // This order keeps the cached system-prompt-prefix invariant (ADR-062)
+        // and ensures the agent never sees the recipesSection + guidance.text
+        // double-hint when FastPath fired.
+        const { resolveStigmergyPrecedence, appendGuidanceText, buildStigmergyDecisionSnapshot } =
+            await import('./stigmergy/precedenceResolver');
+        const precedence = resolveStigmergyPrecedence({
+            fastPathFired: precedenceFastPathFired,
+            bestMatchRecipeId: precedenceRecipeWinner,
+            guidanceText: stigmergyGuidanceText,
+        });
+        const userMessageWithGuidance: typeof userMessage = precedence.suppressGuidanceText
+            ? userMessage
+            : (appendGuidanceText(userMessage, stigmergyGuidanceText) as typeof userMessage);
+        history.push({ role: 'user', content: userMessageWithGuidance });
+        for (const entry of precedenceFastPathHistoryEntries) {
+            history.push(entry);
+        }
+        // Snapshot for ADR-132 / ADR-133 (consumed by FEAT-32-02 in finally).
+        const stigmergyDecisionSnapshot = buildStigmergyDecisionSnapshot({
+            turn: stigmergyTurn,
+            pinnedPath: guidance.path,
+            suppressGuidanceText: precedence.suppressGuidanceText,
+            recipeWinner: precedence.recipeWinner,
+        });
+        if (precedence.suppressGuidanceText) {
+            console.debug(
+                `[Precedence] Recipe '${precedence.recipeWinner ?? '<unknown>'}' won; `
+                + `Stigmergy guidance.text suppressed (mode=${stigmergyTurn.decisionMode}, `
+                + `pathLen=${guidance.path.length})`,
+            );
+        } else if (stigmergyGuidanceText.length > 0) {
+            console.debug(
+                `[Precedence] No FastPath winner; Stigmergy guidance.text shown `
+                + `(mode=${stigmergyTurn.decisionMode}, pathLen=${guidance.path.length})`,
+            );
+        }
+        // FEAT-32-02 PR 2.2 / ADR-133: episode-recording closure counters.
+        // All closure-local (not `this.*`) so a subagent re-entry of run()
+        // does NOT inherit the parent's snapshot. Consumed in the finally
+        // block at the end of run().
+        let totalToolErrors = 0;
+        let attemptCompletionFired = false;
+        const fastPathFired = precedenceFastPathFired;
 
         const MAX_ITERATIONS = this.maxIterations;
         const SOFT_LIMIT = Math.floor(MAX_ITERATIONS * 0.6);
@@ -510,7 +822,9 @@ export class AgentTask {
         let pendingModeSwitch: string | null = null;
         // Phase B: consecutive error tracking
         let consecutiveMistakes = 0;
-        const repetitionDetector = new ToolRepetitionDetector();
+        // FEAT-32-02 PR 2.2: `repetitionDetector` was hoisted up above so
+        // FastPath can feed it via `recordForEpisodeOnly`; declaration kept
+        // out of this block to avoid TDZ for FastPath.
         // ADR-090 Lever 10: count loop iterations for telemetry.
         let telemetryIterations = 0;
 
@@ -525,6 +839,9 @@ export class AgentTask {
 
         const signalCompletion = (result: string) => {
             completionResult = result;
+            // FEAT-32-02 PR 2.2 / ADR-133: track for the episode `success`
+            // flag in the finally block.
+            attemptCompletionFired = true;
         };
 
         const switchMode = (slug: string) => {
@@ -626,26 +943,42 @@ export class AgentTask {
                 this.compositionStack, // FEAT-29-10: share stack by reference
             );
 
-            await childTask.run({
-                userMessage: childMessage,
-                taskId: `${taskId}-sub-${Date.now()}`,
-                initialMode: profile ? 'agent' : childMode,
-                history: childHistory,
-                abortSignal,
-                globalCustomInstructions,
-                includeTime,
-                // Profile spawn: drop the parent's rules/mcp/plugin-skills set
-                // entirely. The profile's roleDefinition + allowedTools is the
-                // full scope.
-                rulesContent: profile ? undefined : rulesContent,
-                skillDirectorySection, // subtask-gated to '' inside buildSystemPromptForMode -- pass-through anyway
-                mcpClient: profile ? undefined : mcpClient,
-                allowedMcpServers: profile ? undefined : allowedMcpServers,
-                pluginSkillsSection: profile ? undefined : pluginSkillsSection,
-                subagentRoleOverride: profile?.roleDefinition,
-                subagentAllowedTools: effectiveAllowedTools,
-                configDir,
-            });
+            // Stigmergy: emit at the inner dispatch when the spawn is a
+            // PROFILE spawn -- those are the ones with a stable, namespaced
+            // `subagent:<profile>` id the daemon can rank. Anonymous
+            // new_task spawns have no canonical id (the child mode/message
+            // are too freeform), so we leave them as their outer
+            // `new_task`-tool emission and skip the subagent layer.
+            // Captures the outer `stigmergyTurn` from the run() scope.
+            const stigmergyOn = profile !== undefined && stigmergyTurn.enabled === true;
+            const capId = profile !== undefined ? stigmergySubagentId(profile.name) : '';
+            if (stigmergyOn) await stigmergyTurn.emitInvoked(capId);
+            let subagentOk = false;
+            try {
+                await childTask.run({
+                    userMessage: childMessage,
+                    taskId: `${taskId}-sub-${Date.now()}`,
+                    initialMode: profile ? 'agent' : childMode,
+                    history: childHistory,
+                    abortSignal,
+                    globalCustomInstructions,
+                    includeTime,
+                    // Profile spawn: drop the parent's rules/mcp/plugin-skills set
+                    // entirely. The profile's roleDefinition + allowedTools is the
+                    // full scope.
+                    rulesContent: profile ? undefined : rulesContent,
+                    skillDirectorySection, // subtask-gated to '' inside buildSystemPromptForMode -- pass-through anyway
+                    mcpClient: profile ? undefined : mcpClient,
+                    allowedMcpServers: profile ? undefined : allowedMcpServers,
+                    pluginSkillsSection: profile ? undefined : pluginSkillsSection,
+                    subagentRoleOverride: profile?.roleDefinition,
+                    subagentAllowedTools: effectiveAllowedTools,
+                    configDir,
+                });
+                subagentOk = true;
+            } finally {
+                if (stigmergyOn) await stigmergyTurn.emitReturned(capId, subagentOk);
+            }
             return childText;
         };
 
@@ -659,6 +992,22 @@ export class AgentTask {
         // via find_tool during this session. Injected into the prompt cache
         // until the task ends.
         const activatedDeferredTools = new Set<string>();
+
+        // ADR-26 Recall-feeds-Retrieval: when consult returned a learned
+        // `sequence` decision, pre-activate every DEFERRED TOOL on that
+        // path so the schemas are already in the very first prompt and
+        // find_tool is unnecessary for the path-tools. Only tool ids are
+        // pre-activated -- skill:* / mcp:* / subagent:* ids are reached by
+        // the agent through their own dispatch tools, not by schema
+        // injection. We pre-activate even ids the daemon learned for tools
+        // that are NOT currently deferred: the activated-set is a no-op for
+        // already-visible tools (isDeferredTool gate inside the helper),
+        // so the loop stays correct when the daemon's view drifts.
+        for (const id of guidance.path) {
+            if (isDeferredTool(id)) {
+                activatedDeferredTools.add(id);
+            }
+        }
 
         // EPIC-26 / FEAT-26-01 / ADR-120: reminder is rebuilt as part of the
         // prompt cache. The closure captures the current value of
@@ -692,8 +1041,13 @@ export class AgentTask {
                 // running on auto-mode (no override active). Lean plugin-skills
                 // until a skill-group tool is actually invoked. Subtasks always
                 // see lean cost-heuristics (their prompts are small anyway).
-                costHeuristicsLean: !this.modelOverrideActive,
-                pluginSkillsLean: !recentPluginSkillUsage,
+                // The "Lean system prompt" setting (#44) ORs into both
+                // decisions to force the compact variants.
+                ...resolveLeanFlags(
+                    this.toolRegistry.plugin.settings.leanSystemPrompt ?? false,
+                    this.modelOverrideActive,
+                    recentPluginSkillUsage,
+                ),
             });
             let baseTools = this.modeService
                 ? this.modeService.getToolDefinitions(activeMode)
@@ -721,6 +1075,28 @@ export class AgentTask {
                 }
             }
 
+            // REF-04 (2026-06-21): always-on meta-tools. find_tool (FEATURE-1600
+            // discovery) and read_skill (FEAT-24-09 / ADR-116 "always-available")
+            // were historically marked INTENTIONALLY_NOT_REACHABLE -- they only
+            // hit by hallucination. FIX-29-99-01 added them to TOOL_GROUP_MAP.agent
+            // so they ride through baseTools automatically when the active agent
+            // includes the `agent` group. The injection below pulls them in even
+            // for custom agents whose group list excludes 'agent' (or for subagent
+            // profiles that restrict the surface): without this safety net,
+            // disabling the meta-tools would silently disable progressive
+            // disclosure for the whole task.
+            const allFromRegistry = this.toolRegistry.getToolDefinitions();
+            for (const name of ['find_tool', 'read_skill'] as const) {
+                if (cachedTools.some((t) => t.name === name)) continue;
+                const def = allFromRegistry.find((t) => t.name === name);
+                if (!def) continue;
+                // Respect subagent profile allowlists explicitly: if the profile
+                // chose to exclude a meta-tool, do not override.
+                if (subagentAllowedTools && subagentAllowedTools.length > 0
+                    && !subagentAllowedTools.includes(name)) continue;
+                cachedTools.push(def);
+            }
+
             // BUG-018 Wave 2: hard tool-filter for plugin-shadowed built-ins.
             // If e.g. the Excalidraw community plugin is active, create_excalidraw
             // disappears from the schema entirely — the LLM cannot accidentally
@@ -744,6 +1120,24 @@ export class AgentTask {
             if (this.modelOverrideActive || !pluginAny.getAdvisorModel?.()) {
                 cachedTools = cachedTools.filter((t) => t.name !== 'consult_flagship');
             }
+
+            // ADR-26 / Recall-feeds-Retrieval contract: Stigmergy is NOT a
+            // second tool selector and MUST NOT reorder the tool block --
+            // VOs own find_tool / progressive disclosure is the precise
+            // default selector. Reordering would compete with that selector,
+            // could downgrade a good pick, and would break the prompt cache
+            // because the model sees the tool array in a per-turn-dependent
+            // order. cachedTools stays in VOs registered order.
+            //
+            // Stigmergy's surfacing signal is delivered earlier in run():
+            // for a learned `sequence` decision, pathGuidance.path lists the
+            // tools the daemon expects on this task; deferred tool ids in
+            // that path are pre-activated via activateDeferredTool BEFORE
+            // the prompt cache is built, so their schemas are already in
+            // cachedTools when this builder runs. find_tool is unaffected
+            // when the path is unknown.
+            // Per-tool capability_invoked/returned events are emitted at the
+            // real dispatch point in ToolExecutionPipeline.executeTool().
 
             cachedPromptMode = activeMode.slug;
             cacheInvalidated = false;
@@ -821,6 +1215,7 @@ export class AgentTask {
         const RATE_LIMIT_BASE_WAIT_MS = 30_000;
         let rateLimitRetries = 0;
 
+        try {
         while (true) {
         try {
             for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
@@ -976,6 +1371,7 @@ export class AgentTask {
                         this.taskCallbacks.onToolStart(chunk.name, {});
                         this.taskCallbacks.onToolResult(chunk.name, chunk.error, true);
                         consecutiveMistakes++;
+                        totalToolErrors++;
                     } else if (chunk.type === 'usage') {
                         // Feature 6: Accumulate tokens across all agentic iterations
                         totalInputTokens += chunk.inputTokens;
@@ -999,9 +1395,22 @@ export class AgentTask {
                 // Build the assistant message content. Thinking first (mirrors
                 // the order the model produced: CoT before answer/tool), then
                 // visible text, then tool_use blocks.
+                //
+                // AUDIT-037 L-1: the wire-side MAX_REASONING_CONTENT_CHARS cap
+                // only trims what is RE-SENT to the API. Without a turn-side
+                // cap the assistant history grew linearly with reasoning depth
+                // until condensing kicked in at 70%. Cap each turn at
+                // PER_TURN_THINKING_CAP characters so a max-effort session
+                // does not stall on RAM long before condensing reacts.
                 const assistantContent: ContentBlock[] = [];
                 if (thinkingParts.length > 0) {
-                    assistantContent.push({ type: 'thinking', text: thinkingParts.join('') });
+                    const joined = thinkingParts.join('');
+                    const PER_TURN_THINKING_CAP = 50_000;
+                    const capped = joined.length > PER_TURN_THINKING_CAP
+                        ? joined.slice(0, PER_TURN_THINKING_CAP)
+                            + `\n[thinking truncated: ${joined.length - PER_TURN_THINKING_CAP} chars dropped to keep history bounded]`
+                        : joined;
+                    assistantContent.push({ type: 'thinking', text: capped });
                 }
                 if (textParts.length > 0) {
                     assistantContent.push({ type: 'text', text: textParts.join('') });
@@ -1203,7 +1612,7 @@ export class AgentTask {
 
                         this.taskCallbacks.onToolResult(toolUse.name, extractTextContent(result.content), result.is_error ?? false);
 
-                        if (result.is_error) { consecutiveMistakes++; } else { consecutiveMistakes = 0; }
+                        if (result.is_error) { consecutiveMistakes++; totalToolErrors++; } else { consecutiveMistakes = 0; }
                         // v2.10.0 TaskRouter: escalate to main model after 2 errors
                         if (consecutiveMistakes >= 2) escalateToMain();
                         if (this.consecutiveMistakeLimit > 0 && consecutiveMistakes >= this.consecutiveMistakeLimit) {
@@ -1229,7 +1638,7 @@ export class AgentTask {
 
                         this.taskCallbacks.onToolResult(toolUse.name, extractTextContent(result.content), result.is_error ?? false);
 
-                        if (result.is_error) { consecutiveMistakes++; } else { consecutiveMistakes = 0; }
+                        if (result.is_error) { consecutiveMistakes++; totalToolErrors++; } else { consecutiveMistakes = 0; }
                         // v2.10.0 TaskRouter: escalate to main model after 2 errors
                         if (consecutiveMistakes >= 2) escalateToMain();
                         if (this.consecutiveMistakeLimit > 0 && consecutiveMistakes >= this.consecutiveMistakeLimit) {
@@ -1393,14 +1802,10 @@ export class AgentTask {
                 );
             }
 
-            // Episodic memory: provide tool execution data for recording (ADR-018)
-            const toolSeq = repetitionDetector.getToolSequence();
-            if (toolSeq.length > 0) {
-                this.taskCallbacks.onEpisodeData?.({
-                    toolSequence: toolSeq,
-                    toolLedger: repetitionDetector.getLedger(),
-                });
-            }
+            // FEAT-32-02 PR 2.2 / ADR-133: episode recording moved into the
+            // finally block at the end of run() so iteration-cap and error
+            // exits also produce an episode (telemetry-complete). The
+            // ADR-018 contract (toolSequence + toolLedger) is preserved.
 
             // ADR-063: Clean up externalized temp files after task completion
             await pipeline.cleanupExternalized();
@@ -1415,6 +1820,34 @@ export class AgentTask {
                 iterations: telemetryIterations,
                 outcome: 'completed',
             });
+
+            // VO/Stigmergy: grade the turn at the normal success-exit.
+            // FIX 2026-06-09 (substrate starvation RCA): binary grading.
+            // - clean attempt_completion -> accept (full reinforcement).
+            // - clean natural exit (model streamed visible text, used at
+            //   least one tool, no tool errors, didn't hit the iteration
+            //   cap) -> accept. This is the read-only / question shape
+            //   the prompt explicitly steers the model into; reaching it
+            //   IS a successful turn from the user's POV and worth
+            //   reinforcing.
+            // - everything else at the success-exit (iteration cap hit,
+            //   hard-limit recovery firing) -> abandon. The previous
+            //   'iterate' grading triggered loop.iterate() which leaks
+            //   the daemon buffer and deposits nothing, so it was a
+            //   strictly-worse choice than abandon for our flow.
+            const hitIterationCap = telemetryIterations >= MAX_ITERATIONS;
+            const productiveToolWork = repetitionDetector.getToolSequence().length > 0;
+            cleanNaturalExit =
+                completionResult === null
+                && hasStreamedText
+                && productiveToolWork
+                && totalToolErrors === 0
+                && consecutiveMistakes === 0
+                && !hitIterationCap;
+            stigmergyOutcome =
+                (completionResult !== null || cleanNaturalExit)
+                    ? 'accept'
+                    : 'abandon';
 
             this.taskCallbacks.onComplete();
             return;  // Success — exit the emergency retry loop
@@ -1435,6 +1868,9 @@ export class AgentTask {
                     iterations: telemetryIterations,
                     outcome: 'aborted',
                 });
+                // VO/Stigmergy: abort is negative evidence -- no
+                // reinforcement of whatever partial path the agent took.
+                stigmergyOutcome = 'abandon';
                 this.taskCallbacks.onComplete();
                 return;
             }
@@ -1523,9 +1959,69 @@ export class AgentTask {
                 console.error('[AgentTask] Task failed:', err);
                 this.taskCallbacks.onError(err);
             }
+            // VO/Stigmergy: thrown error (parse failure, circuit-breaker
+            // trip from consecutive tool errors, API/network failure after
+            // retries) is negative evidence -- no reinforcement.
+            stigmergyOutcome = 'abandon';
             return;  // Error — exit the emergency retry loop
         }
         } // while (true) — emergency condensing retry loop
+        } finally {
+            // VO/Stigmergy: outcome-graded resolution. Binary: accept or
+            // abandon. The default is 'abandon' so any unexpected exit
+            // path (e.g. a future return someone forgets to grade) lands
+            // on the safe side: no reinforcement of an unverified path.
+            // accept and abandon are first-resolver-wins inside the
+            // adapter, so re-entry is safe. `end()` is always called --
+            // it just marks the turn as delivered; the resolution decides
+            // what actually happens to the substrate.
+            // FIX 2026-06-09: 'iterate' was previously a third option
+            // but the upstream loop SDK uses iterate() to CANCEL the
+            // auto-accept timer AND leak the response buffer with zero
+            // deposits. With the prompt forbidding attempt_completion
+            // for read-only tasks, every clean read-only turn ended on
+            // iterate -> substrate accumulated zero edges -> no pin
+            // could ever form. The grading is now binary.
+            await stigmergyTurn.end();
+            if (stigmergyOutcome === 'accept') {
+                await stigmergyTurn.accept(totalInputTokens + totalOutputTokens);
+            } else {
+                await stigmergyTurn.abandon();
+            }
+
+            // FEAT-32-02 PR 2.2 / ADR-133: episode recording (single source
+            // of truth for the episode payload). Fires for every exit path
+            // -- success, iteration-cap, abort, error -- so RecipePromotion
+            // sees the complete picture. `success` is derived from the
+            // already-graded stigmergyOutcome plus the closure counters.
+            try {
+                const toolSeq = repetitionDetector.getToolSequence();
+                if (toolSeq.length > 0) {
+                    // FIX 2026-06-09 (Stigmergy substrate starvation RCA):
+                    // mirror the grading relaxation so RecipePromotion
+                    // (ADR-058 Gate 3 organic 3-similar) is no longer
+                    // starved on the read-only / question task shape that
+                    // the prompt explicitly steers into. A clean natural
+                    // exit counts as success for episode-recording too,
+                    // not just an explicit attempt_completion.
+                    const episodeSuccess =
+                        stigmergyOutcome === 'accept'
+                        && totalToolErrors === 0
+                        && (attemptCompletionFired || cleanNaturalExit);
+                    this.taskCallbacks.onEpisodeData?.({
+                        toolSequence: toolSeq,
+                        toolLedger: repetitionDetector.getLedger(),
+                        success: episodeSuccess,
+                        mistakesEncountered: totalToolErrors,
+                        attemptCompletionFired,
+                        fastPathFired,
+                        stigmergy: stigmergyDecisionSnapshot,
+                    });
+                }
+            } catch (e) {
+                console.warn('[AgentTask] onEpisodeData hook failed (non-fatal):', e);
+            }
+        }
     }
 
     // -------------------------------------------------------------------------

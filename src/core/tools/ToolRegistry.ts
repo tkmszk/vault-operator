@@ -24,6 +24,7 @@ import { AppendToFileTool } from './vault/AppendToFileTool';
 import { CreateFolderTool } from './vault/CreateFolderTool';
 import { DeleteFileTool } from './vault/DeleteFileTool';
 import { MoveFileTool } from './vault/MoveFileTool';
+import { ExtractZipTool } from './vault/ExtractZipTool';
 // Import tools — vault: checkpoints (IMP-01-07-01)
 import { ListCheckpointsTool } from './vault/ListCheckpointsTool';
 import { ReadCheckpointTool } from './vault/ReadCheckpointTool';
@@ -143,6 +144,9 @@ export class ToolRegistry {
             // listing in the system prompt. NOT in DEFERRED_TOOL_NAMES.
             this.register(new ReadMcpToolTool(this.plugin, mcpClient));
         }
+        // Log here instead of inside registerInternalTools so the count
+        // includes the two MCP companion tools registered above.
+        console.debug(`ToolRegistry: Registered ${this.getToolCount()} tools`);
     }
 
     /**
@@ -179,6 +183,8 @@ export class ToolRegistry {
         this.register(new CreateFolderTool(this.plugin));
         this.register(new DeleteFileTool(this.plugin));
         this.register(new MoveFileTool(this.plugin));
+        // Vault: ZIP extraction (skill-translator + general bundle unpack)
+        this.register(new ExtractZipTool(this.plugin));
         // Vault: checkpoints (IMP-01-07-01) -- agent-facing browse + restore
         this.register(new ListCheckpointsTool(this.plugin));
         this.register(new ReadCheckpointTool(this.plugin));
@@ -279,8 +285,6 @@ export class ToolRegistry {
         if (sourceManager && pluginBuilder && pluginReloader) {
             this.register(new ManageSourceTool(this.plugin, sourceManager, pluginBuilder, pluginReloader));
         }
-
-        console.debug(`ToolRegistry: Registered ${this.getToolCount()} tools`);
     }
 
     /**

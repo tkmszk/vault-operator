@@ -17,10 +17,11 @@ import type { LLMProvider } from '../../types/settings';
 import type { ApiHandler, ApiStream, ApiStreamChunk, MessageParam, ModelInfo } from '../types';
 import type { ToolDefinition } from '../../core/tools/types';
 import { GitHubCopilotAuthService } from '../../core/security/GitHubCopilotAuthService';
-import { resolveOutputBudget, estimatePromptTokens } from '../../types/model-registry';
+import { resolveOutputBudget, estimatePromptTokens, modelUsesBudgetTokensThinking } from '../../types/model-registry';
 import { logCacheStat } from '../logCacheStat';
 import { normalizeDeltaContent } from './utils/openAiContent';
 import { flushToolCallAccumulators, type ToolCallAccumulator } from './utils/toolCallFlush';
+import { appendOpenAiChatUserMessage, type OpenAiChatMessage } from '../openaiShapeUserBlocks';
 
 // ---------------------------------------------------------------------------
 // OpenAI REST API types (subset — mirrors openai.ts)
@@ -135,6 +136,12 @@ export class GitHubCopilotProvider implements ApiHandler {
         // Extended thinking for Claude models via Copilot
         const isClaude = /^claude/i.test(this.config.model);
         const thinkingEnabled = isClaude && (this.config.thinkingEnabled ?? false);
+        // Adaptive lineup (Opus 4.7/4.8, Fable, Mythos) removed budget_tokens
+        // and 400s if it is sent -- it only accepts thinking: { type: 'adaptive' }.
+        // Older Claude (Opus 4.6, Sonnet 4.6 and earlier, 3.x) still takes the
+        // legacy { type: 'enabled', budget_tokens } shape.
+        const claudeUsesBudgetTokens = isClaude
+            && modelUsesBudgetTokensThinking(this.config.model);
         const { maxTokens: effectiveMaxTokens, thinkingBudgetTokens: budgetTokens } = resolveOutputBudget(
             this.config.model,
             this.config.maxTokens,
@@ -171,9 +178,17 @@ export class GitHubCopilotProvider implements ApiHandler {
             max_completion_tokens: effectiveMaxTokens,
             stream: true,
             stream_options: { include_usage: true },
-            // Extended thinking: passed as top-level body param for Claude-via-Copilot
+            // Extended thinking: passed as top-level body param for Claude-via-Copilot.
+            // The adaptive lineup (Opus 4.7+, Fable, Mythos) rejects budget_tokens
+            // with a 400; it only accepts { type: 'adaptive' }. The older
+            // budget-tokens lineup (Sonnet 4.6, Opus 4.6 and earlier, 3.x) keeps
+            // the legacy { type: 'enabled', budget_tokens } shape.
             ...(thinkingEnabled
-                ? { thinking: { type: 'enabled', budget_tokens: budgetTokens } }
+                ? {
+                    thinking: claudeUsesBudgetTokens
+                        ? { type: 'enabled', budget_tokens: budgetTokens }
+                        : { type: 'adaptive' },
+                }
                 : {}),
         };
 
@@ -346,43 +361,10 @@ export class GitHubCopilotProvider implements ApiHandler {
                     result.push({ role: 'assistant', content: textParts });
                 }
             } else {
-                // FIX-04-03-09: image blocks used to be silently dropped.
-                // See openai.ts for the same fix; kept symmetric so the
-                // three OpenAI-shape providers behave identically.
-                const hasImage = blocks.some((b) => b.type === 'image');
-                if (hasImage) {
-                    const contentArr: OpenAIContentPart[] = [];
-                    for (const block of blocks) {
-                        if (block.type === 'text') {
-                            contentArr.push({ type: 'text', text: block.text });
-                        } else if (block.type === 'image') {
-                            contentArr.push({
-                                type: 'image_url',
-                                image_url: { url: `data:${block.source.media_type};base64,${block.source.data}` },
-                            });
-                        }
-                    }
-                    if (contentArr.length > 0) {
-                        result.push({ role: 'user', content: contentArr });
-                    }
-                }
-                for (const block of blocks) {
-                    if (!hasImage && block.type === 'text') {
-                        result.push({ role: 'user', content: block.text });
-                    } else if (block.type === 'tool_result') {
-                        const textContent = typeof block.content === 'string'
-                            ? block.content
-                            : block.content
-                                .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
-                                .map((b) => b.text)
-                                .join('\n');
-                        result.push({
-                            role: 'tool',
-                            tool_call_id: block.tool_use_id,
-                            content: textContent,
-                        });
-                    }
-                }
+                // REF-06: shared user-message helper (see openai.ts for the
+                // history). Keeps the three OpenAI-shape providers byte-
+                // identical without three near-duplicate branches.
+                appendOpenAiChatUserMessage(result as OpenAiChatMessage[], msg);
             }
         }
 

@@ -12,7 +12,9 @@
 import { App, Notice, Setting, setIcon } from 'obsidian';
 import type ObsidianAgentPlugin from '../../main';
 import { getModelKey } from '../../types/settings';
+import type { CustomModel } from '../../types/settings';
 import { OnboardingService } from '../../core/memory/OnboardingService';
+import { expandProviderConfigsToCustomModels } from '../../core/settings/expandProviderConfigs';
 import { t } from '../../i18n';
 import { addSectionHeading, addSliderInput } from './utils';
 import { confirmModal } from '../modals/PromptModal';
@@ -180,8 +182,15 @@ export class MemoryTab {
 
                 setupSetting.addButton((b) =>
                     b.setButtonText(isComplete ? t('settings.memory.restartSetup') : t('settings.memory.startSetup')).onClick(async () => {
+                        // Reset only the onboarding flags. Configured models and the memory
+                        // KnowledgeDB stay untouched -- the FirstRunWizardModal is add-only
+                        // and never writes to facts/edges/history.
                         await onboarding.reset();
-                        await this.plugin.startOnboarding();
+                        this.plugin.settings.onboarding.modalCompleted = false;
+                        await this.plugin.saveSettings();
+                        this.app.setting?.close();
+                        const { FirstRunWizardModal } = await import('../modals/FirstRunWizardModal');
+                        new FirstRunWizardModal(this.app, this.plugin).open();
                     }),
                 );
 
@@ -390,7 +399,12 @@ export class MemoryTab {
         // quota-limited tier (e.g. Copilot 402). The atomiser step is the
         // only LLM-heavy part of the cascade; let the user pick a model
         // that is known to have quota.
-        const activeModels = this.plugin.settings.activeModels.filter(m => m.enabled);
+        // REF-08: providerConfigs[] is the post-EPIC-26 canonical store;
+        // expandProviderConfigsToCustomModels bridges the two shapes so
+        // this dropdown is no longer empty on migrated installs.
+        const fromProviders = expandProviderConfigsToCustomModels(this.plugin.settings.providerConfigs ?? []);
+        const legacy = this.plugin.settings.activeModels.filter(m => m.enabled);
+        const activeModels: CustomModel[] = fromProviders.length > 0 ? fromProviders : legacy;
         new Setting(containerEl)
             .setName('Atomiser model')
             .setDesc(

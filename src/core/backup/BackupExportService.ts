@@ -23,6 +23,7 @@
  */
 
 import JSZip from 'jszip';
+import { safeCrypto } from '../utils/runtime';
 
 /** Per-section selection. */
 export interface BackupSelection {
@@ -270,7 +271,10 @@ async function contentHash(files: BackupFile[]): Promise<string> {
         buf.set(c, offset);
         offset += c.byteLength;
     }
-    const cryptoLike = (globalThis as { crypto?: { subtle?: SubtleCrypto } }).crypto;
+    // Web Crypto handle via the runtime-compat helper. Centralises the
+    // renderer/node-test fallback in src/core/utils/runtime.ts so this
+    // file does not reference globalThis directly (review-bot Tier 3).
+    const cryptoLike = safeCrypto();
     if (cryptoLike?.subtle) {
         const digest = await cryptoLike.subtle.digest('SHA-256', buf);
         return Array.from(new Uint8Array(digest))

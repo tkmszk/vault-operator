@@ -34,6 +34,11 @@ import { ChatGptOAuthService } from '../../core/auth/ChatGptOAuthService';
 import { isOpenAIChatCompletionModel } from './testModelConnection';
 import { t } from '../../i18n';
 import { openInfoPopover } from './utils';
+import {
+    MANUAL_TIER_OPTION_VALUE,
+    providerSupportsManualModelId,
+    resolveTierSlotView,
+} from './manualModelEntry';
 
 const TIER_ORDER: ModelTier[] = ['fast', 'mid', 'flagship'];
 
@@ -61,16 +66,35 @@ export class ProviderDetailModal extends Modal {
     private formBaseUrl: string;
     private formApiVersion: string;
     private formAwsRegion: string;
-    private formAwsAuthMode: 'api-key' | 'access-key';
+    private formAwsAuthMode: 'api-key' | 'access-key' | 'gateway';
     private formAwsApiKey: string;
     private formAwsAccessKey: string;
     private formAwsSecretKey: string;
     private formAwsSessionToken: string;
+    /** FEAT-26-07: enterprise gateway header (Bedrock + Anthropic). */
+    private formGatewayHeaderName: string;
+    private formGatewayHeaderValue: string;
+    private formUseGateway: boolean;
 
     private discoveredModels: DiscoveredModel[];
     private lastRefreshAt: number;
     private tierMapping: ProviderConfig['tierMapping'];
     private tierOverrides: ProviderConfig['tierOverrides'];
+
+    /**
+     * IMP-20-06-01 W4-T2 / ADR-135. User-affirmed Zero-Data-Retention
+     * flag. Off by default. Only providers with this flag enabled can
+     * serve the freshness verifier's frontier-tier escalations.
+     */
+    private formZdrCapable: boolean;
+
+    /**
+     * Per-tier flag: the user picked "enter id manually" for a slot whose
+     * override is still empty. Keeps the free-text input visible across the
+     * re-render so it does not snap back to the dropdown before anything is
+     * typed. Only relevant for providers without a model listing endpoint.
+     */
+    private manualTierRequested: Partial<Record<ModelTier, boolean>> = {};
 
     constructor(
         app: App,
@@ -99,10 +123,14 @@ export class ProviderDetailModal extends Modal {
         this.formAwsAccessKey = seed.awsAccessKey ?? '';
         this.formAwsSecretKey = seed.awsSecretKey ?? '';
         this.formAwsSessionToken = seed.awsSessionToken ?? '';
+        this.formGatewayHeaderName = seed.gatewayHeaderName ?? 'Ocp-Apim-Subscription-Key';
+        this.formGatewayHeaderValue = seed.gatewayHeaderValue ?? '';
+        this.formUseGateway = seed.useGateway ?? false;
         this.discoveredModels = seed.discoveredModels ?? [];
         this.lastRefreshAt = seed.lastRefreshAt ?? 0;
         this.tierMapping = { ...(seed.tierMapping ?? {}) };
         this.tierOverrides = { ...(seed.tierOverrides ?? {}) };
+        this.formZdrCapable = seed.zdrCapable ?? false;
     }
 
     private defaultDraftProvider(): ProviderConfig {
@@ -273,6 +301,13 @@ export class ProviderDetailModal extends Modal {
                             ? getDefaultBaseUrlForProvider(this.formType) ?? ''
                             : '';
                     }
+                    // Audit L-4 mitigation (AUDIT-IMP-20-06-01-2026-06-19):
+                    // the ZDR affirmation belongs to one specific
+                    // provider type. Changing the type invalidates it
+                    // and the user must re-confirm with the new vendor.
+                    if (previous !== this.formType) {
+                        this.formZdrCapable = false;
+                    }
                     this.render();
                 },
             }),
@@ -324,6 +359,25 @@ export class ProviderDetailModal extends Modal {
                 setIcon(icon, 'alert-triangle');
                 warn.createSpan({ text: ' ' + t('settings.providers.advisorDisabled') });
             }
+
+            // IMP-20-06-01 W4-T2: ZDR affirmation. Single toggle inside
+            // a labelled sub-section. Frontier escalation for the
+            // freshness verifier needs at least one provider with this
+            // flag on.
+            this.mkSection(form, 'Privacy');
+            this.compactRow(form, {
+                label: 'Zero-Data-Retention (ZDR) confirmed',
+                desc: 'I have confirmed with this provider that prompts and completions are not retained or used for training. Required before the freshness verifier may escalate to the flagship tier on this provider.',
+                build: (ctrl) => {
+                    const label = ctrl.createEl('label', { cls: 'mc-toggle' });
+                    const input = label.createEl('input', { attr: { type: 'checkbox' } });
+                    label.createSpan({ cls: 'mc-toggle-track' });
+                    input.checked = this.formZdrCapable;
+                    input.addEventListener('change', () => {
+                        this.formZdrCapable = input.checked;
+                    });
+                },
+            });
 
             this.mkSection(form, t('settings.providers.modal.section.danger'));
             this.compactRow(form, {
@@ -392,6 +446,13 @@ export class ProviderDetailModal extends Modal {
                 awsAccessKey: this.formAwsAccessKey.trim() || undefined,
                 awsSecretKey: this.formAwsSecretKey.trim() || undefined,
                 awsSessionToken: this.formAwsSessionToken.trim() || undefined,
+                gatewayHeaderName: this.formAwsAuthMode === 'gateway' || (this.formType === 'anthropic' && this.formUseGateway)
+                    ? (this.formGatewayHeaderName.trim() || undefined)
+                    : undefined,
+                gatewayHeaderValue: this.formAwsAuthMode === 'gateway' || (this.formType === 'anthropic' && this.formUseGateway)
+                    ? (this.formGatewayHeaderValue.trim() || undefined)
+                    : undefined,
+                useGateway: this.formType === 'anthropic' ? this.formUseGateway : undefined,
                 discoveredModels: [],
                 lastRefreshAt: 0,
                 tierMapping: {},
@@ -431,8 +492,16 @@ export class ProviderDetailModal extends Modal {
             awsAccessKey: this.formAwsAccessKey.trim() || undefined,
             awsSecretKey: this.formAwsSecretKey.trim() || undefined,
             awsSessionToken: this.formAwsSessionToken.trim() || undefined,
+            gatewayHeaderName: this.formAwsAuthMode === 'gateway' || (this.formType === 'anthropic' && this.formUseGateway)
+                ? (this.formGatewayHeaderName.trim() || undefined)
+                : undefined,
+            gatewayHeaderValue: this.formAwsAuthMode === 'gateway' || (this.formType === 'anthropic' && this.formUseGateway)
+                ? (this.formGatewayHeaderValue.trim() || undefined)
+                : undefined,
+            useGateway: this.formType === 'anthropic' ? this.formUseGateway : undefined,
             tierMapping: this.tierMapping,
             tierOverrides: this.tierOverrides,
+            zdrCapable: this.formZdrCapable || undefined,
         };
         this.plugin.settings.providerConfigs = list;
         await this.plugin.saveSettings();
@@ -500,6 +569,13 @@ export class ProviderDetailModal extends Modal {
             awsAccessKey: this.formAwsAccessKey.trim() || undefined,
             awsSecretKey: this.formAwsSecretKey.trim() || undefined,
             awsSessionToken: this.formAwsSessionToken.trim() || undefined,
+            gatewayHeaderName: this.formAwsAuthMode === 'gateway' || (this.formType === 'anthropic' && this.formUseGateway)
+                ? (this.formGatewayHeaderName.trim() || undefined)
+                : undefined,
+            gatewayHeaderValue: this.formAwsAuthMode === 'gateway' || (this.formType === 'anthropic' && this.formUseGateway)
+                ? (this.formGatewayHeaderValue.trim() || undefined)
+                : undefined,
+            useGateway: this.formType === 'anthropic' ? this.formUseGateway : undefined,
         };
         btn.disabled = true;
         const originalLabel = btn.getText();
@@ -635,6 +711,39 @@ export class ProviderDetailModal extends Modal {
                     onInput: (v) => { this.formApiVersion = v; },
                 }),
             });
+        }
+
+        // FEAT-26-07: optional enterprise-gateway path for Anthropic via
+        // Azure APIM. Toggle + two header fields (mirrors ModelConfigModal).
+        if (this.formType === 'anthropic') {
+            this.compactRow(parent, {
+                label: 'Enterprise gateway',
+                desc: 'Enable when your base URL points to a corporate APIM (e.g. apimgmt-*.azure-api.net) instead of api.anthropic.com. Bypasses CORS and sends the subscription key as a custom header.',
+                build: (ctrl) => this.compactToggle(ctrl, {
+                    value: this.formUseGateway,
+                    onChange: (v) => { this.formUseGateway = v; this.render(); },
+                }),
+            });
+            if (this.formUseGateway) {
+                this.compactRow(parent, {
+                    label: 'Gateway header name',
+                    desc: 'Header carrying the subscription key. Most Azure APIM gateways use Ocp-Apim-Subscription-Key.',
+                    build: (ctrl) => this.compactInput(ctrl, {
+                        value: this.formGatewayHeaderName,
+                        placeholder: 'Ocp-Apim-Subscription-Key',
+                        onInput: (v) => { this.formGatewayHeaderName = v; },
+                    }),
+                });
+                this.compactRow(parent, {
+                    label: 'Subscription key',
+                    desc: 'Pasted into the gateway header above. Saved encrypted at rest.',
+                    build: (ctrl) => this.compactInput(ctrl, {
+                        type: 'password',
+                        value: this.formGatewayHeaderValue,
+                        onInput: (v) => { this.formGatewayHeaderValue = v; },
+                    }),
+                });
+            }
         }
 
         this.renderTestConnectionRow(parent);
@@ -786,9 +895,10 @@ export class ProviderDetailModal extends Modal {
                 options: [
                     { value: 'api-key', label: 'API key (bearer)' },
                     { value: 'access-key', label: 'Access key + secret' },
+                    { value: 'gateway', label: 'API gateway (Bedrock-compatible)' },
                 ],
                 onChange: (v) => {
-                    this.formAwsAuthMode = v as 'api-key' | 'access-key';
+                    this.formAwsAuthMode = v as 'api-key' | 'access-key' | 'gateway';
                     this.render();
                 },
             }),
@@ -803,7 +913,7 @@ export class ProviderDetailModal extends Modal {
                     onInput: (v) => { this.formAwsApiKey = v; },
                 }),
             });
-        } else {
+        } else if (this.formAwsAuthMode === 'access-key') {
             this.compactRow(parent, {
                 label: t('settings.providers.bedrockAccessKey'),
                 build: (ctrl) => this.compactInput(ctrl, {
@@ -820,6 +930,34 @@ export class ProviderDetailModal extends Modal {
                     onInput: (v) => { this.formAwsSecretKey = v; },
                 }),
             });
+        } else {
+            // FEAT-26-07 gateway mode: header-based subscription key.
+            this.compactRow(parent, {
+                label: 'Gateway base URL',
+                desc: 'e.g. https://gateway.example.com/bedrock. The SDK appends /model/{id}/converse-stream.',
+                build: (ctrl) => this.compactInput(ctrl, {
+                    type: 'text',
+                    value: this.formBaseUrl,
+                    onInput: (v) => { this.formBaseUrl = v; },
+                }),
+            });
+            this.compactRow(parent, {
+                label: 'Gateway header name',
+                desc: 'Most Azure APIM gateways use Ocp-Apim-Subscription-Key.',
+                build: (ctrl) => this.compactInput(ctrl, {
+                    type: 'text',
+                    value: this.formGatewayHeaderName,
+                    onInput: (v) => { this.formGatewayHeaderName = v; },
+                }),
+            });
+            this.compactRow(parent, {
+                label: 'Subscription key',
+                build: (ctrl) => this.compactInput(ctrl, {
+                    type: 'password',
+                    value: this.formGatewayHeaderValue,
+                    onInput: (v) => { this.formGatewayHeaderValue = v; },
+                }),
+            });
         }
     }
 
@@ -830,9 +968,20 @@ export class ProviderDetailModal extends Modal {
         const stamp = this.lastRefreshAt
             ? new Date(this.lastRefreshAt).toLocaleString()
             : 'never';
-        const desc = count > 0
-            ? t('settings.providers.discoveryDesc', { count, stamp })
-            : t('settings.providers.discoveryEmpty');
+        // Providers without a model-listing endpoint (ChatGPT OAuth / Codex)
+        // get wording that does not imply the static list is exhaustive and
+        // points at the manual-entry option in the tier slots.
+        const isCodexLike = providerSupportsManualModelId(this.formType);
+        let desc: string;
+        if (isCodexLike) {
+            desc = count > 0
+                ? t('settings.providers.discoveryCodex', { count })
+                : t('settings.providers.discoveryCodexEmpty');
+        } else {
+            desc = count > 0
+                ? t('settings.providers.discoveryDesc', { count, stamp })
+                : t('settings.providers.discoveryEmpty');
+        }
         this.compactRow(parent, {
             label: t('settings.providers.discovery'),
             desc,
@@ -884,7 +1033,10 @@ export class ProviderDetailModal extends Modal {
             || (persisted.apiVersion ?? '') !== this.formApiVersion.trim()
             || (persisted.awsApiKey ?? '') !== this.formAwsApiKey.trim()
             || (persisted.awsAccessKey ?? '') !== this.formAwsAccessKey.trim()
-            || (persisted.awsSecretKey ?? '') !== this.formAwsSecretKey.trim();
+            || (persisted.awsSecretKey ?? '') !== this.formAwsSecretKey.trim()
+            || (persisted.gatewayHeaderName ?? '') !== this.formGatewayHeaderName.trim()
+            || (persisted.gatewayHeaderValue ?? '') !== this.formGatewayHeaderValue.trim()
+            || (persisted.useGateway ?? false) !== this.formUseGateway;
     }
 
     private hasAnyCredentials(): boolean {
@@ -892,9 +1044,11 @@ export class ProviderDetailModal extends Modal {
             return !!this.formBaseUrl.trim();
         }
         if (this.formType === 'bedrock') {
-            return this.formAwsAuthMode === 'api-key'
-                ? !!this.formAwsApiKey.trim()
-                : !!this.formAwsAccessKey.trim() && !!this.formAwsSecretKey.trim();
+            if (this.formAwsAuthMode === 'api-key') return !!this.formAwsApiKey.trim();
+            if (this.formAwsAuthMode === 'gateway') {
+                return !!this.formBaseUrl.trim() && !!this.formGatewayHeaderValue.trim();
+            }
+            return !!this.formAwsAccessKey.trim() && !!this.formAwsSecretKey.trim();
         }
         if (OAUTH_PROVIDER_TYPES.includes(this.formType)) {
             return (this.formType === 'github-copilot' && !!this.plugin.settings.githubCopilotAccessToken)
@@ -928,6 +1082,19 @@ export class ProviderDetailModal extends Modal {
         });
         badge.setAttr('aria-label', `tier: ${getTierBadgeLabel(tier)}`);
 
+        const manualAllowed = providerSupportsManualModelId(this.formType);
+        const view = resolveTierSlotView({
+            override: this.tierOverrides?.[tier],
+            discoveredIds: this.discoveredModels.map((m) => m.id),
+            manualAllowed,
+            manualRequested: this.manualTierRequested[tier],
+        });
+
+        if (view.mode === 'manual') {
+            this.renderManualTierControl(controlCol, tier, view.manualValue);
+            return;
+        }
+
         const select = controlCol.createEl('select', { cls: 'dropdown mcm-tier-dropdown' });
         const autoSuggested = this.tierMapping?.[tier];
         const autoLabel = autoSuggested
@@ -941,12 +1108,59 @@ export class ProviderDetailModal extends Modal {
             const opt = select.createEl('option', { text: this.modelOptionLabel(m, tier) });
             opt.value = m.id;
         }
+        if (manualAllowed) {
+            const manualOpt = select.createEl('option', {
+                text: t('settings.providers.tier.manualOption'),
+            });
+            manualOpt.value = MANUAL_TIER_OPTION_VALUE;
+        }
         select.value = this.tierOverrides?.[tier] ?? '';
         select.addEventListener('change', () => {
             const v = select.value;
+            if (v === MANUAL_TIER_OPTION_VALUE) {
+                this.manualTierRequested = { ...this.manualTierRequested, [tier]: true };
+                this.render();
+                return;
+            }
+            this.manualTierRequested = { ...this.manualTierRequested, [tier]: false };
             this.tierOverrides = { ...this.tierOverrides };
             if (!v) delete this.tierOverrides[tier];
             else this.tierOverrides[tier] = v;
+            this.render();
+        });
+    }
+
+    /**
+     * Free-text model-id control for providers without a reliable model
+     * listing endpoint (ChatGPT OAuth / Codex, and custom OpenAI-compatible
+     * endpoints that may not expose /v1/models -- issue #40). Lets the user
+     * type a model id we cannot enumerate. An unknown id degrades gracefully:
+     * the provider falls back to default model info and the endpoint's own
+     * error surfaces if the id is wrong.
+     */
+    private renderManualTierControl(parent: HTMLElement, tier: ModelTier, value: string): void {
+        const input = parent.createEl('input', {
+            cls: 'dropdown mcm-tier-dropdown mcm-tier-manual-input',
+            attr: { type: 'text' },
+        });
+        input.value = value;
+        input.placeholder = t('settings.providers.tier.manualPlaceholder');
+        input.addEventListener('input', () => {
+            const v = input.value.trim();
+            this.tierOverrides = { ...this.tierOverrides };
+            if (!v) delete this.tierOverrides[tier];
+            else this.tierOverrides[tier] = v;
+        });
+
+        const back = parent.createEl('button', {
+            cls: 'mcm-tier-manual-back',
+            text: t('settings.providers.tier.manualBack'),
+            attr: { type: 'button' },
+        });
+        back.addEventListener('click', () => {
+            this.manualTierRequested = { ...this.manualTierRequested, [tier]: false };
+            this.tierOverrides = { ...this.tierOverrides };
+            delete this.tierOverrides[tier];
             this.render();
         });
     }

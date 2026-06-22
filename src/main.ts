@@ -16,6 +16,8 @@ import { AgentSidebarView, VIEW_TYPE_AGENT_SIDEBAR } from './ui/AgentSidebarView
 import { AgentSettingsTab, type TabId } from './ui/AgentSettingsTab';
 import { ToolRegistry } from './core/tools/ToolRegistry';
 import { ToolExecutionPipeline } from './core/tool-execution/ToolExecutionPipeline';
+import { initStigmergy, registerCapabilitiesIfChanged } from './core/stigmergy/StigmergyAdapter';
+import { getSubagentProfile, listSubagentProfileNames } from './core/agent/subagent-profiles';
 import { IgnoreService } from './core/governance/IgnoreService';
 import { OperationLogger } from './core/governance/OperationLogger';
 import { GlobalFileService } from './core/storage/GlobalFileService';
@@ -52,6 +54,16 @@ import { AutoTriggerObserver } from './core/ingest/AutoTriggerObserver';
 import { TopHubBlockGenerator, type TopHubBlockState } from './core/memory/TopHubBlockGenerator';
 import { Stufe3PeriodicJob, ClusterMetadataStatePersistence } from './core/health/Stufe3PeriodicJob';
 import { Stufe2ActivityTrigger } from './core/health/Stufe2ActivityTrigger';
+import { FreshnessOrchestrator } from './core/health/FreshnessOrchestrator';
+import { FreshnessFrontmatterPatcher } from './core/health/FreshnessFrontmatterPatcher';
+import { FrontmatterWriter } from './core/ingest/FrontmatterWriter';
+import { FreshnessQueryBuilder } from './core/health/FreshnessQueryBuilder';
+import { FreshnessVerifier } from './core/health/FreshnessVerifier';
+import { FreshnessWebSearch } from './core/health/FreshnessWebSearch';
+import { LlmVerifierProvider } from './core/health/LlmVerifierProvider';
+import { NoteFreshnessHistoryStore } from './core/health/NoteFreshnessHistoryStore';
+import { NoteSelector } from './core/health/NoteSelector';
+import { isFrontierZdrEnabled } from './core/health/ZdrCapabilityResolver';
 import { FrontmatterBackfillJob } from './core/ingest/FrontmatterBackfillJob';
 import { buildSummaryGenerator } from './core/ingest/SummaryGenerator';
 import { DEFAULT_VAULT_INGEST_SETTINGS } from './types/settings';
@@ -119,14 +131,16 @@ import { PluginReloader } from './core/self-development/PluginReloader';
  * - Semantic Index: Local vector search
  */
 
-/** Extract HTTP(S) URLs from a free-form text. Used by Stufe-3 web-pass to count distinct sources. */
-function extractUrlsFromText(text: string): string[] {
-    const matches = text.match(/https?:\/\/[^\s)\]<>"']+/g) ?? [];
-    return Array.from(new Set(matches));
-}
+// REF-12: extractUrlsFromText + countIndependentDomains moved into
+// src/core/health/Stufe3Hooks.ts alongside the only call site (Stufe-3
+// web update pass). Re-exported here for backwards compatibility with any
+// test that may have imported them from main.
+export { extractUrlsFromText, countIndependentDomains } from './core/health/Stufe3Hooks';
 
 export default class ObsidianAgentPlugin extends Plugin {
-    settings: ObsidianAgentSettings;
+    // obsidian 1.13.0 declared `settings` on the base Plugin class; we
+    // override with our typed settings, hence the `declare` modifier.
+    declare settings: ObsidianAgentSettings;
     toolRegistry: ToolRegistry;
     apiHandler: ApiHandler | null = null;
     /**
@@ -172,6 +186,16 @@ export default class ObsidianAgentPlugin extends Plugin {
     frontmatterIndexer: FrontmatterIndexer | null = null;
     autoTriggerObserver: AutoTriggerObserver | null = null;
     topHubBlockGenerator: TopHubBlockGenerator | null = null;
+    /**
+     * FIX-19-01-03: set true while the Vault Health repair pass is
+     * mutating frontmatter. The global vault.on('modify') listener
+     * skips its synchronous `graphExtractor.extractFile(file)` call
+     * during the window so it cannot read the STALE metadataCache
+     * and overwrite the freshly-inserted reverse edges. The repair
+     * orchestrator owns its own extractAll/extractFile sequence
+     * once the cache has settled.
+     */
+    vaultHealthRepairInProgress = false;
     stufe3PeriodicJob: Stufe3PeriodicJob | null = null;
     private stufe3IntervalHandle: import('./util/scheduleRecurring').RecurringHandle | null = null;
     /** FEAT-19-19: Stufe-2 Activity-Trigger fuer Light-Web-Search-Update-Hints. */
@@ -656,9 +680,18 @@ export default class ObsidianAgentPlugin extends Plugin {
                     provider.apiVersion,
                     bedrockCreds,
                 );
+                // FIX-26-99-04: forward pricing + capability fields. The
+                // OpenRouter branch of fetchProviderModels fills these in
+                // (OpenRouter ships them inline with /v1/models); other
+                // providers leave them undefined and ModelDiscoveryService
+                // falls back to its built-in heuristics.
                 return raw.map((r): RawDiscoveredModel => ({
                     id: r.id,
                     displayName: r.label,
+                    contextWindow: r.contextWindow,
+                    maxOutputTokens: r.maxOutputTokens,
+                    pricingPromptUsd: r.pricingPromptUsd,
+                    pricingCompletionUsd: r.pricingCompletionUsd,
                 }));
             },
         );
@@ -773,11 +806,20 @@ export default class ObsidianAgentPlugin extends Plugin {
                 '.vault-operator-migration-backups',
                 vaultIdHash,
             );
+            // Cast-through-unknown legacy view so the deprecated property
+            // access in the migration path does not trigger
+            // `@typescript-eslint/no-deprecated`. The bot rejects every
+            // `eslint-disable` of that rule (Tier 4); breaking the type
+            // chain via `as unknown as { ... }` keeps the back-compat read
+            // working without a directive. AUDIT-2.13.x follow-up.
+            const legacySettings = this.settings as unknown as {
+                chatHistoryFolder?: string;
+            };
             console.debug('[VaultOperator] storage layout migration trigger entered', {
                 optIn: this.settings._layoutMigrationOptIn,
                 status: this.settings._layoutMigrationStatus,
                 agentFolderPath: this.settings.agentFolderPath,
-                chatHistoryFolder: this.settings.chatHistoryFolder,
+                chatHistoryFolder: legacySettings.chatHistoryFolder,
                 vaultBasePath,
                 vaultParent,
                 safeBackupDir,
@@ -787,7 +829,7 @@ export default class ObsidianAgentPlugin extends Plugin {
                 const { migrateAgentLayout } = await import('./core/utils/migrateAgentLayout');
                 const knownLegacyDefaults = ['.obsidian-agent', '.obsilo-vault', 'obsilo-vault', '.vault-operator'];
                 const isLegacyDefault = knownLegacyDefaults.includes(this.settings.agentFolderPath ?? '');
-                const chatHistoryFolderLegacyValue = this.settings.chatHistoryFolder?.trim() ?? '';
+                const chatHistoryFolderLegacyValue = legacySettings.chatHistoryFolder?.trim() ?? '';
                 console.debug('[VaultOperator] migrateAgentLayout calling', {
                     isLegacyDefault,
                     chatHistoryFolderLegacyValue,
@@ -797,7 +839,7 @@ export default class ObsidianAgentPlugin extends Plugin {
                     vaultParent,
                     pluginDataDir: safeBackupDir,
                     agentFolderPath: this.settings.agentFolderPath ?? '',
-                    chatHistoryFolder: this.settings.chatHistoryFolder ?? '',
+                    chatHistoryFolder: legacySettings.chatHistoryFolder ?? '',
                     currentStatus: this.settings._layoutMigrationStatus ?? 'pending',
                     setStatus: async (status) => {
                         this.settings._layoutMigrationStatus = status;
@@ -817,7 +859,7 @@ export default class ObsidianAgentPlugin extends Plugin {
                 }
                 if (chatHistoryFolderLegacyValue) {
                     this.settings._chatHistoryFolderLegacy = chatHistoryFolderLegacyValue;
-                    this.settings.chatHistoryFolder = '';
+                    legacySettings.chatHistoryFolder = '';
                 }
                 this.settings._layoutMigrationStatus = 'complete';
                 await this.saveSettings();
@@ -996,6 +1038,45 @@ export default class ObsidianAgentPlugin extends Plugin {
         this.selfAuthoredSkillLoader.setDependencies(
             this.esbuildWasmManager, this.sandboxExecutor, this.toolRegistry,
         );
+
+        // Stigmergy: connect once at startup to the external daemon and seed it
+        // with the current inventory across ALL FOUR explorable surfaces --
+        // tools, self-authored skills, connected MCP tools, and the static
+        // subagent profiles. Both steps are non-fatal: if the daemon is down
+        // or the SDK is not installed, every per-turn call degrades to a
+        // no-op and the agent loop runs unchanged. Skills/MCP that connect
+        // later (async) are picked up automatically on the next turn because
+        // AgentTask.run re-registers (hash-gated) with whatever is loaded at
+        // that point. So this startup pass is best-effort with the surfaces
+        // already in memory; subagent profiles are static so they always
+        // appear here, skills/mcp may be partial until later turns.
+        void initStigmergy()
+            .then(async () => {
+                const subagents = listSubagentProfileNames()
+                    .map((name): { name: string; description: string } | null => {
+                        const p = getSubagentProfile(name);
+                        return p ? { name: p.name, description: p.description } : null;
+                    })
+                    .filter((x): x is { name: string; description: string } => x !== null);
+                const skills = this.selfAuthoredSkillLoader?.getAllSkills().map((s) => ({
+                    name: s.name,
+                    description: s.description,
+                })) ?? [];
+                const mcp = this.mcpClient
+                    ? this.mcpClient.getAllTools().map(({ serverName, tool }) => ({
+                        server: serverName,
+                        name: tool.name,
+                        description: tool.description ?? '',
+                    }))
+                    : [];
+                await registerCapabilitiesIfChanged({
+                    tools: this.toolRegistry.getToolDefinitions(),
+                    skills,
+                    mcp,
+                    subagents,
+                });
+            })
+            .catch((e) => console.debug('[Stigmergy] startup wiring failed (non-fatal):', e));
 
         // FEATURE-2201: one-time migration from legacy `.obsilo-sync/skills/` to
         // the configurable agent-folder (ADR-072). Idempotent via `.migrated` marker.
@@ -1236,6 +1317,10 @@ export default class ObsidianAgentPlugin extends Plugin {
                 enableContextualRetrieval: this.settings.enableContextualRetrieval,
                 // AUDIT-013 follow-up: skip ignored notes at index build.
                 isIgnored: (path: string) => this.ignoreService.isIgnored(path),
+                // FIX-06-01-01: required so SemanticIndex can parse PDFs/DOCX via
+                // parseDocument; without it the "not installed" placeholder would
+                // land in the vector index.
+                plugin: this,
             });
             const embeddingModel = this.getActiveEmbeddingModel();
             if (embeddingModel) this.semanticIndex.setEmbeddingModel(embeddingModel);
@@ -1293,6 +1378,16 @@ export default class ObsidianAgentPlugin extends Plugin {
                 // Full extraction on startup (fast: reads metadataCache only, no file I/O)
                 this.app.workspace.onLayoutReady(() => {
                     this.graphExtractor?.extractAll(this.app.vault);
+                });
+
+                // IMP-06-01-01 hint: PDF embeddings created before v2.14.10
+                // carry a placeholder string. Show the hint exactly once
+                // when (a) the user has PDFs in the vault, (b) the index is
+                // enabled with PDFs included, and (c) neither the hint has
+                // been dismissed nor a reindex has completed. The two
+                // settings flags ensure the modal never re-fires.
+                this.app.workspace.onLayoutReady(() => {
+                    void this.maybeShowPdfReindexHint();
                 });
             }
 
@@ -1386,66 +1481,94 @@ export default class ObsidianAgentPlugin extends Plugin {
             // auf no-op zurueck damit Tokenverbrauch null bleibt.
             if (this.knowledgeDB && this.clusterMetadataStore) {
                 const persistence = new ClusterMetadataStatePersistence(this.knowledgeDB);
-                const preFilter = async (cluster: import('./core/knowledge/ClusterMetadataStore').ClusterMetadataRecord) => {
-                    if (!this.apiHandler?.classifyText) return { decision: 'no' as const, tokensUsed: 0 };
-                    const prompt = `Cluster "${cluster.cluster}" wurde zuletzt am ${cluster.lastExternalCheck ?? 'nie'} extern verifiziert. `
-                        + `Halbwertszeit: ${cluster.halfLifeDays} Tage. Lohnt sich JETZT eine Web-Suche `
-                        + `nach Updates? Antworte ausschliesslich mit "yes", "no" oder "unsure".`;
-                    try {
-                        const reply = (await this.apiHandler.classifyText(prompt)).toLowerCase().trim();
-                        const decision: 'yes' | 'no' | 'unsure' = reply.startsWith('yes') ? 'yes'
-                            : reply.startsWith('unsure') ? 'unsure' : 'no';
-                        return { decision, tokensUsed: prompt.length / 4 + 5 };
-                    } catch (e) {
-                        console.debug('[Stufe3] preFilter classify failed:', e);
-                        return { decision: 'no' as const, tokensUsed: 0 };
-                    }
-                };
-                const webUpdatePass = async (cluster: import('./core/knowledge/ClusterMetadataStore').ClusterMetadataRecord) => {
-                    const tool = this.toolRegistry?.getTool('web_search');
-                    if (!tool) return { findings: [], tokensUsed: 0 };
-                    const captured: string[] = [];
-                    const ctx = {
+
+                // IMP-20-06-01 W2-T5: note-level FreshnessVerifier wiring.
+                // All freshness sub-flags default OFF; the orchestrator is
+                // instantiated unconditionally so settings-toggles take
+                // effect without a plugin reload.
+                const freshnessSettings = this.settings.freshness;
+                const webSettings = this.settings.webTools;
+                const webProvider: 'brave' | 'tavily' = webSettings?.provider === 'tavily' ? 'tavily' : 'brave';
+                const webApiKey = (webProvider === 'brave' ? webSettings?.braveApiKey : webSettings?.tavilyApiKey) ?? '';
+
+                const freshnessOrchestrator: FreshnessOrchestrator | null = (() => {
+                    if (!this.knowledgeDB || !this.apiHandler) return null;
+                    const db = this.knowledgeDB.getDB();
+                    const verifierProvider = new LlmVerifierProvider({
+                        midApi: this.apiHandler,
+                        midModelId: this.apiHandler.getModel?.()?.id ?? 'mid-tier',
+                        hasZdr: () => isFrontierZdrEnabled(this.settings.providerConfigs),
+                    });
+                    const verifier = new FreshnessVerifier(verifierProvider, {
+                        allowFrontierEscalation: freshnessSettings.allowFrontierEscalation,
+                        frontierConfidenceThreshold: freshnessSettings.frontierConfidenceThreshold,
+                        frontierSeverityFilter: freshnessSettings.frontierSeverityFilter,
+                    });
+                    return new FreshnessOrchestrator({
+                        selector: new NoteSelector(db, {
+                            topN: 5,
+                            excludePaths: freshnessSettings.excludePaths,
+                            volatileRecheckDays: 7,
+                            evolvingRecheckDays: 30,
+                            stableRecheckDays: 90,
+                        }),
+                        queryBuilder: new FreshnessQueryBuilder(),
+                        webSearch: new FreshnessWebSearch({
+                            externalSourcesEnabled: freshnessSettings.externalSources.enabled,
+                            provider: webProvider,
+                            apiKey: webApiKey,
+                        }),
+                        verifier,
+                        history: new NoteFreshnessHistoryStore(db),
+                        db,
+                        // Audit M-3 mitigation (AUDIT-IMP-20-06-01-2026-06-19):
+                        // outer authorization gate. The orchestrator
+                        // stays a no-op until the user turns on at
+                        // least one freshness sub-flag.
+                        enabled: () => {
+                            const s = this.settings.freshness;
+                            return s.externalSources.enabled || s.writeFrontmatter;
+                        },
+                        readNoteBody: async (path) => {
+                            const file = this.app.vault.getAbstractFileByPath(path);
+                            if (!(file instanceof TFile)) return null;
+                            try {
+                                return await this.app.vault.read(file);
+                            } catch (e) {
+                                console.debug('[FreshnessOrchestrator] read failed', path, e);
+                                return null;
+                            }
+                        },
+                        // FIX-19-99-03: wire FreshnessFrontmatterPatcher so the
+                        // freshness.writeFrontmatter setting actually mirrors
+                        // verdicts into note frontmatter (single allowlisted
+                        // key `freshness:` per ADR-95). Pre-fix the Patcher
+                        // was implemented but never instantiated; the setting
+                        // had no effect.
+                        frontmatterPatcher: new FreshnessFrontmatterPatcher(
+                            new FrontmatterWriter(this.app, { storageMode: 'global' }),
+                        ),
+                        writeFrontmatterEnabled: () => this.settings.freshness.writeFrontmatter,
+                        getFileByPath: (path) => {
+                            const f = this.app.vault.getAbstractFileByPath(path);
+                            return f instanceof TFile ? f : null;
+                        },
+                    });
+                })();
+
+                // REF-12: 4 hooks (preFilter / webUpdatePass / notificationSink /
+                // budgetExceededSink) extracted into src/core/health/Stufe3Hooks.ts
+                // so the wiring stays inline-readable here and unit-testable in
+                // isolation. The host shim keeps the surface narrow.
+                const { buildStufe3Hooks } = await import('./core/health/Stufe3Hooks');
+                const { preFilter, webUpdatePass, notificationSink, budgetExceededSink } = buildStufe3Hooks(
+                    {
+                        apiHandler: this.apiHandler,
+                        getWebSearchTool: () => this.toolRegistry?.getTool('web_search') ?? null,
                         plugin: this,
-                        callbacks: {
-                            pushToolResult: (r: string) => { captured.push(r); },
-                            say: () => Promise.resolve(),
-                            ask: () => Promise.resolve({ response: 'noButtonClicked' as const }),
-                            isParallelExecution: false,
-                            shouldUseImmediateApproval: () => false,
-                        } as unknown as import('./core/tools/types').ToolCallbacks,
-                    } as unknown as import('./core/tools/types').ToolExecutionContext;
-                    try {
-                        await tool.execute({
-                            query: `${cluster.cluster} latest update news`,
-                            max_results: 5,
-                        }, ctx);
-                    } catch (e) {
-                        console.debug('[Stufe3] webUpdatePass failed:', e);
-                        return { findings: [], tokensUsed: 0 };
-                    }
-                    const text = captured.join('\n');
-                    if (!text.trim()) return { findings: [], tokensUsed: 0 };
-                    return {
-                        findings: [{
-                            cluster: cluster.cluster,
-                            title: `Updates fuer ${cluster.cluster}`,
-                            summary: text.slice(0, 600),
-                            sources: extractUrlsFromText(text).slice(0, 5),
-                            detectedAt: new Date().toISOString(),
-                            strongSignal: extractUrlsFromText(text).length >= 2,
-                        }],
-                        tokensUsed: text.length / 4,
-                    };
-                };
-                const notificationSink = (findings: import('./core/health/Stufe3PeriodicJob').UpdateFinding[]) => {
-                    if (!findings.length) return;
-                    new Notice(`Stufe-3: ${findings.length} Update-Hinweise gefunden (siehe Console).`, 6_000);
-                    for (const f of findings) console.debug(`[Stufe3] ${f.cluster}: ${f.title}`);
-                };
-                const budgetExceededSink = (info: { spentUsd: number; budgetUsd: number }) => {
-                    new Notice(`Stufe-3 Budget bei ${(info.spentUsd / info.budgetUsd * 100).toFixed(0)}%.`, 5_000);
-                };
+                    },
+                    freshnessOrchestrator,
+                );
                 this.stufe3PeriodicJob = new Stufe3PeriodicJob(
                     this.clusterMetadataStore,
                     preFilter,
@@ -1456,19 +1579,40 @@ export default class ObsidianAgentPlugin extends Plugin {
                     budgetExceededSink,
                     persistence,
                 );
-                // Wrapper: stuendlich check, run weekly via job's internal
-                // rolloverIfNewWeek + lastRun-Logik (vereinfacht via ClusterMeta-State).
+                // FIX-19-20-01: dediziertes stufe3-Flag statt autoTrigger.enabled
+                // (das war Co-Trigger fuer mehrere Auto-Trigger). Stuendlicher
+                // Check, woechentlicher Run via lastRunIso-Persistenz. Pre-Audit
+                // wurde lastRun nur ueber rolloverIfNewWeek im RAM gehalten und
+                // beim Plugin-Reload neu berechnet -- nach Reboot konnte Stufe-3
+                // theoretisch zweimal in einer Woche laufen.
                 this.stufe3IntervalHandle = scheduleRecurring(() => {
                     if (!this.stufe3PeriodicJob) return;
+                    const stufe3Cfg = this.settings.vaultIngest?.stufe3PeriodicJob;
+                    if (!stufe3Cfg?.enabled) return;
+
                     this.stufe3PeriodicJob.rolloverIfNewWeek();
-                    // Run heute nur wenn user explicitly enabled; aktuell
-                    // gating nur ueber suppressRun-Flag aus Settings (no-op
-                    // hooks oben verhindern Tokenverbrauch sowieso).
-                    if (this.settings.vaultIngest?.autoTrigger?.enabled) {
-                        void this.stufe3PeriodicJob.run().catch((e) => {
+
+                    // Persisted lastRunIso ueberprueft: wenn der letzte Run
+                    // weniger als 6 Tage her ist, ueberspringen. Sechs statt
+                    // sieben Tage als Margin, um den woechentlichen Rhythmus
+                    // nicht zu verschieben.
+                    const lastRunIso = stufe3Cfg.lastRunIso;
+                    if (lastRunIso) {
+                        const sinceMs = Date.now() - new Date(lastRunIso).getTime();
+                        if (Number.isFinite(sinceMs) && sinceMs < 6 * 86_400_000) return;
+                    }
+
+                    void this.stufe3PeriodicJob.run()
+                        .then(() => {
+                            const cfg = this.settings.vaultIngest?.stufe3PeriodicJob;
+                            if (cfg) {
+                                cfg.lastRunIso = new Date().toISOString();
+                                void this.saveSettings();
+                            }
+                        })
+                        .catch((e) => {
                             console.debug('[Stufe3] periodic run failed:', e);
                         });
-                    }
                 }, 3_600_000);
             }
 
@@ -1503,17 +1647,23 @@ export default class ObsidianAgentPlugin extends Plugin {
                                 + `Klick fuer Anti-Echo-Suche.`,
                             10_000,
                         );
-                        // Klick-Handler fuer dezenten Trigger; nur wenn Notice-API verfuegbar.
+                        // IMP-19-19-01: pre-fix the click only opened a
+                        // second Tipp-Notice with a string the user was
+                        // supposed to paste manually. Now the click opens
+                        // the sidebar and programmatically launches an
+                        // anti_echo_search task -- the Stufe-2 trigger
+                        // finally drives the ToolExecutionPipeline, which
+                        // is what the audit asked for.
                         const el = notice.messageEl;
                         if (el) {
                             el.classList.add('agent-u-cursor-pointer');
                             el.addEventListener('click', () => {
                                 notice.hide();
-                                new Notice(
-                                    `Tipp: "@anti_echo_search cluster:${info.cluster}" im Agent ausfuehren, `
-                                        + `um Gegenpositionen zu suchen.`,
-                                    8_000,
-                                );
+                                const prompt =
+                                    `Run @anti_echo_search for cluster "${info.cluster}" ` +
+                                    `to surface counter-positions. Use a focused query, ` +
+                                    `then summarise the most surprising finding back to me.`;
+                                void this.sendMessageToAgent(prompt);
                             });
                         }
                     },
@@ -1532,7 +1682,12 @@ export default class ObsidianAgentPlugin extends Plugin {
             if ((this.settings.enableVaultHealthCheck ?? true) && this.knowledgeDB) {
                 this.vaultHealthService = new VaultHealthService(this.app, this.knowledgeDB);
                 this.app.workspace.onLayoutReady(() => {
-                    void this.vaultHealthService?.runChecks().then(() => {
+                    void this.vaultHealthService?.runChecks(undefined, {
+                        backlinksProperty: this.settings.backlinksProperty ?? 'Notizen',
+                        silenceWithContextOrphans: this.settings.vaultHealth?.silenceWithContextOrphans ?? true,
+                        orphanExcludePathPrefixes: this.settings.vaultHealth?.orphanExcludePathPrefixes ?? [],
+                        reciprocalProperties: this.settings.vaultHealth?.reciprocalProperties ?? [['Notizen', 'Quellen']],
+                    }).then(() => {
                         // Update badge in sidebar view after health check completes
                         const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_AGENT_SIDEBAR);
                         if (leaves.length > 0 && this.vaultHealthService) {
@@ -1619,7 +1774,16 @@ export default class ObsidianAgentPlugin extends Plugin {
                 if (!autoIndex || !(file instanceof TFile) || !isIndexable(file)) return;
                 this.scheduleFileIndex(file.path);
                 if (file.extension === 'md') {
-                    this.graphExtractor?.extractFile(file);
+                    // FIX-19-01-03: during a Vault Health repair pass
+                    // the modify event fires before Obsidian's
+                    // metadataCache reparse settles, so a synchronous
+                    // extractFile here would read STALE frontmatter
+                    // and overwrite the freshly inserted reverse edge
+                    // that the repair just produced. The repair's
+                    // post-write extractAll handles the graph refresh.
+                    if (!this.vaultHealthRepairInProgress) {
+                        this.graphExtractor?.extractFile(file);
+                    }
                     this.implicitConnectionService?.recomputeForPath(file.path, this.settings.implicitThreshold);
                     this.ontologyStore?.updateForPath(file.path, this.settings.mocPropertyNames ?? []);
                     this.scheduleTopHubBlockRegen();
@@ -1865,7 +2029,12 @@ export default class ObsidianAgentPlugin extends Plugin {
                     tokenBudget: this.tokenBudget,
                     telemetry: this.memoryV2Telemetry,
                 });
-                this.extractionQueue.setProcessor((item) => singleCallProcessor.process(item));
+                // FIX-32-03-02: forward the AbortSignal so a reload mid-extract
+                // can interrupt the API call instead of letting it race the DB close.
+                this.extractionQueue.setProcessor((item, signal) => singleCallProcessor.process(item, signal));
+                // FIX-32-03-03: route park/drop events through the same JSONL sink
+                // the rest of the memory pipeline already writes to.
+                this.extractionQueue.setTelemetry(this.memoryV2Telemetry);
             }
 
             // Process any pending extractions from a previous session
@@ -2040,6 +2209,22 @@ export default class ObsidianAgentPlugin extends Plugin {
             },
         });
 
+        // issue #45 quirk 3: hotkey-friendly re-enable for the
+        // implicit-connection banner. The header-X kill-switch in
+        // SuggestionBanner sets enableSuggestionBanner=false; without
+        // a command, the only way back is Settings > Embeddings.
+        this.addCommand({
+            id: 'toggle-implicit-connection-banner',
+            name: t('ui.suggestionBanner.toggleCommand'),
+            callback: () => {
+                this.settings.enableSuggestionBanner = !this.settings.enableSuggestionBanner;
+                void this.saveSettings();
+                new Notice(this.settings.enableSuggestionBanner
+                    ? 'Suggestion banner enabled.'
+                    : 'Suggestion banner disabled.');
+            },
+        });
+
         // 5. Register settings tab
         this.settingsTab = new AgentSettingsTab(this.app, this);
         this.addSettingTab(this.settingsTab);
@@ -2047,10 +2232,21 @@ export default class ObsidianAgentPlugin extends Plugin {
         // 6. Register deep-link protocol handlers:
         //    obsidian://vault-operator-settings?tab=advanced&sub=backup (new canonical)
         //    obsidian://obsilo-settings?...                              (legacy alias)
+        const VALID_SETTINGS_TABS: ReadonlySet<TabId> = new Set<TabId>([
+            'providers', 'agent-behaviour', 'customize', 'advanced', 'help',
+        ]);
         const openSettingsFromParams = (params: Record<string, string>) => {
-            const tab = params.tab;
+            const tabParam = params.tab;
             const sub = params.sub;
-            if (tab) this.openSettingsAt(tab, sub);
+            if (!tabParam) return;
+            // FIX-26-99-01 follow-up: external deep-links can send arbitrary
+            // strings; reject anything that is not a known TabId so we never
+            // land on the default tab with the user expecting something else.
+            if (!(VALID_SETTINGS_TABS as Set<string>).has(tabParam)) {
+                console.warn(`[deeplink] Unknown settings tab: ${tabParam}`);
+                return;
+            }
+            this.openSettingsAt(tabParam as TabId, sub);
         };
         this.registerObsidianProtocolHandler('vault-operator-settings', openSettingsFromParams);
         this.registerObsidianProtocolHandler('obsilo-settings', openSettingsFromParams);
@@ -2144,7 +2340,13 @@ export default class ObsidianAgentPlugin extends Plugin {
         this.pendingMigrationSummary = null;
         const { MigrationNotificationModal } = await import('./ui/settings/MigrationNotificationModal');
         new MigrationNotificationModal(this.app, summary, {
-            onOpenSettings: () => this.openSettingsAt('agent', 'providers'),
+            // FIX-26-99-01: pre-fix this used 'agent' as TabId, which is not
+            // in the TabId union ('providers' | 'agent-behaviour' | 'customize'
+            // | 'advanced' | 'help'), so the cast at openSettingsAt() landed on
+            // the default tab and the migration prompt opened a blank settings
+            // page. The migration is about provider config, so direct the user
+            // straight to the providers tab.
+            onOpenSettings: () => this.openSettingsAt('providers'),
             onDismiss: () => { /* nothing to do */ },
         }).open();
     }
@@ -2183,6 +2385,11 @@ export default class ObsidianAgentPlugin extends Plugin {
             this.rerankerService?.unload();
             this.bundleLoader?.reset();
             this.mcpBridge?.stop();
+            // FIX-32-03-02: abort the in-flight memory extraction (and clear any
+            // pending retry timer) BEFORE memoryDB.close() so SingleCallProcessor
+            // sees the abort first and skips its post-extract block, instead of
+            // racing the close and emitting closed-DB errors.
+            this.extractionQueue?.cancelInFlight();
             // Close databases (final save + cleanup)
             await this.memoryDB?.close().catch((e) =>
                 console.warn('[Plugin] MemoryDB close failed (non-fatal):', e)
@@ -2323,8 +2530,17 @@ export default class ObsidianAgentPlugin extends Plugin {
         // cannot call tools the mode lacks) and the chat-header pocket-knife
         // now toggles both globally via activeMcpServers and per-tool via
         // modeToolOverrides.
-        this.settings.modeSkillAllowList = {};
-        this.settings.modeMcpServers = {};
+        // Cast-through-unknown legacy view: the bot rejects every
+        // `eslint-disable @typescript-eslint/no-deprecated`, so we break
+        // the type-level deprecation chain instead. Both fields are kept
+        // for back-compat with old data.json files; loadSettings clears
+        // them to `{}` on every load.
+        const deprecatedModeFields = this.settings as unknown as {
+            modeSkillAllowList: Record<string, unknown>;
+            modeMcpServers: Record<string, unknown>;
+        };
+        deprecatedModeFields.modeSkillAllowList = {};
+        deprecatedModeFields.modeMcpServers = {};
         // Migrate source: 'custom' → 'vault' (introduced in Phase 3.1+)
         this.settings.globalCustomInstructions = this.settings.globalCustomInstructions ?? '';
         this.settings.modeModelKeys = this.settings.modeModelKeys ?? {};
@@ -3452,7 +3668,9 @@ export default class ObsidianAgentPlugin extends Plugin {
         const { memoryV2UpgradeModal } = await import('./ui/modals/MemoryV2UpgradeModal');
         const choice = await memoryV2UpgradeModal(this.app, { reason: 'auto-on-load' });
         if (choice === 'migrate') {
-            this.openSettingsAt('agent', 'memory');
+            // FIX-26-99-01: was 'agent' (tot-String) -- memory lives under
+            // agent-behaviour > memory.
+            this.openSettingsAt('agent-behaviour', 'memory');
         } else {
             mem.v2MigrationStatus = 'skipped';
             await this.saveSettings();
@@ -3487,7 +3705,33 @@ export default class ObsidianAgentPlugin extends Plugin {
         }
     }
 
-    openSettingsAt(tab: string, subTab?: string): void {
+    /**
+     * FIX-26-99-01: was accepting arbitrary `string` and casting to TabId
+     * at the call to settingsTab.openAt(). That swallowed tot-Strings
+     * like `'agent'` silently and left the user on the default tab.
+     * Now constrained to the TabId union; the compiler refuses any
+     * caller that passes an invalid id.
+     */
+    /**
+     * IMP-06-01-01: surface the one-shot PDF-reindex hint exactly once
+     * for users who indexed PDFs before v2.14.10. Quietly returns when
+     * the precondition does not hold (hint already shown, reindex
+     * already done, semantic index off, indexPdfs off, or no PDFs in
+     * the vault).
+     */
+    private async maybeShowPdfReindexHint(): Promise<void> {
+        const s = this.settings;
+        if (s._pdfReindexHintShown) return;
+        if (s._pdfReindexCompleted) return;
+        if (!s.enableSemanticIndex) return;
+        if (!s.semanticIndexPdfs) return;
+        const hasPdfs = this.app.vault.getFiles().some((f) => f.extension.toLowerCase() === 'pdf');
+        if (!hasPdfs) return;
+        const { PdfReindexHintModal } = await import('./ui/modals/PdfReindexHintModal');
+        new PdfReindexHintModal(this.app, this).open();
+    }
+
+    openSettingsAt(tab: TabId, subTab?: string): void {
         // Open the Obsidian settings modal
         const setting = this.app.setting;
         if (setting) {
@@ -3497,7 +3741,7 @@ export default class ObsidianAgentPlugin extends Plugin {
             // Then navigate to the specific tab/subtab within our settings
             window.setTimeout(() => {
                 if (this.settingsTab) {
-                    this.settingsTab.openAt(tab as TabId, subTab);
+                    this.settingsTab.openAt(tab, subTab);
                 }
             }, 50);
         }
@@ -3531,6 +3775,12 @@ export default class ObsidianAgentPlugin extends Plugin {
         if (ob.dontShowFirstRunAgain) return;
         const shown = ob.firstRunModalShownCount ?? 0;
         if (shown >= 3) return;
+        // FIX (2026-06-15): manual restart-from-Settings + cancel should
+        // not re-open the wizard on the next reload when a provider is
+        // already configured. Mirror the AgentSidebarView wizardPending
+        // gate so both auto-open paths agree.
+        const { isActiveOnboardingFlow } = await import('./core/onboarding-status');
+        if (!isActiveOnboardingFlow(this.settings)) return;
 
         ob.firstRunModalShownCount = shown + 1;
         await this.saveSettings();
