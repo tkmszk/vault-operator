@@ -5071,3 +5071,66 @@ Adversarial Verify-Workflow + Full-Suite-Lauf. Wenn clean: commit der Rename-Wel
 **Release-recommendation:** GREEN fuer interne Builds / dev-merge; YELLOW fuer Public-Mirror -- die 8 Partials sollten in einer kurzen Folge-Welle vor v2.15.0-Public abgeschlossen werden.
 
 **Naechster Schritt empfohlen:** `/dia-orchestrator` Phase 7 (Release Closure) ODER manueller Merge nach dev mit Vorlauf-Welle fuer die 8 Partials.
+
+---
+
+## requirements-engineering-to-architecture 2026-06-22
+
+triage: FEAT-03-27
+triage_kind: feature
+epic: EPIC-03
+feature: FEAT-03-27
+
+### NFR summary
+
+| Category | Target | Quelle |
+|---|---|---|
+| Migration-Dauer | <= 30s bei 5000 Notes + 1000 Sessions + 5000 Episodes | FEAT-03-27 SC-03 |
+| Lookup nach Migration | O(log n), kein Full-Scan pro Konsumenten-Query | FEAT-03-27 |
+| RecallEngine Mixed-Layer-Latenz | <= +10% gegen Baseline | FEAT-03-27 SC-06 |
+| Tool-API-Kompatibilitaet | Recall-Top-10-Diff <= 5% auf 30 Queries | FEAT-03-27 SC-02 |
+| DB-File-Groesse | <= +5% gegenueber heutigem Stand | FEAT-03-27 |
+| Plugin-Start-Blockierung | <= 30s | FEAT-03-27 |
+| Skalierungs-Endausbau | 50.000 Sessions + 50.000 Episodes ohne Re-Migration | FEAT-03-27 |
+
+### Critical ASRs (muessen je ein ADR bekommen)
+
+- ASR-03-27-01 Schema-Migration ohne User-Re-Index: erzwingt Praeferenz Spalten-Diskriminator vor Tabellen-Namespace (Tabellen-Namespace = Daten-Verschiebung = User-Re-Index unausweichlich).
+- ASR-03-27-02 Tool-API-Kompatibilitaet: URI-Schemas `session://`, `episode://`, `vault://`, `fact://` bleiben unveraendert, selbst wenn interne Spalten-Namen sich aendern.
+
+### Moderate ASRs
+
+- ASR-03-27-03 Reader/Writer-Site-Vollstaendigkeit: Helper, Lint-Regel oder Schema-Constraint muss Drift in kuenftigen Konsumenten verhindern.
+
+### Open architecture questions (sechs)
+
+1. Diskriminator-Variante: Spalten (`vectors.domain TEXT`) versus separater Tabellen-Namespace.
+2. Migration in-place via Pfad-Prefix-Inferenz versus Re-Insert.
+3. Edges-Tabelle: braucht sie auch einen Diskriminator, oder reicht FK auf `vectors`?
+4. URI-Schemas im `RecallHit` (Mapping intern -> API-Oberflaeche).
+5. Reader/Writer-Coverage-Mechanik: Helper-Funktion + ESLint, Views, oder Tabellen-Namespace?
+6. Reranker (Retrieval Wave 1): respektiert Layer-Trennung, oder bewusst cross-layer fuer Episode-Anreicherung?
+
+### Constraints (aus User-Dialog 2026-06-22 + bestehende Plugin-Infrastruktur)
+
+- sql.js WASM Engine bleibt unveraendert, keine neue DB-Engine
+- Daily-Snapshot vor Migration muss erzwungen sein (FEATURE-0314 Snapshot-Mechanik)
+- Lock-File aus FEATURE-0314 schuetzt vor parallelen Plugin-Instanzen waehrend Migration
+- Migration in `onload`, kein Background-Worker
+- Keine Tool-API-Aenderung (`recall_memory`, `search_history`, `mark_for_memory`, `semantic_search`)
+
+### Forbidden-terms check
+
+Success Criteria SC-01 bis SC-06 wurden ueber den ESLint-aequivalenten Grep gegen die Forbidden-Liste gefahren (OAuth, REST, PostgreSQL, ms, cache, TLS, RBAC, JSON, HTTP, ...). 0 Treffer. Schema-Migration, sql.js, TypeScript, DB-Constraint stehen in den Technical NFRs, wo sie erlaubt sind.
+
+### Forbidden-words (Em-Dash, AI Vocabulary)
+
+0 Em-Dashes (U+2014, U+2013) in FEAT-03-27-Spec und im architect-handoff. 0 AI-Vokabel-Treffer (landscape, nuanced, leverage, seamless, holistic, crucial, delve, robust, foster, underscoring, highlighting). Deutsche Umlaute durchgaengig korrekt.
+
+### Empfohlene naechste Schritte
+
+1. `/architecture` startet mit dem Diskriminator-ADR (zentrale Variante), referenziert ASR-03-27-01.
+2. Folge-ADR Migration-Strategie (Pfad-Prefix-Inferenz idempotent in-place, mit Daily-Snapshot vor Migration und Lock-File-Schutz).
+3. Folge-ADR Tool-API-Mapping (`RecallHit.uri` bleibt `<scheme>://<id>`, interne `domain`-Spalte mappt auf das Scheme).
+4. Folge-ADR Reader/Writer-Coverage-Mechanik (vermutlich Helper + ESLint-Regel, weil das die einfachste additive Variante ist, ohne Views einfuehren zu muessen).
+5. Update ADR-77 (Memory v2 Storage Schema) als Amendment oder Supersedence, je nach Diskriminator-Variante.
