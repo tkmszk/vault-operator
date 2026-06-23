@@ -1,5 +1,5 @@
 {
-  "id": "vault-operator",
+  "id": "my-vault-operator",
   "name": "Vault Operator",
   "version": "3.0.2",
   "minAppVersion": "1.13.0",
