@@ -14,10 +14,12 @@
     "format": "prettier --write 'src/**/*.ts'",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
+    "docs:gen-tools": "node scripts/generate-tools-reference.mjs",
     "docs:preview": "vitepress preview docs",
     "codeql:db": "codeql database create codeql-db --language=javascript --source-root=src/ --overwrite",
     "codeql:analyze": "codeql database analyze codeql-db --format=sarif-latest --output=codeql-results.sarif codeql/javascript-queries:codeql-suites/javascript-security-and-quality.qls",
-    "codeql:scan": "npm run codeql:db && npm run codeql:analyze"
+    "codeql:scan": "npm run codeql:db && npm run codeql:analyze",
+    "verify:esbuild-hashes": "bash scripts/update-esbuild-integrity.sh"
   },
   "keywords": [
     "obsidian",
@@ -31,10 +33,14 @@
   "author": "Sebastian Hanke",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@codemirror/state": "6.5.0",
+    "@codemirror/view": "6.38.6",
     "@types/diff": "^7.0.2",
     "@types/node": "^20.11.0",
     "@typescript-eslint/eslint-plugin": "^8.56.1",
     "@typescript-eslint/parser": "^8.56.1",
+    "@vitest/coverage-v8": "^4.1.9",
+    "dompurify": "^3.4.11",
     "esbuild": "^0.28.1",
     "eslint": "^9.39.3",
     "eslint-plugin-no-unsanitized": "^4.1.5",
@@ -59,8 +65,8 @@
     "@aws-sdk/client-bedrock-runtime": "^3.1030.0",
     "@aws-sdk/credential-providers": "^3.1030.0",
     "@huggingface/transformers": "^4.0.0",
-    "@smithy/node-http-handler": "^4.0.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "@smithy/node-http-handler": "^4.0.0",
     "delay": "^5.0.0",
     "diff": "^5.1.0",
     "docx": "^9.6.0",
@@ -78,7 +84,7 @@
     "sql.js": "^1.14.1"
   },
   "overrides": {
-    "hono": ">=4.12.21",
+    "hono": ">=4.12.25",
     "@hono/node-server": ">=1.19.10",
     "express-rate-limit": ">=8.2.2",
     "undici": ">=7.24.0",
@@ -88,13 +94,14 @@
     "brace-expansion": ">=2.0.3",
     "vite": "$vite",
     "protobufjs": ">=8.6.0",
-    "dompurify": ">=3.4.7",
+    "dompurify": "$dompurify",
     "fast-uri": ">=3.1.2",
     "fast-xml-builder": ">=1.1.7",
     "uuid": "^14.0.0",
     "qs": ">=6.15.2",
     "tmp": ">=0.2.6",
     "js-yaml": ">=4.2.0",
+    "zod": ">=4.4.0",
     "esbuild": "$esbuild"
   }
 }
