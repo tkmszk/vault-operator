@@ -79,7 +79,7 @@ temp/
 
 .claude
 forked-kilocode/
-
+data.json
 
 # CodeQL
 codeql-db/
